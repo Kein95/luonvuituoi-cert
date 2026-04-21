@@ -1,0 +1,49 @@
+{
+  "$schema": "../../../../cert.schema.json",
+  "project": {
+    "name": "DEMO ACADEMY",
+    "slug": "demo-academy",
+    "locale": "en"
+  },
+  "rounds": [
+    {
+      "id": "main",
+      "label": "Main Round",
+      "table": "students",
+      "pdf": "templates/main.pdf"
+    }
+  ],
+  "subjects": [
+    {
+      "code": "S",
+      "en": "Science",
+      "db_col": "science_result"
+    }
+  ],
+  "results": {
+    "S": {
+      "GOLD": 1,
+      "SILVER": 2
+    }
+  },
+  "data_mapping": {
+    "sbd_col": "registration_number",
+    "name_col": "full_name"
+  },
+  "layout": {
+    "page_size": [842, 595],
+    "fields": {
+      "name": {
+        "x": 421,
+        "y": 300,
+        "font": "serif",
+        "size": 36,
+        "color": "#000000",
+        "align": "center"
+      }
+    }
+  },
+  "fonts": {
+    "serif": "assets/fonts/PlayfairDisplay-SemiBold.ttf"
+  }
+}

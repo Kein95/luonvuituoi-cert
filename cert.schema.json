@@ -1,0 +1,544 @@
+{
+  "$defs": {
+    "AdminConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "auth_mode": {
+          "default": "password",
+          "enum": [
+            "password",
+            "otp_email",
+            "magic_link"
+          ],
+          "title": "Auth Mode",
+          "type": "string"
+        },
+        "multi_user": {
+          "default": true,
+          "title": "Multi User",
+          "type": "boolean"
+        },
+        "roles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Roles",
+          "type": "array"
+        }
+      },
+      "title": "AdminConfig",
+      "type": "object"
+    },
+    "Branding": {
+      "additionalProperties": false,
+      "properties": {
+        "logo_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Url"
+        },
+        "primary_color": {
+          "default": "#667eea",
+          "title": "Primary Color",
+          "type": "string"
+        },
+        "accent_color": {
+          "default": "#764ba2",
+          "title": "Accent Color",
+          "type": "string"
+        }
+      },
+      "title": "Branding",
+      "type": "object"
+    },
+    "DataMapping": {
+      "additionalProperties": false,
+      "properties": {
+        "sbd_col": {
+          "default": "sbd",
+          "title": "Sbd Col",
+          "type": "string"
+        },
+        "name_col": {
+          "default": "name",
+          "title": "Name Col",
+          "type": "string"
+        },
+        "dob_col": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dob Col"
+        },
+        "school_col": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "School Col"
+        },
+        "grade_col": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grade Col"
+        },
+        "phone_col": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phone Col"
+        },
+        "extra_cols": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Extra Cols",
+          "type": "array"
+        }
+      },
+      "title": "DataMapping",
+      "type": "object"
+    },
+    "Features": {
+      "additionalProperties": false,
+      "properties": {
+        "qr_verify": {
+          "$ref": "#/$defs/QRVerify"
+        },
+        "shipment": {
+          "$ref": "#/$defs/Shipment"
+        },
+        "otp_email": {
+          "$ref": "#/$defs/OtpEmail"
+        },
+        "gsheet_log": {
+          "$ref": "#/$defs/GSheetLog"
+        },
+        "kv_backend": {
+          "default": "local",
+          "enum": [
+            "local",
+            "upstash",
+            "vercel-kv"
+          ],
+          "title": "Kv Backend",
+          "type": "string"
+        }
+      },
+      "title": "Features",
+      "type": "object"
+    },
+    "GSheetLog": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "GSheetLog",
+      "type": "object"
+    },
+    "LayoutField": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "font": {
+          "description": "Key into the top-level ``fonts`` registry.",
+          "minLength": 1,
+          "title": "Font",
+          "type": "string"
+        },
+        "size": {
+          "exclusiveMinimum": 0,
+          "maximum": 500,
+          "title": "Size",
+          "type": "number"
+        },
+        "color": {
+          "default": "#000000",
+          "title": "Color",
+          "type": "string"
+        },
+        "align": {
+          "default": "center",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "title": "Align",
+          "type": "string"
+        },
+        "wrap": {
+          "anyOf": [
+            {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wrap"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "font",
+        "size"
+      ],
+      "title": "LayoutField",
+      "type": "object"
+    },
+    "LayoutSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "page_size": {
+          "description": "(width, height) in points.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Page Size",
+          "type": "array"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/LayoutField"
+          },
+          "minProperties": 1,
+          "title": "Fields",
+          "type": "object"
+        }
+      },
+      "required": [
+        "page_size",
+        "fields"
+      ],
+      "title": "LayoutSpec",
+      "type": "object"
+    },
+    "OtpEmail": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "provider": {
+          "const": "resend",
+          "default": "resend",
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "title": "OtpEmail",
+      "type": "object"
+    },
+    "Project": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "slug": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Slug",
+          "type": "string"
+        },
+        "locale": {
+          "default": "en",
+          "enum": [
+            "en",
+            "vi"
+          ],
+          "title": "Locale",
+          "type": "string"
+        },
+        "branding": {
+          "$ref": "#/$defs/Branding"
+        }
+      },
+      "required": [
+        "name",
+        "slug"
+      ],
+      "title": "Project",
+      "type": "object"
+    },
+    "QRVerify": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "public_key_path": {
+          "default": "public_key.pem",
+          "title": "Public Key Path",
+          "type": "string"
+        }
+      },
+      "title": "QRVerify",
+      "type": "object"
+    },
+    "Round": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "table": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Table",
+          "type": "string"
+        },
+        "pdf": {
+          "description": "Relative path to the certificate template PDF.",
+          "minLength": 1,
+          "title": "Pdf",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "table",
+        "pdf"
+      ],
+      "title": "Round",
+      "type": "object"
+    },
+    "Shipment": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "statuses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Statuses",
+          "type": "array"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "array"
+        }
+      },
+      "title": "Shipment",
+      "type": "object"
+    },
+    "StudentSearch": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "name_dob_captcha",
+          "enum": [
+            "name_dob_captcha",
+            "name_sbd_captcha",
+            "sbd_phone"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "admin_mode": {
+          "default": "sbd_auth",
+          "enum": [
+            "sbd_auth",
+            "sbd_phone"
+          ],
+          "title": "Admin Mode",
+          "type": "string"
+        }
+      },
+      "title": "StudentSearch",
+      "type": "object"
+    },
+    "Subject": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Short code used as a key in results/layout.",
+          "maxLength": 10,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "en": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "En",
+          "type": "string"
+        },
+        "vi": {
+          "anyOf": [
+            {
+              "maxLength": 60,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vi"
+        },
+        "db_col": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Db Col",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "en",
+        "db_col"
+      ],
+      "title": "Subject",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Root document for ``cert.config.json``. All handlers read from this.",
+  "properties": {
+    "project": {
+      "$ref": "#/$defs/Project"
+    },
+    "rounds": {
+      "items": {
+        "$ref": "#/$defs/Round"
+      },
+      "minItems": 1,
+      "title": "Rounds",
+      "type": "array"
+    },
+    "subjects": {
+      "items": {
+        "$ref": "#/$defs/Subject"
+      },
+      "minItems": 1,
+      "title": "Subjects",
+      "type": "array"
+    },
+    "results": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "type": "object"
+      },
+      "description": "subject_code → { result_name: page_number_in_pdf }.",
+      "title": "Results",
+      "type": "object"
+    },
+    "data_mapping": {
+      "$ref": "#/$defs/DataMapping"
+    },
+    "layout": {
+      "$ref": "#/$defs/LayoutSpec"
+    },
+    "fonts": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "font_key → ttf path (relative).",
+      "minProperties": 1,
+      "title": "Fonts",
+      "type": "object"
+    },
+    "student_search": {
+      "$ref": "#/$defs/StudentSearch"
+    },
+    "admin": {
+      "$ref": "#/$defs/AdminConfig"
+    },
+    "features": {
+      "$ref": "#/$defs/Features"
+    }
+  },
+  "required": [
+    "project",
+    "rounds",
+    "subjects",
+    "results",
+    "layout",
+    "fonts"
+  ],
+  "title": "LUONVUITUOI-CERT configuration",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luonvuitoi.github.io/cert/cert.schema.json"
+}

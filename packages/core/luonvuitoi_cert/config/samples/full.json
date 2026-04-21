@@ -1,0 +1,91 @@
+{
+  "$schema": "../../../../cert.schema.json",
+  "project": {
+    "name": "DEMO ACADEMY",
+    "slug": "demo-academy-full",
+    "locale": "en",
+    "branding": {
+      "logo_url": "/assets/logo.png",
+      "primary_color": "#1E3A8A",
+      "accent_color": "#60A5FA"
+    }
+  },
+  "rounds": [
+    {
+      "id": "main",
+      "label": "Main Round",
+      "table": "students",
+      "pdf": "templates/main.pdf"
+    },
+    {
+      "id": "finals",
+      "label": "National Finals",
+      "table": "students_finals",
+      "pdf": "templates/finals.pdf"
+    }
+  ],
+  "subjects": [
+    { "code": "S", "en": "Science", "vi": "Khoa Học", "db_col": "science_result" },
+    { "code": "E", "en": "English", "vi": "Tiếng Anh", "db_col": "english_result" }
+  ],
+  "results": {
+    "S": { "GOLD": 1, "SILVER": 2, "BRONZE": 3, "MERIT": 4, "PARTICIPANT": 5 },
+    "E": { "GOLD": 6, "SILVER": 7, "BRONZE": 8, "MERIT": 9, "PARTICIPANT": 10 }
+  },
+  "data_mapping": {
+    "sbd_col": "registration_number",
+    "name_col": "full_name",
+    "dob_col": "date_of_birth",
+    "school_col": "school",
+    "grade_col": "grade",
+    "phone_col": "phone",
+    "extra_cols": ["province", "country"]
+  },
+  "layout": {
+    "page_size": [842, 595],
+    "fields": {
+      "name": {
+        "x": 421, "y": 330, "font": "script", "size": 40, "color": "#1E3A8A", "align": "center"
+      },
+      "grade": {
+        "x": 421, "y": 290, "font": "serif", "size": 18, "align": "center"
+      },
+      "school": {
+        "x": 421, "y": 260, "font": "serif", "size": 18, "align": "center", "wrap": 60
+      }
+    }
+  },
+  "fonts": {
+    "script": "assets/fonts/GreatVibes-Regular.ttf",
+    "serif": "assets/fonts/PlayfairDisplay-SemiBold.ttf",
+    "sans": "assets/fonts/Inter-SemiBold.ttf"
+  },
+  "student_search": {
+    "mode": "name_dob_captcha",
+    "admin_mode": "sbd_auth"
+  },
+  "admin": {
+    "auth_mode": "otp_email",
+    "multi_user": true,
+    "roles": ["super-admin", "admin", "viewer"]
+  },
+  "features": {
+    "qr_verify": {
+      "enabled": true,
+      "public_key_path": "public_key.pem"
+    },
+    "shipment": {
+      "enabled": true,
+      "statuses": ["pending", "packed", "shipped", "delivered", "returned"],
+      "fields": ["tracking_code", "carrier", "shipped_at", "delivered_at", "note"]
+    },
+    "otp_email": {
+      "enabled": true,
+      "provider": "resend"
+    },
+    "gsheet_log": {
+      "enabled": true
+    },
+    "kv_backend": "upstash"
+  }
+}

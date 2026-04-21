@@ -1,0 +1,52 @@
+{
+  "$schema": "../../../../cert.schema.json",
+  "project": {
+    "name": "DEMO ACADEMY",
+    "slug": "demo-academy-qr",
+    "locale": "en"
+  },
+  "rounds": [
+    {
+      "id": "main",
+      "label": "Main Round",
+      "table": "students",
+      "pdf": "templates/main.pdf"
+    }
+  ],
+  "subjects": [
+    { "code": "G", "en": "General", "db_col": "result" }
+  ],
+  "results": {
+    "G": { "GOLD": 1, "SILVER": 2, "BRONZE": 3, "PARTICIPANT": 4 }
+  },
+  "data_mapping": {
+    "sbd_col": "registration_number",
+    "name_col": "full_name",
+    "school_col": "school"
+  },
+  "layout": {
+    "page_size": [842, 595],
+    "fields": {
+      "name": {
+        "x": 421, "y": 320, "font": "script", "size": 44, "align": "center"
+      },
+      "school": {
+        "x": 421, "y": 270, "font": "serif", "size": 18, "align": "center", "wrap": 60
+      }
+    }
+  },
+  "fonts": {
+    "script": "assets/fonts/GreatVibes-Regular.ttf",
+    "serif": "assets/fonts/PlayfairDisplay-SemiBold.ttf"
+  },
+  "admin": {
+    "auth_mode": "password",
+    "multi_user": false
+  },
+  "features": {
+    "qr_verify": {
+      "enabled": true,
+      "public_key_path": "public_key.pem"
+    }
+  }
+}
