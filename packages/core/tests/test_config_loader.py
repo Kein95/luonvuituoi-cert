@@ -57,6 +57,48 @@ def test_load_validation_error_wraps_cleanly(tmp_path: Path) -> None:
         load_config(p)
 
 
+def test_validation_error_includes_file_path(tmp_path: Path) -> None:
+    """Regression: Phase 02 review H1 — file path was missing from validation-error branch."""
+    p = tmp_path / "bad.json"
+    p.write_text(json.dumps({"project": {"name": "x", "slug": "x"}}), encoding="utf-8")
+    try:
+        load_config(p)
+    except ConfigError as e:
+        assert str(p) in str(e)
+    else:
+        pytest.fail("ConfigError not raised")
+
+
+def test_validation_error_has_no_pydantic_url_noise(tmp_path: Path) -> None:
+    """Humanized errors must not dump ``https://errors.pydantic.dev/...`` back at users."""
+    p = tmp_path / "bad.json"
+    p.write_text(json.dumps({"project": {"name": "x", "slug": "x"}}), encoding="utf-8")
+    try:
+        load_config(p)
+    except ConfigError as e:
+        assert "errors.pydantic.dev" not in str(e)
+    else:
+        pytest.fail("ConfigError not raised")
+
+
+def test_validation_error_does_not_echo_raw_input(tmp_path: Path) -> None:
+    """Raw input may contain secrets — don't echo it back."""
+    p = tmp_path / "bad.json"
+    secret_marker = "s3cret-marker-do-not-leak"
+    p.write_text(json.dumps({"project": {"name": secret_marker, "slug": "x"}}), encoding="utf-8")
+    try:
+        load_config(p)
+    except ConfigError as e:
+        assert secret_marker not in str(e)
+
+
+def test_non_utf8_file_raises_clean_error(tmp_path: Path) -> None:
+    p = tmp_path / "bad.json"
+    p.write_bytes(b"\xff\xfe\x00{invalid utf16 or garbage}")
+    with pytest.raises(ConfigError):
+        load_config(p)
+
+
 def test_load_config_dict_short_circuits() -> None:
     raw = json.loads((SAMPLES_DIR / "minimal.json").read_text(encoding="utf-8"))
     raw.pop("$schema", None)

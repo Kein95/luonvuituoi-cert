@@ -27,7 +27,26 @@ KVBackend = Literal["local", "upstash", "vercel-kv"]
 EmailProvider = Literal["resend"]
 
 _HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
-_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+# Slug: lowercase kebab-case segments joined by single hyphens, no leading/trailing hyphen.
+_SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+# Identifier used as a dict/URL key — letters/digits/_/- only, no path separators.
+_IDENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
+# SQL identifier safe to interpolate into column/table fragments (no quoting needed).
+_SQL_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _validate_relative_path(v: str, field: str) -> str:
+    """Reject absolute paths and parent-directory traversal for asset references."""
+    if not v:
+        raise ValueError(f"{field} must not be empty")
+    if v.startswith(("/", "\\")):
+        raise ValueError(f"{field} must be a relative path (got absolute {v!r})")
+    if len(v) >= 2 and v[1] == ":":  # Windows drive letter, e.g. C:\
+        raise ValueError(f"{field} must be a relative path (got drive-letter {v!r})")
+    parts = re.split(r"[\\/]", v)
+    if ".." in parts:
+        raise ValueError(f"{field} must not traverse parents ('..' segment in {v!r})")
+    return v
 
 
 class _Strict(BaseModel):
@@ -67,12 +86,45 @@ class Round(_Strict):
     table: str = Field(min_length=1, max_length=60)
     pdf: str = Field(min_length=1, description="Relative path to the certificate template PDF.")
 
+    @field_validator("id")
+    @classmethod
+    def _ident(cls, v: str) -> str:
+        if not _IDENT.match(v):
+            raise ValueError(f"round.id must match {_IDENT.pattern}, got {v!r}")
+        return v
+
+    @field_validator("table")
+    @classmethod
+    def _sql_ident(cls, v: str) -> str:
+        if not _SQL_IDENT.match(v):
+            raise ValueError(f"round.table must be a SQL identifier, got {v!r}")
+        return v
+
+    @field_validator("pdf")
+    @classmethod
+    def _pdf_path(cls, v: str) -> str:
+        return _validate_relative_path(v, "round.pdf")
+
 
 class Subject(_Strict):
     code: str = Field(min_length=1, max_length=10, description="Short code used as a key in results/layout.")
     en: str = Field(min_length=1, max_length=60)
     vi: str | None = Field(default=None, max_length=60)
     db_col: str = Field(min_length=1, max_length=60)
+
+    @field_validator("code")
+    @classmethod
+    def _ident(cls, v: str) -> str:
+        if not _IDENT.match(v):
+            raise ValueError(f"subject.code must match {_IDENT.pattern}, got {v!r}")
+        return v
+
+    @field_validator("db_col")
+    @classmethod
+    def _sql_ident(cls, v: str) -> str:
+        if not _SQL_IDENT.match(v):
+            raise ValueError(f"subject.db_col must be a SQL identifier, got {v!r}")
+        return v
 
 
 class LayoutField(_Strict):
@@ -172,6 +224,15 @@ class CertConfig(_Strict):
     data_mapping: DataMapping = Field(default_factory=DataMapping)
     layout: LayoutSpec
     fonts: dict[str, str] = Field(min_length=1, description="font_key → ttf path (relative).")
+
+    @field_validator("fonts")
+    @classmethod
+    def _font_paths_relative(cls, v: dict[str, str]) -> dict[str, str]:
+        for key, path in v.items():
+            if not _IDENT.match(key):
+                raise ValueError(f"fonts key {key!r} must match {_IDENT.pattern}")
+            _validate_relative_path(path, f"fonts[{key!r}]")
+        return v
     student_search: StudentSearch = Field(default_factory=StudentSearch)
     admin: AdminConfig = Field(default_factory=AdminConfig)
     features: Features = Field(default_factory=Features)
@@ -193,9 +254,16 @@ class CertConfig(_Strict):
     @model_validator(mode="after")
     def _check_results_match_subjects(self) -> CertConfig:
         declared = {s.code for s in self.subjects}
-        extras = set(self.results.keys()) - declared
+        declared_results = set(self.results.keys())
+        extras = declared_results - declared
         if extras:
             raise ValueError(f"results has keys not declared in subjects: {sorted(extras)}")
+        missing = declared - declared_results
+        if missing:
+            raise ValueError(
+                f"subjects declared without a results mapping: {sorted(missing)} "
+                "(every subject.code must have a corresponding results[code] entry)"
+            )
         # Each result map must have at least 1 entry and unique page numbers.
         for code, mapping in self.results.items():
             if not mapping:

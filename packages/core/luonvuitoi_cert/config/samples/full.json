@@ -25,12 +25,12 @@
     }
   ],
   "subjects": [
-    { "code": "S", "en": "Science", "vi": "Khoa Học", "db_col": "science_result" },
-    { "code": "E", "en": "English", "vi": "Tiếng Anh", "db_col": "english_result" }
+    { "code": "SCI", "en": "Science", "vi": "Khoa Học", "db_col": "science_result" },
+    { "code": "ENG", "en": "English", "vi": "Tiếng Anh", "db_col": "english_result" }
   ],
   "results": {
-    "S": { "GOLD": 1, "SILVER": 2, "BRONZE": 3, "MERIT": 4, "PARTICIPANT": 5 },
-    "E": { "GOLD": 6, "SILVER": 7, "BRONZE": 8, "MERIT": 9, "PARTICIPANT": 10 }
+    "SCI": { "DISTINCTION": 1, "MERIT": 3, "PASS": 5 },
+    "ENG": { "DISTINCTION": 2, "MERIT": 4, "PASS": 6 }
   },
   "data_mapping": {
     "sbd_col": "registration_number",

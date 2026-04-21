@@ -48,7 +48,15 @@ def test_slug_must_be_kebab_case() -> None:
         Project(name="Demo", slug="Invalid Slug")
     with pytest.raises(ValidationError):
         Project(name="Demo", slug="UPPER")
+    # Tightened regex: reject trailing hyphen and double hyphens.
+    with pytest.raises(ValidationError):
+        Project(name="Demo", slug="trailing-")
+    with pytest.raises(ValidationError):
+        Project(name="Demo", slug="double--hyphen")
+    with pytest.raises(ValidationError):
+        Project(name="Demo", slug="-leading")
     Project(name="Demo", slug="valid-slug-123")
+    Project(name="Demo", slug="abc")
 
 
 def test_branding_rejects_non_hex_color() -> None:
@@ -63,6 +71,73 @@ def test_results_keys_must_match_subject_codes() -> None:
     raw = _valid_raw()
     raw["results"]["UNKNOWN"] = {"GOLD": 3}
     with pytest.raises(ValidationError, match="not declared in subjects"):
+        CertConfig.model_validate(raw)
+
+
+def test_subject_without_results_is_rejected() -> None:
+    """Regression: Phase 02 review C1 — a subject declared without results silently passed before."""
+    raw = _valid_raw()
+    raw["subjects"].append({"code": "EXTRA", "en": "Extra", "db_col": "extra_col"})
+    # results only has the first subject
+    with pytest.raises(ValidationError, match="subjects declared without a results mapping"):
+        CertConfig.model_validate(raw)
+
+
+def test_round_id_rejects_path_separators() -> None:
+    raw = _valid_raw()
+    raw["rounds"][0]["id"] = "has/slash"
+    with pytest.raises(ValidationError, match="round.id"):
+        CertConfig.model_validate(raw)
+
+
+def test_round_pdf_rejects_absolute_path() -> None:
+    raw = _valid_raw()
+    raw["rounds"][0]["pdf"] = "/etc/passwd"
+    with pytest.raises(ValidationError, match="relative path"):
+        CertConfig.model_validate(raw)
+
+
+def test_round_pdf_rejects_parent_traversal() -> None:
+    raw = _valid_raw()
+    raw["rounds"][0]["pdf"] = "../../etc/passwd"
+    with pytest.raises(ValidationError, match="traverse parents"):
+        CertConfig.model_validate(raw)
+
+
+def test_round_table_must_be_sql_identifier() -> None:
+    raw = _valid_raw()
+    raw["rounds"][0]["table"] = "students; DROP TABLE"
+    with pytest.raises(ValidationError, match="SQL identifier"):
+        CertConfig.model_validate(raw)
+
+
+def test_subject_code_rejects_special_chars() -> None:
+    raw = _valid_raw()
+    raw["subjects"][0]["code"] = "a/b!"
+    raw["results"] = {"a/b!": {"GOLD": 1}}
+    with pytest.raises(ValidationError, match="subject.code"):
+        CertConfig.model_validate(raw)
+
+
+def test_subject_db_col_rejects_sql_injection() -> None:
+    raw = _valid_raw()
+    raw["subjects"][0]["db_col"] = "x; DROP TABLE students;--"
+    with pytest.raises(ValidationError, match="SQL identifier"):
+        CertConfig.model_validate(raw)
+
+
+def test_fonts_reject_absolute_path() -> None:
+    raw = _valid_raw()
+    raw["fonts"]["evil"] = "/etc/passwd"
+    raw["layout"]["fields"]["name"]["font"] = "evil"
+    with pytest.raises(ValidationError, match="relative path"):
+        CertConfig.model_validate(raw)
+
+
+def test_fonts_reject_parent_traversal() -> None:
+    raw = _valid_raw()
+    raw["fonts"]["serif"] = "../../../etc/passwd"
+    with pytest.raises(ValidationError, match="traverse parents"):
         CertConfig.model_validate(raw)
 
 
