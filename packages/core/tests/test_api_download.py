@@ -86,6 +86,66 @@ def test_unknown_subject_raises(cert_config, populated_db, project_root, kv_memo
         )
 
 
+def test_download_embeds_signed_qr_when_enabled(
+    project_root, tmp_path, kv_memory, config_dict
+) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 07 — QR pipeline renders + signs + embeds + roundtrips through /api/verify."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    from luonvuitoi_cert.api import verify_qr
+    from luonvuitoi_cert.config import CertConfig
+    from luonvuitoi_cert.ingest import ingest_rows
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    (project_root / "private_key.pem").write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    (project_root / "public_key.pem").write_bytes(
+        key.public_key().public_bytes(
+            serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+    )
+    qr_enabled = {**config_dict, "features": {"qr_verify": {"enabled": True}}}
+    cfg = CertConfig.model_validate(qr_enabled)
+    db = tmp_path / "qr.db"
+    ingest_rows(
+        cfg,
+        db,
+        "main",
+        [{"sbd": "12345", "full_name": "A", "dob": "01-06-2010", "school": "S", "phone": "0901234567", "s": "GOLD"}],
+    )
+    ch = issue_challenge(kv_memory)
+
+    captured_blobs: list[str] = []
+    resp = download_certificate(
+        config=cfg,
+        project_root=project_root,
+        db_path=db,
+        kv=kv_memory,
+        params={
+            "sbd": "12345",
+            "name": "A",
+            "dob": "01-06-2010",
+            "captcha_id": ch.id,
+            "captcha_answer": _solve(ch.question),
+            "round_id": "main",
+            "subject_code": "S",
+        },
+        client_id="ip-1",
+        verify_url_builder=lambda blob: captured_blobs.append(blob) or blob,
+    )
+    assert resp.pdf_bytes.startswith(b"%PDF")
+    assert len(captured_blobs) == 1  # QR generation path ran
+    verdict = verify_qr(config=cfg, project_root=project_root, blob=captured_blobs[0])
+    assert verdict.valid
+    assert verdict.payload.sbd == "12345"  # type: ignore[union-attr]
+
+
 def test_admin_mode_works_without_captcha(cert_config, populated_db, project_root, kv_memory) -> None:  # type: ignore[no-untyped-def]
     from luonvuitoi_cert.auth import Role, issue_admin_token
 

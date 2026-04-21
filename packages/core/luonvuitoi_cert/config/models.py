@@ -204,6 +204,15 @@ class AdminConfig(_Strict):
 class QRVerify(_Strict):
     enabled: bool = False
     public_key_path: str = "public_key.pem"
+    private_key_path: str = "private_key.pem"
+    """Signing key — only the issuer needs this. Never commit it.
+
+    The public key is safe to ship; the verifier endpoint uses only it.
+    """
+    x: float = 40.0
+    y: float = 40.0
+    size_pt: float = Field(default=80.0, gt=0)
+    """Side length of the QR square drawn on the PDF overlay (in points)."""
 
 
 class Shipment(_Strict):

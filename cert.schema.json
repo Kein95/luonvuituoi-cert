@@ -332,6 +332,27 @@
           "default": "public_key.pem",
           "title": "Public Key Path",
           "type": "string"
+        },
+        "private_key_path": {
+          "default": "private_key.pem",
+          "title": "Private Key Path",
+          "type": "string"
+        },
+        "x": {
+          "default": 40.0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "default": 40.0,
+          "title": "Y",
+          "type": "number"
+        },
+        "size_pt": {
+          "default": 80.0,
+          "exclusiveMinimum": 0,
+          "title": "Size Pt",
+          "type": "number"
         }
       },
       "title": "QRVerify",

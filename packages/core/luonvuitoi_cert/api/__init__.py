@@ -28,6 +28,7 @@ from luonvuitoi_cert.api.security import (
     validate_request_size,
     validate_sbd,
 )
+from luonvuitoi_cert.api.verify import VerifyError, VerifyResponse, verify_qr
 
 __all__ = [
     "CaptchaChallenge",
@@ -38,6 +39,8 @@ __all__ = [
     "SearchError",
     "SearchResult",
     "SecurityError",
+    "VerifyError",
+    "VerifyResponse",
     "check_rate_limit",
     "clean_sbd",
     "download_certificate",
@@ -47,4 +50,5 @@ __all__ = [
     "validate_request_size",
     "validate_sbd",
     "verify_challenge",
+    "verify_qr",
 ]

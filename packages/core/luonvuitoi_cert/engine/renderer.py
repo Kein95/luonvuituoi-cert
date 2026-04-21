@@ -25,6 +25,7 @@ from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import HexColor
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 from luonvuitoi_cert.config import CertConfig, LayoutField
@@ -54,6 +55,13 @@ class OverlayRequest:
     """1-indexed page number inside the round's template PDF."""
     values: dict[str, str] = field(default_factory=dict)
     """Field name → text to draw. Keys must match ``config.layout.fields``."""
+    qr_png_bytes: bytes | None = None
+    """If supplied, drawn at ``config.features.qr_verify.{x, y, size_pt}``.
+
+    The caller is responsible for generating and signing the QR; the renderer
+    only pastes the image. Keeps the engine ignorant of crypto so QR-disabled
+    projects don't pay for ``cryptography`` imports.
+    """
 
 
 def _resolve_template(request: OverlayRequest) -> Path:
@@ -125,6 +133,18 @@ def render_certificate_bytes(
         c.setFont(psname, spec.size)
         c.setFillColor(HexColor(spec.color))
         _draw_text(c, text, spec)
+
+    if request.qr_png_bytes:
+        qr_cfg = request.config.features.qr_verify
+        c.drawImage(
+            ImageReader(BytesIO(request.qr_png_bytes)),
+            qr_cfg.x,
+            qr_cfg.y,
+            width=qr_cfg.size_pt,
+            height=qr_cfg.size_pt,
+            preserveAspectRatio=True,
+            mask="auto",
+        )
 
     c.showPage()
     c.save()

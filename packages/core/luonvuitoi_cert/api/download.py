@@ -29,6 +29,13 @@ from luonvuitoi_cert.api.security import sanitize_filename
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.engine import OverlayRequest, render_certificate_bytes
 from luonvuitoi_cert.engine.fonts import FontRegistry
+from luonvuitoi_cert.qr import (
+    QRPayload,
+    encode_blob,
+    load_private_key,
+    render_qr_png,
+    sign_payload,
+)
 from luonvuitoi_cert.storage.kv.base import KVBackend
 
 
@@ -69,6 +76,38 @@ def _pick_certificate(
     )
 
 
+def _maybe_sign_qr(
+    config: CertConfig,
+    project_root: Path,
+    sbd: str,
+    cert: AvailableCertificate,
+    verify_url_builder,  # type: ignore[no-untyped-def]
+) -> bytes | None:
+    """Build + sign + render the QR PNG if ``features.qr_verify.enabled``.
+
+    ``verify_url_builder(blob: str) -> str`` wraps the signed blob into the
+    verifier URL so printed QRs open directly to ``/certificate-checker``.
+    Passing ``None`` emits the raw blob as the QR text — fine for CLI tests,
+    not what you want in production.
+    """
+    qr = config.features.qr_verify
+    if not qr.enabled:
+        return None
+    key_path = project_root / qr.private_key_path
+    private_key = load_private_key(key_path)
+    payload = QRPayload.now(
+        project_slug=config.project.slug,
+        round_id=cert.round_id,
+        subject_code=cert.subject_code,
+        result=cert.result_name,
+        sbd=sbd,
+    )
+    signature = sign_payload(private_key, payload)
+    blob = encode_blob(payload, signature)
+    qr_text = verify_url_builder(blob) if verify_url_builder else blob
+    return render_qr_png(qr_text)
+
+
 def download_certificate(
     *,
     config: CertConfig,
@@ -80,8 +119,15 @@ def download_certificate(
     mode: Literal["student", "admin"] = "student",
     font_registry: FontRegistry | None = None,
     env: dict[str, str] | None = None,
+    verify_url_builder=None,  # type: ignore[no-untyped-def]
 ) -> DownloadResponse:
-    """Search the student, pick the requested certificate, overlay + return PDF bytes."""
+    """Search the student, pick the requested certificate, overlay + return PDF bytes.
+
+    ``verify_url_builder(blob: str) -> str`` is used only when
+    ``features.qr_verify.enabled``; it wraps the signed blob into a URL that
+    opens the Certificate-Checker page with the blob prefilled. Passing None
+    makes the QR encode the blob directly (fine for CLI tests).
+    """
     round_id = str(params.get("round_id", "")).strip()
     subject_code = str(params.get("subject_code", "")).strip()
     if not round_id or not subject_code:
@@ -98,6 +144,8 @@ def download_certificate(
     )
     cert = _pick_certificate(result.certificates, round_id, subject_code)
 
+    qr_png = _maybe_sign_qr(config, Path(project_root), result.sbd, cert, verify_url_builder)
+
     pdf_bytes = render_certificate_bytes(
         OverlayRequest(
             config=config,
@@ -105,6 +153,7 @@ def download_certificate(
             round_id=cert.round_id,
             page_number=cert.page_number,
             values=_build_field_values(config, result.fields),
+            qr_png_bytes=qr_png,
         ),
         font_registry=font_registry,
     )
