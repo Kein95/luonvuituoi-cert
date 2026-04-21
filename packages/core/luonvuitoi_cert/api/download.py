@@ -79,6 +79,7 @@ def download_certificate(
     client_id: str,
     mode: Literal["student", "admin"] = "student",
     font_registry: FontRegistry | None = None,
+    env: dict[str, str] | None = None,
 ) -> DownloadResponse:
     """Search the student, pick the requested certificate, overlay + return PDF bytes."""
     round_id = str(params.get("round_id", "")).strip()
@@ -87,7 +88,13 @@ def download_certificate(
         raise SearchError("round_id and subject_code are both required")
 
     result = search_student(
-        config=config, db_path=db_path, kv=kv, params=params, client_id=client_id, mode=mode
+        config=config,
+        db_path=db_path,
+        kv=kv,
+        params=params,
+        client_id=client_id,
+        mode=mode,
+        env=env,
     )
     cert = _pick_certificate(result.certificates, round_id, subject_code)
 

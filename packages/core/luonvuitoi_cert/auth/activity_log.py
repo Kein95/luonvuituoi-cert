@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import sqlite3
+import threading
 import time
 import uuid
 from contextlib import closing
@@ -100,25 +101,31 @@ class ActivityLog:
         ]
 
     def _forward_to_webhook(self, entry: ActivityLogEntry) -> None:
+        """Fire-and-forget: spawn a daemon thread so admin actions don't wait on I/O.
+
+        The local SQLite write has already happened synchronously, so even if
+        the thread is killed by interpreter shutdown the audit record is safe.
+        """
         if not self._webhook:
             return
+        payload = {
+            "id": entry.id,
+            "timestamp": entry.timestamp,
+            "user_id": entry.user_id,
+            "user_email": entry.user_email,
+            "action": entry.action,
+            "target_id": entry.target_id,
+            "metadata": entry.metadata,
+            "ip": entry.ip,
+        }
+        threading.Thread(
+            target=self._post_webhook, args=(payload,), daemon=True, name="activity-log-webhook"
+        ).start()
+
+    def _post_webhook(self, payload: dict[str, object]) -> None:
         try:
-            httpx.post(
-                self._webhook,
-                json={
-                    "id": entry.id,
-                    "timestamp": entry.timestamp,
-                    "user_id": entry.user_id,
-                    "user_email": entry.user_email,
-                    "action": entry.action,
-                    "target_id": entry.target_id,
-                    "metadata": entry.metadata,
-                    "ip": entry.ip,
-                },
-                timeout=3.0,
-            )
+            httpx.post(self._webhook, json=payload, timeout=3.0)  # type: ignore[arg-type]
         except httpx.HTTPError as e:
-            # Webhook is best-effort — the SQLite write is authoritative.
             _LOGGER.warning("activity log webhook POST failed: %s", e)
 
 

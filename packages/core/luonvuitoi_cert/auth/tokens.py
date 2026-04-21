@@ -8,7 +8,6 @@ allowed but loudly logged once per process.
 
 from __future__ import annotations
 
-import logging
 import os
 import secrets
 import time
@@ -20,8 +19,6 @@ from luonvuitoi_cert.auth.admin_db import Role
 
 DEFAULT_TOKEN_TTL_SECONDS = 8 * 3600
 ALGORITHM = "HS256"
-_LOGGER = logging.getLogger(__name__)
-_WARNED_FALLBACK = False
 
 
 class TokenError(Exception):
@@ -39,19 +36,18 @@ class AdminToken:
 
 
 def _resolve_secret(env: dict[str, str] | None) -> str:
+    """Require ``JWT_SECRET`` explicitly — no silent fallback.
+
+    Serverless handlers may run in many processes; sharing an ephemeral
+    secret across invocations is impossible, so a missing secret is a
+    configuration bug, not something to paper over. Tests set the env via
+    the ``_jwt_secret_for_tests`` autouse fixture.
+    """
     source = env if env is not None else os.environ
     secret = source.get("JWT_SECRET", "")
-    if secret:
-        return secret
-    global _WARNED_FALLBACK
-    if not _WARNED_FALLBACK:
-        _LOGGER.warning(
-            "JWT_SECRET not set; using an ephemeral per-process secret. "
-            "Sessions will not survive a restart. DO NOT deploy without setting it."
-        )
-        _WARNED_FALLBACK = True
-    # Per-process fallback so tests don't depend on env setup.
-    return source.setdefault("_JWT_EPHEMERAL_SECRET", secrets.token_urlsafe(48))  # type: ignore[union-attr]
+    if not secret:
+        raise TokenError("JWT_SECRET is not set; cannot issue/verify admin tokens")
+    return secret
 
 
 def issue_admin_token(

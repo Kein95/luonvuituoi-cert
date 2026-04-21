@@ -119,19 +119,26 @@ def test_otp_login_two_steps(tmp_path: Path, kv_memory) -> None:  # type: ignore
     assert step2.token is not None
 
 
-def test_otp_login_unknown_email(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
+def test_otp_login_unknown_email_uniform_response(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 06 review C1 — unknown email must not be distinguishable.
+
+    Step 1 responds ``challenge_issued=True`` whether or not the email maps
+    to a real admin; the attacker can't tell them apart from the outside.
+    Real emails go only to real users.
+    """
     db = tmp_path / "auth.db"
     mailer = NullEmailProvider()
-    with pytest.raises(LoginError):
-        perform_login(
-            _cfg("otp_email"),
-            db_path=db,
-            kv=kv_memory,
-            email_provider=mailer,
-            params={"email": "ghost@x.co"},
-            env=_env(),
-        )
-    assert mailer.sent == []  # no email sent to unknown accounts
+    resp = perform_login(
+        _cfg("otp_email"),
+        db_path=db,
+        kv=kv_memory,
+        email_provider=mailer,
+        params={"email": "ghost@x.co"},
+        env=_env(),
+    )
+    assert resp.challenge_issued
+    assert resp.token is None
+    assert mailer.sent == []  # no real email sent to unknown accounts
 
 
 def test_otp_login_wrong_code(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
@@ -187,6 +194,56 @@ def test_magic_link_two_steps(tmp_path: Path, kv_memory) -> None:  # type: ignor
         env=_env(),
     )
     assert step2.token is not None
+
+
+def test_magic_link_unknown_email_uniform_response(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 06 review C1 — no user-enumeration via magic-link step 1."""
+    db = tmp_path / "auth.db"
+    mailer = NullEmailProvider()
+    resp = perform_login(
+        _cfg("magic_link"),
+        db_path=db,
+        kv=kv_memory,
+        email_provider=mailer,
+        params={"email": "ghost@x.co"},
+        env=_env(),
+        magic_link_builder=lambda token: f"https://example/login?t={token}",
+    )
+    assert resp.challenge_issued
+    assert mailer.sent == []
+
+
+def test_login_success_and_failure_audited(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 06 review H4 — login events must reach the audit trail."""
+    from luonvuitoi_cert.auth import ActivityLog, create_admin_user
+
+    db = tmp_path / "auth.db"
+    audit = ActivityLog(tmp_path / "audit.db")
+    create_admin_user(db, email="a@b.co", role=Role.ADMIN, password="pw")
+    perform_login(
+        _cfg("password"),
+        db_path=db,
+        kv=kv_memory,
+        email_provider=NullEmailProvider(),
+        params={"email": "a@b.co", "password": "pw"},
+        env=_env(),
+        activity=audit,
+        ip="10.0.0.1",
+    )
+    with pytest.raises(LoginError):
+        perform_login(
+            _cfg("password"),
+            db_path=db,
+            kv=kv_memory,
+            email_provider=NullEmailProvider(),
+            params={"email": "a@b.co", "password": "wrong"},
+            env=_env(),
+            activity=audit,
+            ip="10.0.0.1",
+        )
+    actions = [e.action for e in audit.recent()]
+    assert "admin.login.success" in actions
+    assert "admin.login.failure" in actions
 
 
 def test_magic_link_token_is_single_use(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]

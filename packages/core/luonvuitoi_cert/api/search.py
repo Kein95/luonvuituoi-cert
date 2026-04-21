@@ -183,14 +183,20 @@ def search_student(
     params: dict[str, Any],
     client_id: str,
     mode: Literal["student", "admin"] = "student",
+    env: dict[str, str] | None = None,
 ) -> SearchResult:
-    """Resolve a student record and enumerate downloadable certificates."""
+    """Resolve a student record and enumerate downloadable certificates.
+
+    ``env`` is threaded through to :func:`verify_admin_token` so tests and
+    multi-worker deployments share a single JWT secret source. If omitted,
+    ``os.environ`` is read at verify time.
+    """
     sbd = validate_sbd(params.get("sbd"))
     if mode == "student":
         _verify_student_gate(kv, params, client_id)
     elif mode == "admin":
         try:
-            verify_admin_token(str(params.get("token", "")))
+            verify_admin_token(str(params.get("token", "")), env=env)
         except TokenError as e:
             raise SecurityError(str(e)) from e
     else:

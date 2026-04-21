@@ -121,6 +121,37 @@ def test_admin_mode_rejects_empty_token(cert_config, populated_db, kv_memory) ->
         )
 
 
+def test_admin_mode_honors_env_jwt_secret(cert_config, populated_db, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 06 review C2 — env= must thread through to verify_admin_token."""
+    from luonvuitoi_cert.auth import Role, issue_admin_token
+
+    custom_env = {"JWT_SECRET": "isolated-env-secret-padded-to-32-bytes"}
+    token = issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env=custom_env)
+    res = search_student(
+        config=cert_config,
+        db_path=populated_db,
+        kv=kv_memory,
+        params={"sbd": "12345", "token": token},
+        client_id="ip-1",
+        mode="admin",
+        env=custom_env,
+    )
+    assert res.sbd == "12345"
+
+    # Same token against a different env must fail (proves env is actually threaded).
+    wrong_env = {"JWT_SECRET": "completely-different-secret-for-test"}
+    with pytest.raises(SecurityError):
+        search_student(
+            config=cert_config,
+            db_path=populated_db,
+            kv=kv_memory,
+            params={"sbd": "12345", "token": token},
+            client_id="ip-1",
+            mode="admin",
+            env=wrong_env,
+        )
+
+
 # ── Failure modes ───────────────────────────────────────────────────
 
 

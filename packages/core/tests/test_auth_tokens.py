@@ -67,3 +67,9 @@ def test_unknown_role_rejected() -> None:
     token = jwt.encode(payload, _env()["JWT_SECRET"], algorithm="HS256")
     with pytest.raises(TokenError, match="unknown role"):
         verify_admin_token(token, env=_env())
+
+
+def test_missing_jwt_secret_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Regression: Phase 06 review H1 — silent ephemeral fallback removed."""
+    with pytest.raises(TokenError, match="JWT_SECRET is not set"):
+        issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env={})
