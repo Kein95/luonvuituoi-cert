@@ -1,0 +1,129 @@
+{% extends "base.html.j2" %}
+
+{% block title %}{{ t("verify.title", default="Certificate Verification") }} — {{ project.name }}{% endblock %}
+
+{% block main %}
+<section class="card">
+  <h2>{{ t("verify.title", default="Certificate Verification") }}</h2>
+  <p class="subtitle">{{ t("verify.subtitle", default="Scan the QR from a printed certificate to confirm authenticity.") }}</p>
+  <form id="verify-form" autocomplete="off">
+    <label for="blob">{{ t("verify.label_blob", default="QR payload") }}</label>
+    <textarea id="blob" name="blob" rows="4" spellcheck="false" required></textarea>
+    <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+      <button type="submit" id="submit-btn">{{ t("portal.verify_button", default="Verify") }}</button>
+      <span id="status" class="badge" hidden></span>
+    </div>
+  </form>
+</section>
+
+<section id="result" class="card" hidden>
+  <h2 id="result-title"></h2>
+  <p id="result-reason" class="reason" hidden></p>
+  <dl id="result-fields"></dl>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  const endpoint = {{ verify_endpoint | tojson }};
+  const labels = {
+    valid: {{ t("verify.valid", default="Signature valid") | tojson }},
+    tampered: {{ t("verify.tampered", default="Signature does not match — certificate may be altered.") | tojson }},
+    fields: {
+      sbd: {{ t("verify.field.sbd", default="Registration #") | tojson }},
+      round_id: {{ t("verify.field.round_id", default="Round") | tojson }},
+      subject_code: {{ t("verify.field.subject_code", default="Subject") | tojson }},
+      result: {{ t("verify.field.result", default="Result") | tojson }},
+      issued_at: {{ t("verify.field.issued_at", default="Issued") | tojson }},
+    },
+  };
+
+  const form = document.getElementById("verify-form");
+  const blobEl = document.getElementById("blob");
+  const btn = document.getElementById("submit-btn");
+  const badge = document.getElementById("status");
+  const result = document.getElementById("result");
+  const resultTitle = document.getElementById("result-title");
+  const resultReason = document.getElementById("result-reason");
+  const resultFields = document.getElementById("result-fields");
+
+  function showBadge(ok, text) {
+    badge.hidden = false;
+    badge.classList.remove("ok", "bad");
+    badge.classList.add(ok ? "ok" : "bad");
+    badge.textContent = text;
+  }
+
+  function formatTs(seconds) {
+    if (!seconds) return "";
+    const d = new Date(seconds * 1000);
+    return d.toISOString().replace("T", " ").slice(0, 19) + " UTC";
+  }
+
+  function render(response) {
+    result.hidden = false;
+    const valid = !!response.valid;
+    resultTitle.textContent = valid ? labels.valid : labels.tampered;
+    resultTitle.style.color = valid ? "var(--ok)" : "var(--bad)";
+    resultReason.hidden = !response.reason;
+    resultReason.textContent = response.reason || "";
+    resultFields.innerHTML = "";
+    const p = response.payload;
+    if (p) {
+      const pairs = [
+        ["sbd", p.sbd],
+        ["round_id", p.round_id],
+        ["subject_code", p.subject_code],
+        ["result", p.result],
+        ["issued_at", formatTs(p.issued_at)],
+      ];
+      for (const [key, value] of pairs) {
+        const dt = document.createElement("dt");
+        dt.textContent = labels.fields[key] || key;
+        const dd = document.createElement("dd");
+        dd.textContent = value || "—";
+        resultFields.appendChild(dt);
+        resultFields.appendChild(dd);
+      }
+    }
+  }
+
+  async function submit(blob) {
+    btn.disabled = true;
+    showBadge(true, "…");
+    try {
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blob }),
+      });
+      const data = await resp.json().catch(() => ({ valid: false, reason: "bad response" }));
+      showBadge(!!data.valid, data.valid ? "✓" : "✗");
+      render(data);
+    } catch (err) {
+      showBadge(false, "✗");
+      render({ valid: false, reason: "network error: " + err.message });
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    const blob = (blobEl.value || "").trim();
+    if (!blob) return;
+    submit(blob);
+  });
+
+  // Auto-fill from ?blob= so scanned QRs can go straight to a verdict.
+  const qs = new URLSearchParams(location.search);
+  const incoming = qs.get("blob");
+  if (incoming) {
+    blobEl.value = incoming;
+    submit(incoming);
+  }
+})();
+</script>
+{% endblock %}
