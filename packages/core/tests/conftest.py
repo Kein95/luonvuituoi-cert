@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 import reportlab
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
@@ -82,6 +82,6 @@ def _reset_font_registry():
     """Clear FontRegistry's process-wide cache between tests so registration is re-exercised."""
     from luonvuitoi_cert.engine.fonts import FontRegistry
 
-    FontRegistry._registered_globally.clear()
+    FontRegistry._psname_by_path.clear()
     yield
-    FontRegistry._registered_globally.clear()
+    FontRegistry._psname_by_path.clear()

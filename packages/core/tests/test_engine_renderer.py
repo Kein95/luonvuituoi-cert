@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from luonvuitoi_cert.engine import OverlayError, OverlayRequest, render_certificate_bytes
 
@@ -61,6 +61,29 @@ def test_unknown_field_silently_ignored(cert_config, project_root: Path) -> None
 
 def test_empty_value_does_not_break(cert_config, project_root: Path) -> None:  # type: ignore[no-untyped-def]
     req = _make_request(cert_config, project_root, name="")
+    out = render_certificate_bytes(req)
+    assert len(out) > 500
+
+
+def test_whitespace_only_value_is_skipped(cert_config, project_root: Path) -> None:
+    """Phase 03 review H2: ``' '`` used to draw a blank over the template."""
+    req = _make_request(cert_config, project_root, name="   ")
+    out = render_certificate_bytes(req)
+    assert len(out) > 500  # renders, but name field is skipped
+
+
+def test_value_exceeding_max_length_raises(cert_config, project_root: Path) -> None:
+    """Phase 03 review H2: cap adversarial input sizes at the engine boundary."""
+    from luonvuitoi_cert.engine.renderer import MAX_FIELD_LENGTH
+
+    req = _make_request(cert_config, project_root, name="x" * (MAX_FIELD_LENGTH + 1))
+    with pytest.raises(OverlayError, match="MAX_FIELD_LENGTH"):
+        render_certificate_bytes(req)
+
+
+def test_non_string_value_is_coerced(cert_config, project_root: Path) -> None:
+    """Numbers, etc., still render (coerced via ``str()``)."""
+    req = _make_request(cert_config, project_root, name=12345)  # type: ignore[arg-type]
     out = render_certificate_bytes(req)
     assert len(out) > 500
 

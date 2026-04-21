@@ -1,13 +1,17 @@
 """Font registry: resolve TrueType fonts referenced by :class:`CertConfig.fonts`.
 
-ReportLab's ``pdfmetrics.registerFont`` is a global singleton — registering
-twice raises. This wrapper keeps track of what's already registered in the
-current process so handlers can call :meth:`FontRegistry.ensure_loaded`
-freely at request time without tripping over duplicate calls.
+ReportLab's ``pdfmetrics.registerFont`` is a global singleton keyed on the
+font's PostScript name. If two projects in the same process both use
+``"serif"`` as a config key but point at different TTF files, registering the
+second one would be a no-op and the first file would silently win. To avoid
+that, every ``(font_key, resolved_path)`` pair is registered under a
+path-derived PSName so distinct files can coexist; callers receive the actual
+PSName back from :meth:`ensure_loaded` and pass it to ``canvas.setFont``.
 """
 
 from __future__ import annotations
 
+import hashlib
 import threading
 from pathlib import Path
 
@@ -21,6 +25,15 @@ class FontRegistryError(Exception):
     """Raised when a font file referenced in the config is missing or invalid."""
 
 
+def _psname_for(font_key: str, resolved_path: Path) -> str:
+    """Return a unique PostScript name derived from ``(key, path)``.
+
+    Deterministic so repeated loads of the same file produce the same name.
+    """
+    digest = hashlib.sha1(str(resolved_path).encode("utf-8")).hexdigest()[:8]
+    return f"{font_key}_{digest}"
+
+
 class FontRegistry:
     """Resolve and register all fonts referenced by a :class:`CertConfig`.
 
@@ -31,10 +44,14 @@ class FontRegistry:
     Thread-safety: registration is serialized by a module-level lock so
     concurrent serverless invocations in the same process don't race when
     both see an unregistered font.
+
+    Collision-safety: ``(font_key, resolved_path)`` is the cache key, so two
+    projects using the same config key with different TTFs register under
+    different PSNames and both work correctly.
     """
 
     _lock = threading.Lock()
-    _registered_globally: set[str] = set()
+    _psname_by_path: dict[tuple[str, str], str] = {}
 
     def __init__(self, config: CertConfig, project_root: str | Path) -> None:
         self._config = config
@@ -57,19 +74,27 @@ class FontRegistry:
         return path
 
     def ensure_loaded(self, font_key: str) -> str:
-        """Register the font with ReportLab if not already registered; return the PSName."""
-        if font_key in self._registered_globally:
-            return font_key
+        """Register the font with ReportLab if not already registered and return the PSName.
+
+        The PSName is path-derived, so callers must use this return value (not
+        the raw ``font_key``) when calling ``canvas.setFont``.
+        """
         path = self.resolve(font_key)
+        cache_key = (font_key, str(path))
+        cached = self._psname_by_path.get(cache_key)
+        if cached is not None:
+            return cached
+        psname = _psname_for(font_key, path)
         with self._lock:
-            if font_key in self._registered_globally:
-                return font_key
+            cached = self._psname_by_path.get(cache_key)
+            if cached is not None:
+                return cached
             try:
-                pdfmetrics.registerFont(TTFont(font_key, str(path)))
+                pdfmetrics.registerFont(TTFont(psname, str(path)))
             except TTFError as e:
                 raise FontRegistryError(f"ReportLab rejected {path}: {e}") from e
-            self._registered_globally.add(font_key)
-        return font_key
+            self._psname_by_path[cache_key] = psname
+        return psname
 
     def ensure_all_loaded(self) -> None:
         """Eagerly load every font declared in the config. Useful at startup / tests."""

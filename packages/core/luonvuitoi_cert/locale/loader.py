@@ -10,10 +10,24 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from string import Template
 from typing import Any
 
 BUILTIN_DIR = Path(__file__).resolve().parent
 DEFAULT_LOCALE = "en"
+
+
+def _substitute(value: str, kwargs: dict[str, Any]) -> str:
+    """Apply ``$name`` / ``${name}`` substitution without exposing ``str.format`` internals.
+
+    We deliberately avoid ``str.format`` because translator-supplied strings
+    could otherwise walk attributes (``{x.__class__}``) or trigger DoS-sized
+    alignment specs (``{x:>10000000}``). ``string.Template.safe_substitute``
+    is a flat substitution with no format specs, attributes, or indexing.
+    """
+    if not kwargs:
+        return value
+    return Template(value).safe_substitute({k: str(v) for k, v in kwargs.items()})
 
 
 class LocaleError(Exception):
@@ -42,11 +56,11 @@ class Locale:
                 node = None
                 break
         if isinstance(node, str):
-            return node.format(**kwargs) if kwargs else node
+            return _substitute(node, kwargs)
         if self._fallback is not None:
             return self._fallback.get(key, default, **kwargs)
         if default is not None:
-            return default.format(**kwargs) if kwargs else default
+            return _substitute(default, kwargs)
         return key
 
 

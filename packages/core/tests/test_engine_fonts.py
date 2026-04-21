@@ -39,7 +39,34 @@ def test_ensure_loaded_is_idempotent(cert_config, project_root: Path) -> None:  
 def test_ensure_all_loaded(cert_config, project_root: Path) -> None:  # type: ignore[no-untyped-def]
     reg = FontRegistry(cert_config, project_root)
     reg.ensure_all_loaded()
-    assert "serif" in FontRegistry._registered_globally
+    keys = {k for k, _ in FontRegistry._psname_by_path}
+    assert "serif" in keys
+
+
+def test_ensure_loaded_returns_psname(cert_config, project_root: Path) -> None:  # type: ignore[no-untyped-def]
+    reg = FontRegistry(cert_config, project_root)
+    psname = reg.ensure_loaded("serif")
+    assert psname.startswith("serif_") and len(psname) > len("serif_")
+
+
+def test_same_key_different_paths_do_not_collide(tmp_path: Path, config_dict: dict) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 03 review C1 — previously project B's font silently replaced project A's."""
+    import reportlab as rl
+
+    rl_fonts = Path(rl.__file__).parent / "fonts"
+    from luonvuitoi_cert.config import CertConfig
+    import shutil as _sh
+
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    for root, ttf_name in [(root_a, "Vera.ttf"), (root_b, "VeraBd.ttf")]:
+        (root / "assets" / "fonts").mkdir(parents=True)
+        _sh.copy2(rl_fonts / ttf_name, root / "assets" / "fonts" / "serif.ttf")
+    cfg_a = CertConfig.model_validate({**config_dict, "fonts": {"serif": "assets/fonts/serif.ttf"}})
+    cfg_b = CertConfig.model_validate({**config_dict, "fonts": {"serif": "assets/fonts/serif.ttf"}})
+    ps_a = FontRegistry(cfg_a, root_a).ensure_loaded("serif")
+    ps_b = FontRegistry(cfg_b, root_b).ensure_loaded("serif")
+    assert ps_a != ps_b, "same font key from different roots must register under distinct PSNames"
 
 
 def test_ensure_loaded_reports_invalid_ttf(tmp_path: Path, cert_config) -> None:  # type: ignore[no-untyped-def]

@@ -23,12 +23,20 @@ from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
 
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import HexColor
 from reportlab.pdfgen import canvas
 
 from luonvuitoi_cert.config import CertConfig, LayoutField
 from luonvuitoi_cert.engine.fonts import FontRegistry
+
+MAX_FIELD_LENGTH = 1000
+"""Upper bound on a single field's rendered text length.
+
+Bounds rendering cost for adversarial inputs (100 KB strings took ~0.7 s in
+testing) and keeps output PDFs to sane sizes. Handlers can truncate or reject
+upstream; the engine enforces it as a last-resort safeguard.
+"""
 
 
 class OverlayError(Exception):
@@ -103,21 +111,31 @@ def render_certificate_bytes(
 
     for field_name, value in request.values.items():
         spec = request.config.layout.fields.get(field_name)
-        if spec is None or value is None or value == "":
+        if spec is None or value is None:
             continue
+        text = str(value).strip()
+        if not text:
+            continue
+        if len(text) > MAX_FIELD_LENGTH:
+            raise OverlayError(
+                f"value for field {field_name!r} exceeds MAX_FIELD_LENGTH "
+                f"({len(text)} > {MAX_FIELD_LENGTH}); truncate upstream"
+            )
         psname = fonts.ensure_loaded(spec.font)
         c.setFont(psname, spec.size)
         c.setFillColor(HexColor(spec.color))
-        _draw_text(c, str(value), spec)
+        _draw_text(c, text, spec)
 
     c.showPage()
     c.save()
     overlay_buf.seek(0)
 
-    overlay_page = PdfReader(overlay_buf).pages[0]
-    template_page.merge_page(overlay_page)
+    # Attach the template page to the writer first, then merge the overlay onto
+    # the writer-owned page. pypdf 7+ requires this ordering.
     writer = PdfWriter()
     writer.add_page(template_page)
+    overlay_page = PdfReader(overlay_buf).pages[0]
+    writer.pages[0].merge_page(overlay_page)
 
     out = BytesIO()
     writer.write(out)
