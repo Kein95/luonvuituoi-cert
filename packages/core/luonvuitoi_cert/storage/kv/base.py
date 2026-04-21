@@ -28,6 +28,14 @@ class KVBackend(Protocol):
     def exists(self, key: str) -> bool: ...
     def scan_prefix(self, prefix: str, *, limit: int = 100) -> list[str]: ...
 
+    def consume(self, key: str) -> str | None:
+        """Atomically read and delete ``key``; return the value or ``None``.
+
+        Used by the CAPTCHA verifier to guarantee single-use semantics even
+        when two requests arrive with the same correct answer at the same
+        time. Implementations must not return the same value twice.
+        """
+
 
 class MemoryKV:
     """In-process ``dict`` backend. Used by tests + embedded scenarios.
@@ -79,3 +87,11 @@ class MemoryKV:
                 if len(alive) >= limit:
                     break
             return alive
+
+    def consume(self, key: str) -> str | None:
+        with self._lock:
+            entry = self._data.pop(key, None)
+            if entry is None:
+                return None
+            value, expires_at = entry
+            return value if self._is_alive(expires_at) else None

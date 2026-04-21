@@ -101,3 +101,14 @@ class LocalFileKV:
             if mutated:
                 self._save(data)
             return alive
+
+    def consume(self, key: str) -> str | None:
+        with self._lock:
+            data = self._load()
+            entry = data.pop(key, None)
+            if entry is None:
+                return None
+            value, expires_at = entry
+            # Even on expiry we still write back the pop — frees the slot.
+            self._save(data)
+            return value if self._is_alive(expires_at) else None

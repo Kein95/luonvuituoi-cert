@@ -66,6 +66,16 @@ def test_dob_normalization(cert_config, populated_db, kv_memory) -> None:  # typ
     assert res.sbd == "12345"
 
 
+@pytest.mark.parametrize("dob", ["01-06-2010", "1/6/2010", "01.06.2010", "2010-06-01", "  01-06-2010  "])
+def test_dob_accepts_iso_and_dotted_and_whitespace(cert_config, populated_db, kv_memory, dob: str) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 05 review H2 — ISO, dotted, and trimmed variants must match."""
+    params = _student_params(kv_memory, dob=dob)
+    res = search_student(
+        config=cert_config, db_path=populated_db, kv=kv_memory, params=params, client_id="ip-1"
+    )
+    assert res.sbd == "12345"
+
+
 # ── Admin mode ──────────────────────────────────────────────────────
 
 
@@ -145,3 +155,29 @@ def test_rate_limit_kicks_in(cert_config, populated_db, kv_memory) -> None:  # t
             params=_student_params(kv_memory),
             client_id="ip-1",
         )
+
+
+def test_failed_captcha_does_not_tick_rate_limit(cert_config, populated_db, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 05 review H3 — 20 wrong CAPTCHA guesses used to lock out legit users."""
+    from luonvuitoi_cert.api.captcha import CaptchaError
+
+    # 30 wrong CAPTCHA submissions (well over the 20-req/min limit).
+    for _ in range(30):
+        params = _student_params(kv_memory, captcha_answer=99999)  # wrong
+        with pytest.raises(CaptchaError):
+            search_student(
+                config=cert_config,
+                db_path=populated_db,
+                kv=kv_memory,
+                params=params,
+                client_id="ip-1",
+            )
+    # Next legitimate request still succeeds — rate limit never ticked.
+    res = search_student(
+        config=cert_config,
+        db_path=populated_db,
+        kv=kv_memory,
+        params=_student_params(kv_memory),
+        client_id="ip-1",
+    )
+    assert res.sbd == "12345"

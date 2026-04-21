@@ -100,5 +100,10 @@ class RestKV:
                 break
         return collected
 
+    def consume(self, key: str) -> str | None:
+        """Atomic get-and-delete via Redis ``GETDEL`` (Upstash + Vercel-KV both support it)."""
+        result = self._command("GETDEL", key)
+        return None if result is None else str(result)
+
     def close(self) -> None:
         self._client.close()

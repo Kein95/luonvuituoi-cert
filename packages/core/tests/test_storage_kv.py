@@ -72,6 +72,45 @@ def test_scan_prefix_limit(kv) -> None:  # type: ignore[no-untyped-def]
     assert len(keys) == 3
 
 
+def test_consume_returns_and_deletes(kv) -> None:  # type: ignore[no-untyped-def]
+    kv.set("k", "v")
+    assert kv.consume("k") == "v"
+    assert kv.get("k") is None
+
+
+def test_consume_missing_returns_none(kv) -> None:  # type: ignore[no-untyped-def]
+    assert kv.consume("absent") is None
+
+
+def test_consume_expired_treated_as_missing(kv) -> None:  # type: ignore[no-untyped-def]
+    kv.set("k", "v", ttl_seconds=1)
+    time.sleep(1.1)
+    assert kv.consume("k") is None
+
+
+def test_consume_is_single_use_under_concurrency(kv) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 05 review C1 — get+delete TOCTOU between threads."""
+    import threading
+
+    kv.set("race", "v")
+    results: list[str | None] = []
+    lock = threading.Lock()
+
+    def worker() -> None:
+        res = kv.consume("race")
+        with lock:
+            results.append(res)
+
+    threads = [threading.Thread(target=worker) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    # Exactly one thread wins; everyone else sees None.
+    assert results.count("v") == 1
+    assert results.count(None) == len(threads) - 1
+
+
 # ── LocalFileKV-specific ────────────────────────────────────────────
 
 

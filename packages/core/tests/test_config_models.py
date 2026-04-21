@@ -198,6 +198,27 @@ def test_admin_roles_cannot_be_empty() -> None:
         CertConfig.model_validate(raw)
 
 
+def test_data_mapping_columns_must_be_sql_idents() -> None:
+    """Regression: Phase 05 review C2 — *_col fields fed SQL but weren't regex-validated."""
+    raw = _valid_raw()
+    raw["data_mapping"] = {"sbd_col": "col;DROP TABLE"}
+    with pytest.raises(ValidationError, match="SQL identifier"):
+        CertConfig.model_validate(raw)
+
+
+def test_data_mapping_extra_cols_must_be_sql_idents() -> None:
+    raw = _valid_raw()
+    raw["data_mapping"] = {"extra_cols": ["valid", "a b c"]}
+    with pytest.raises(ValidationError, match="SQL identifiers"):
+        CertConfig.model_validate(raw)
+
+
+def test_data_mapping_optional_cols_skip_validation_when_none() -> None:
+    raw = _valid_raw()
+    raw["data_mapping"] = {"dob_col": None}  # optional, None is allowed
+    CertConfig.model_validate(raw)  # must not raise
+
+
 def test_layout_field_size_bounds() -> None:
     raw = _valid_raw()
     raw["layout"]["fields"]["name"]["size"] = 0

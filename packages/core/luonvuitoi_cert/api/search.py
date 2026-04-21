@@ -3,12 +3,16 @@
 Two modes share this entry point:
 
 - ``student`` (default) — public lookup via name + DOB / SBD, protected by a
-  one-shot CAPTCHA and a fixed-window rate limit. Rate limit + CAPTCHA are
-  both called *before* the DB query so probe-and-retry attacks don't even
-  see the SQL.
+  one-shot CAPTCHA and a fixed-window rate limit. CAPTCHA runs first, rate
+  limit only ticks after a successful CAPTCHA so a single typo can't lock the
+  caller out. Both gates run before any DB access.
 - ``admin`` — privileged lookup by SBD. The caller is already authenticated
   upstream (Phase 06 wires JWT); here we only re-check the token is non-empty.
   Admin skips CAPTCHA + rate limit.
+
+Transport-layer contract: the HTTP/Flask/Vercel wrapper **must** call
+:func:`validate_request_size` on the raw body before JSON-parsing it. This
+module trusts the ``params`` dict is already size-bounded.
 
 Result: every round where the student exists, and for each subject that has
 a non-empty result cell, the (round_id, subject_code, result_name,
@@ -67,12 +71,25 @@ def _strip_accents_upper(text: str) -> str:
 
 
 def _normalize_dob(raw: str) -> str:
-    """Accept ``D/M/YYYY``, ``DD-MM-YYYY`` etc. → ``DD-MM-YYYY`` zero-padded."""
-    parts = str(raw).replace("/", "-").split("-")
+    """Canonicalize common date formats to ``DD-MM-YYYY`` zero-padded.
+
+    Accepted inputs:
+    - ``D/M/YYYY`` or ``DD/MM/YYYY`` — slash separator
+    - ``DD-MM-YYYY`` — hyphen separator
+    - ``01.06.2010`` — dotted (European style)
+    - ``YYYY-MM-DD`` — ISO 8601 (auto-detected by 4-digit leading year)
+    Leading/trailing whitespace is stripped before parsing.
+    """
+    text = str(raw).strip().replace("/", "-").replace(".", "-")
+    parts = text.split("-")
     if len(parts) != 3:
-        return str(raw).strip()
-    d, m, y = parts
-    return f"{d.zfill(2)}-{m.zfill(2)}-{y}"
+        return text
+    # ISO: first part is the 4-digit year → flip to DD-MM-YYYY.
+    if len(parts[0]) == 4 and parts[0].isdigit():
+        y, m, d = parts
+    else:
+        d, m, y = parts
+    return f"{d.zfill(2)}-{m.zfill(2)}-{y.zfill(4) if y.isdigit() and len(y) < 4 else y}"
 
 
 def _matches_name(candidate: str, query: str) -> bool:
@@ -124,9 +141,16 @@ def _collect_certificates(
 def _verify_student_gate(
     kv: KVBackend, params: dict[str, Any], client_id: str
 ) -> None:
-    """Rate limit first so probe-and-retry attacks don't burn CAPTCHA slots."""
-    check_rate_limit(kv, "search", client_id, limit=STUDENT_RATE_LIMIT, window_seconds=STUDENT_RATE_WINDOW_SECONDS)
+    """CAPTCHA first, rate-limit after — a wrong guess must not burn the caller's quota.
+
+    Ordering rationale: the CAPTCHA is single-use and consumed on failure, so
+    attackers can't get free retries; ticking the rate limit only *after* a
+    successful CAPTCHA ensures that if a legitimate human typos their answer
+    they don't get locked out of search on the next try. ``issue_challenge``
+    itself is rate-limited at the transport layer (Phase 07).
+    """
     verify_challenge(kv, str(params.get("captcha_id", "")), params.get("captcha_answer"))
+    check_rate_limit(kv, "search", client_id, limit=STUDENT_RATE_LIMIT, window_seconds=STUDENT_RATE_WINDOW_SECONDS)
 
 
 def _match_predicate(

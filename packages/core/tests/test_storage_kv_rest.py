@@ -108,6 +108,27 @@ def test_non_json_response_wrapped_in_kv_error() -> None:
         kv.get("foo")
 
 
+def test_consume_uses_getdel() -> None:
+    """Regression: Phase 05 review C1 — atomic single-use via Redis GETDEL."""
+    seen: list = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"result": "value"})
+
+    kv = _make_kv(handler)
+    assert kv.consume("foo") == "value"
+    assert seen[-1] == ["GETDEL", "foo"]
+
+
+def test_consume_missing_returns_none() -> None:
+    def handler(_):  # type: ignore[no-untyped-def]
+        return httpx.Response(200, json={"result": None})
+
+    kv = _make_kv(handler)
+    assert kv.consume("absent") is None
+
+
 def test_scan_prefix_paginates_until_cursor_zero() -> None:
     responses = iter(
         [

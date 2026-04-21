@@ -86,14 +86,14 @@ def issue_challenge(kv: KVBackend, *, rng: secrets.SystemRandom | None = None) -
 def verify_challenge(kv: KVBackend, challenge_id: str, answer: object) -> None:
     """Consume the challenge — raises :class:`CaptchaError` on any mismatch.
 
-    Consumption is single-use: the KV entry is deleted on verify regardless of
-    success, so replaying a correct answer never works twice.
+    Consumption is single-use and race-safe: the KV entry is atomically
+    read-and-deleted via ``consume()``. Two concurrent requests with the same
+    correct answer cannot both succeed, and replays of a correct answer never
+    work twice — even across backends with independent transactions.
     """
     if not challenge_id:
         raise CaptchaError("captcha id is required")
-    key = f"{KV_PREFIX}{challenge_id}"
-    expected = kv.get(key)
-    kv.delete(key)
+    expected = kv.consume(f"{KV_PREFIX}{challenge_id}")
     if expected is None:
         raise CaptchaError("captcha challenge not found or expired")
     try:

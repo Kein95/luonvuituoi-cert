@@ -7,8 +7,15 @@ The handler composes three subsystems:
   student's text onto the correct template page.
 - :func:`sanitize_filename` produces the ``Content-Disposition`` name.
 
-Separating it from raw transport keeps handlers identical between Vercel
-serverless and the Flask dev server.
+Because ``search_student`` is called internally, each download consumes a
+fresh CAPTCHA challenge — callers must issue separate challenges for search
+and for download; the same ``captcha_id`` cannot be reused.
+
+Transport-layer contract: the HTTP/Flask/Vercel wrapper **must** call
+:func:`validate_request_size` on the raw body before JSON-parsing it.
+
+Separating the logic from raw transport keeps handlers identical between
+Vercel serverless and the Flask dev server.
 """
 
 from __future__ import annotations

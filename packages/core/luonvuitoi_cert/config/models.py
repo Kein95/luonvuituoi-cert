@@ -165,6 +165,23 @@ class DataMapping(_Strict):
     phone_col: str | None = None
     extra_cols: list[str] = Field(default_factory=list)
 
+    @field_validator("sbd_col", "name_col", "dob_col", "school_col", "grade_col", "phone_col")
+    @classmethod
+    def _sql_ident_optional(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not _SQL_IDENT.match(v):
+            raise ValueError(f"data_mapping column must be a SQL identifier, got {v!r}")
+        return v
+
+    @field_validator("extra_cols")
+    @classmethod
+    def _extra_cols_sql_idents(cls, v: list[str]) -> list[str]:
+        for col in v:
+            if not _SQL_IDENT.match(col):
+                raise ValueError(f"data_mapping.extra_cols entries must be SQL identifiers, got {col!r}")
+        return v
+
 
 class StudentSearch(_Strict):
     mode: SearchMode = "name_dob_captcha"
