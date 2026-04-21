@@ -13,6 +13,8 @@ easy to reduce).
 
 from __future__ import annotations
 
+import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +27,8 @@ from luonvuitoi_cert.qr import (
     load_public_key,
     verify_payload,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class VerifyError(Exception):
@@ -59,9 +63,17 @@ def verify_qr(
     config: CertConfig,
     project_root: str | Path,
     blob: str,
+    clock=None,  # type: ignore[no-untyped-def]
 ) -> VerifyResponse:
-    """Decode + verify the QR blob. Never raises — always returns a structured verdict."""
-    if not config.features.qr_verify.enabled:
+    """Decode + verify the QR blob. Never raises on bad client input — always returns a verdict.
+
+    :class:`VerifyError` is raised only for operational misconfiguration
+    (QR disabled, missing public key) so the transport layer can respond with
+    a distinct HTTP status. The exception message is caller-safe — it never
+    contains filesystem paths or raw key material.
+    """
+    qr_cfg = config.features.qr_verify
+    if not qr_cfg.enabled:
         raise VerifyError("QR verification is disabled for this project")
     if not blob:
         return VerifyResponse(valid=False, reason="missing QR payload")
@@ -79,13 +91,30 @@ def verify_qr(
             ),
             payload=payload,
         )
-    public_key_path = Path(project_root) / config.features.qr_verify.public_key_path
+    public_key_path = Path(project_root) / qr_cfg.public_key_path
     try:
         public_key = load_public_key(public_key_path)
     except SignatureError as e:
-        raise VerifyError(str(e)) from e
+        # Don't leak the resolved filesystem path to the caller.
+        _LOGGER.error("verify_qr: public key load failed (%s): %s", public_key_path, e)
+        raise VerifyError("verifier is not configured correctly") from e
     try:
         verify_payload(public_key, payload, signature)
     except SignatureError as e:
         return VerifyResponse(valid=False, reason=str(e), payload=payload)
+    if qr_cfg.max_age_seconds > 0:
+        now = int((clock or time.time)())
+        age = now - payload.issued_at
+        if age > qr_cfg.max_age_seconds:
+            return VerifyResponse(
+                valid=False,
+                reason=f"certificate expired ({age}s old > {qr_cfg.max_age_seconds}s)",
+                payload=payload,
+            )
+        if age < -60:  # allow small clock skew
+            return VerifyResponse(
+                valid=False,
+                reason="certificate issued in the future; clock skew or forged timestamp",
+                payload=payload,
+            )
     return VerifyResponse(valid=True, payload=payload)

@@ -128,6 +128,17 @@ def test_render_qr_png_produces_image() -> None:
     assert len(png) > 100
 
 
+def test_render_qr_png_rejects_oversize_text() -> None:
+    """Regression: Phase 07 review H3 — bounded text length stops DoS through the renderer."""
+    with pytest.raises(CodecError, match="too long"):
+        render_qr_png("x" * 5000)
+
+
+def test_render_qr_png_rejects_non_string() -> None:
+    with pytest.raises(CodecError, match="expects str"):
+        render_qr_png(b"bytes not allowed")  # type: ignore[arg-type]
+
+
 def test_payload_canonical_json_is_byte_stable() -> None:
     p1 = _payload()
     p2 = _payload()

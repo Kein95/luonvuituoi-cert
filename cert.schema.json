@@ -353,6 +353,12 @@
           "exclusiveMinimum": 0,
           "title": "Size Pt",
           "type": "number"
+        },
+        "max_age_seconds": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Age Seconds",
+          "type": "integer"
         }
       },
       "title": "QRVerify",

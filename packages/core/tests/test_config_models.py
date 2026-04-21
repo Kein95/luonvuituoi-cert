@@ -219,6 +219,34 @@ def test_data_mapping_optional_cols_skip_validation_when_none() -> None:
     CertConfig.model_validate(raw)  # must not raise
 
 
+def test_qr_key_paths_reject_absolute() -> None:
+    """Regression: Phase 07 review C1 — public/private key paths bypassed traversal check."""
+    raw = _valid_raw()
+    raw["features"] = {"qr_verify": {"public_key_path": "/etc/passwd"}}
+    with pytest.raises(ValidationError, match="relative path"):
+        CertConfig.model_validate(raw)
+
+
+def test_qr_key_paths_reject_parent_traversal() -> None:
+    raw = _valid_raw()
+    raw["features"] = {"qr_verify": {"private_key_path": "../../../secret.pem"}}
+    with pytest.raises(ValidationError, match="traverse parents"):
+        CertConfig.model_validate(raw)
+
+
+def test_qr_max_age_seconds_defaults_to_zero() -> None:
+    raw = _valid_raw()
+    cfg = CertConfig.model_validate(raw)
+    assert cfg.features.qr_verify.max_age_seconds == 0
+
+
+def test_qr_max_age_seconds_rejects_negative() -> None:
+    raw = _valid_raw()
+    raw["features"] = {"qr_verify": {"max_age_seconds": -1}}
+    with pytest.raises(ValidationError):
+        CertConfig.model_validate(raw)
+
+
 def test_layout_field_size_bounds() -> None:
     raw = _valid_raw()
     raw["layout"]["fields"]["name"]["size"] = 0

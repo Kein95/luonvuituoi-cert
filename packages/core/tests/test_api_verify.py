@@ -124,3 +124,38 @@ def test_qr_disabled_raises(qr_project) -> None:  # type: ignore[no-untyped-def]
     )
     with pytest.raises(VerifyError, match="disabled"):
         verify_qr(config=disabled, project_root=project_root, blob=_make_blob(config, priv))
+
+
+def test_missing_public_key_error_hides_filesystem_path(qr_project) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 07 review H2 — error must not leak the resolved key path."""
+    config, project_root, priv = qr_project
+    blob = _make_blob(config, priv)
+    (project_root / "public_key.pem").unlink()  # force load_public_key to fail
+    with pytest.raises(VerifyError) as excinfo:
+        verify_qr(config=config, project_root=project_root, blob=blob)
+    assert "public_key.pem" not in str(excinfo.value)
+    assert str(project_root) not in str(excinfo.value)
+
+
+def test_expired_cert_rejected_when_max_age_set(qr_project) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 07 review H1 — issued_at TTL is enforced."""
+    config, project_root, priv = qr_project
+    aged = config.model_copy(
+        update={"features": config.features.model_copy(update={"qr_verify": config.features.qr_verify.model_copy(update={"max_age_seconds": 3600})})}
+    )
+    # Issue a cert stamped 2 days ago.
+    blob = _make_blob(aged, priv, issued_at=1_700_000_000)
+    resp = verify_qr(config=aged, project_root=project_root, blob=blob, clock=lambda: 1_700_000_000 + 200_000)
+    assert not resp.valid
+    assert resp.reason is not None and "expired" in resp.reason
+
+
+def test_future_dated_cert_rejected(qr_project) -> None:  # type: ignore[no-untyped-def]
+    config, project_root, priv = qr_project
+    aged = config.model_copy(
+        update={"features": config.features.model_copy(update={"qr_verify": config.features.qr_verify.model_copy(update={"max_age_seconds": 3600})})}
+    )
+    blob = _make_blob(aged, priv, issued_at=1_700_000_000 + 10_000)
+    resp = verify_qr(config=aged, project_root=project_root, blob=blob, clock=lambda: 1_700_000_000)
+    assert not resp.valid
+    assert resp.reason is not None and "future" in resp.reason

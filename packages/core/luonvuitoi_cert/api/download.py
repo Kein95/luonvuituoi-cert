@@ -82,17 +82,24 @@ def _maybe_sign_qr(
     sbd: str,
     cert: AvailableCertificate,
     verify_url_builder,  # type: ignore[no-untyped-def]
+    allow_raw_qr: bool,
 ) -> bytes | None:
     """Build + sign + render the QR PNG if ``features.qr_verify.enabled``.
 
-    ``verify_url_builder(blob: str) -> str`` wraps the signed blob into the
-    verifier URL so printed QRs open directly to ``/certificate-checker``.
-    Passing ``None`` emits the raw blob as the QR text — fine for CLI tests,
-    not what you want in production.
+    When ``verify_url_builder`` is None the QR holds the raw blob, which is
+    fine for tests but a footgun in production — end users expect scanning to
+    open a URL. In production paths :func:`download_certificate` raises
+    :class:`SearchError` unless the caller has opted in via
+    ``allow_raw_qr=True``.
     """
     qr = config.features.qr_verify
     if not qr.enabled:
         return None
+    if verify_url_builder is None and not allow_raw_qr:
+        raise SearchError(
+            "verify_url_builder is required when features.qr_verify.enabled; "
+            "pass allow_raw_qr=True in tests to embed the raw blob"
+        )
     key_path = project_root / qr.private_key_path
     private_key = load_private_key(key_path)
     payload = QRPayload.now(
@@ -120,13 +127,17 @@ def download_certificate(
     font_registry: FontRegistry | None = None,
     env: dict[str, str] | None = None,
     verify_url_builder=None,  # type: ignore[no-untyped-def]
+    allow_raw_qr: bool = False,
 ) -> DownloadResponse:
     """Search the student, pick the requested certificate, overlay + return PDF bytes.
 
     ``verify_url_builder(blob: str) -> str`` is used only when
     ``features.qr_verify.enabled``; it wraps the signed blob into a URL that
-    opens the Certificate-Checker page with the blob prefilled. Passing None
-    makes the QR encode the blob directly (fine for CLI tests).
+    opens the Certificate-Checker page with the blob prefilled.
+
+    When QR is enabled and ``verify_url_builder`` is None, a :class:`SearchError`
+    is raised unless ``allow_raw_qr=True`` (tests and CLI). In production the
+    builder should always be wired up so scanned QRs actually open a verifier.
     """
     round_id = str(params.get("round_id", "")).strip()
     subject_code = str(params.get("subject_code", "")).strip()
@@ -144,7 +155,9 @@ def download_certificate(
     )
     cert = _pick_certificate(result.certificates, round_id, subject_code)
 
-    qr_png = _maybe_sign_qr(config, Path(project_root), result.sbd, cert, verify_url_builder)
+    qr_png = _maybe_sign_qr(
+        config, Path(project_root), result.sbd, cert, verify_url_builder, allow_raw_qr
+    )
 
     pdf_bytes = render_certificate_bytes(
         OverlayRequest(

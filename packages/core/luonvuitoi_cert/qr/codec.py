@@ -19,6 +19,14 @@ from qrcode.constants import ERROR_CORRECT_M
 from luonvuitoi_cert.qr.payload import QRPayload
 
 BLOB_SEPARATOR = "."
+MAX_QR_TEXT_LENGTH = 2000
+"""Upper bound on text fed into :func:`render_qr_png`.
+
+QR v40 (largest standard version) holds ~4296 alphanumerics or ~2953 bytes,
+but a 2000-char cap keeps the rendered image small enough to fit on a cert
+template without degrading readability. Blob + URL wrapper ship around ~500
+chars for typical RSA-2048 signatures, leaving headroom.
+"""
 
 
 class CodecError(Exception):
@@ -58,7 +66,18 @@ def decode_blob(blob: str) -> tuple[QRPayload, bytes]:
 
 
 def render_qr_png(text: str, *, box_size: int = 10, border: int = 2) -> bytes:
-    """Encode ``text`` as a PNG QR image. ``text`` is typically a URL wrapping the blob."""
+    """Encode ``text`` as a PNG QR image. ``text`` is typically a URL wrapping the blob.
+
+    Rejects text longer than :data:`MAX_QR_TEXT_LENGTH` with :class:`CodecError`
+    so a caller can't DoS the renderer with a multi-MB string or run the QR
+    library past its version ceiling.
+    """
+    if not isinstance(text, str):
+        raise CodecError(f"render_qr_png expects str, got {type(text).__name__}")
+    if len(text) > MAX_QR_TEXT_LENGTH:
+        raise CodecError(
+            f"QR text too long ({len(text)} > {MAX_QR_TEXT_LENGTH}); shorten the payload or URL wrapper"
+        )
     qr = qrcode.QRCode(
         version=None,  # auto-size based on payload
         error_correction=ERROR_CORRECT_M,
@@ -66,7 +85,10 @@ def render_qr_png(text: str, *, box_size: int = 10, border: int = 2) -> bytes:
         border=border,
     )
     qr.add_data(text)
-    qr.make(fit=True)
+    try:
+        qr.make(fit=True)
+    except qrcode.exceptions.DataOverflowError as e:
+        raise CodecError(f"QR cannot encode the given text: {e}") from e
     image = qr.make_image(fill_color="black", back_color="white")
     buf = BytesIO()
     image.save(buf, format="PNG")

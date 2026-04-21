@@ -213,6 +213,18 @@ class QRVerify(_Strict):
     y: float = 40.0
     size_pt: float = Field(default=80.0, gt=0)
     """Side length of the QR square drawn on the PDF overlay (in points)."""
+    max_age_seconds: int = Field(default=0, ge=0)
+    """Reject QR payloads older than this when verifying. ``0`` disables the check.
+
+    Use a non-zero value (e.g., 365 * 86400) when you want issued certificates
+    to expire — useful as a poor-man's revocation when there's no admin-side
+    revocation list.
+    """
+
+    @field_validator("public_key_path", "private_key_path")
+    @classmethod
+    def _key_paths_relative(cls, v: str) -> str:
+        return _validate_relative_path(v, "features.qr_verify.*_key_path")
 
 
 class Shipment(_Strict):
