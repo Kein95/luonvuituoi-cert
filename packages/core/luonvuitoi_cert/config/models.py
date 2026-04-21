@@ -53,6 +53,9 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
+_SAFE_LOGO_SCHEMES = ("/", "http://", "https://", "data:image/")
+
+
 class Branding(_Strict):
     logo_url: str | None = None
     primary_color: str = "#667eea"
@@ -63,6 +66,23 @@ class Branding(_Strict):
     def _hex(cls, v: str) -> str:
         if not _HEX_COLOR.match(v):
             raise ValueError(f"expected hex color (e.g. #667eea), got {v!r}")
+        return v
+
+    @field_validator("logo_url")
+    @classmethod
+    def _safe_scheme(cls, v: str | None) -> str | None:
+        """Reject ``javascript:``, ``vbscript:``, and other XSS-adjacent URIs.
+
+        Only relative paths, HTTP(S), and inline image data URIs are allowed —
+        which covers the real-world cases (uploaded logo, CDN-hosted image,
+        embedded base64) without opening an execution sink.
+        """
+        if v is None or v == "":
+            return v
+        if not any(v.startswith(prefix) for prefix in _SAFE_LOGO_SCHEMES):
+            raise ValueError(
+                f"branding.logo_url must start with {list(_SAFE_LOGO_SCHEMES)}; got {v!r}"
+            )
         return v
 
 

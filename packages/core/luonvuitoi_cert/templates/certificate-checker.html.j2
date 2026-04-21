@@ -11,12 +11,12 @@
     <textarea id="blob" name="blob" rows="4" spellcheck="false" required></textarea>
     <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
       <button type="submit" id="submit-btn">{{ t("portal.verify_button", default="Verify") }}</button>
-      <span id="status" class="badge" hidden></span>
+      <span id="status" class="badge" role="status" aria-live="polite" hidden></span>
     </div>
   </form>
 </section>
 
-<section id="result" class="card" hidden>
+<section id="result" class="card" role="region" aria-live="polite" aria-atomic="true" hidden>
   <h2 id="result-title"></h2>
   <p id="result-reason" class="reason" hidden></p>
   <dl id="result-fields"></dl>
@@ -99,6 +99,11 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ blob }),
       });
+      if (!resp.ok) {
+        showBadge(false, "✗");
+        render({ valid: false, reason: "server returned HTTP " + resp.status });
+        return;
+      }
       const data = await resp.json().catch(() => ({ valid: false, reason: "bad response" }));
       showBadge(!!data.valid, data.valid ? "✓" : "✗");
       render(data);

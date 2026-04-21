@@ -87,12 +87,52 @@ def test_vi_locale_translates_page_strings() -> None:
 
 
 def test_page_js_uses_tojson_for_endpoint() -> None:
-    """Endpoint passed through ``|tojson`` so quotes / angle brackets can't break out of the JS literal."""
+    """Regression: Phase 08 review H1 — previous assertion was tautological.
+
+    ``|tojson`` must escape the closing quote inside the endpoint string so
+    the attacker can't terminate the JS literal. Verify by asserting the
+    escape sequence ``\\"`` is present *and* the would-be breakout token
+    ``"/api/verify";`` (unescaped end-quote followed by a semicolon) is not.
+    """
     html = render_certificate_checker_page(
-        config=_cfg(), locale=load_locale("en"), verify_endpoint='/api/verify"; alert(1); //'
+        config=_cfg(),
+        locale=load_locale("en"),
+        verify_endpoint='/api/verify"; alert(1); //',
     )
-    # tojson escapes the trailing quote; there must be no literal JS injection.
-    assert 'alert(1)' not in html.replace("alert(1)", "", 1) or '\\"' in html  # escaped form present
+    # Escaped closing quote must be present (Jinja tojson emits \").
+    assert '\\"' in html
+    # The unescaped breakout — ending the string with `";` — must never occur.
+    assert 'verify";' not in html
+
+
+def test_branding_logo_url_rejects_javascript_uri() -> None:
+    """Regression: Phase 08 review C1 — logo_url is an active URL sink."""
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        _cfg(
+            project={
+                "name": "X",
+                "slug": "x",
+                "locale": "en",
+                "branding": {"logo_url": "javascript:alert(1)"},
+            }
+        )
+
+
+def test_branding_logo_url_accepts_safe_schemes() -> None:
+    for url in ("/static/logo.png", "https://cdn/img.png", "http://x/y.png", "data:image/png;base64,iVBOR"):
+        cfg = _cfg(
+            project={"name": "X", "slug": "x", "locale": "en", "branding": {"logo_url": url}}
+        )
+        assert cfg.project.branding.logo_url == url
+
+
+def test_result_region_has_aria_live() -> None:
+    """Regression: Phase 08 review M3 — badge + result must announce to screen readers."""
+    html = render_certificate_checker_page(config=_cfg(), locale=load_locale("en"))
+    assert 'aria-live="polite"' in html
+    assert 'role="region"' in html
 
 
 def test_page_contains_auto_submit_snippet() -> None:
