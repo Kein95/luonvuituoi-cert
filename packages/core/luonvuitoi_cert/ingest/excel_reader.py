@@ -41,26 +41,30 @@ def read_excel(path: str | Path, sheet: str | None = None) -> list[dict[str, str
     except Exception as e:
         raise IngestError(f"failed to open Excel workbook ({p}): {e}") from e
 
-    ws = wb[sheet] if sheet else wb.active
-    if ws is None:
-        raise IngestError(f"workbook has no active worksheet: {p}")
-
-    rows = ws.iter_rows(values_only=True)
+    # ``load_workbook(read_only=True)`` holds a file handle open until close();
+    # ``finally`` guarantees it releases on every path — Windows otherwise locks
+    # the file against subsequent writers in the same test.
     try:
-        header_raw = next(rows)
-    except StopIteration:
-        return []
-    headers = [_cell_to_str(h) for h in header_raw]
-    if not any(headers):
-        raise IngestError(f"Excel header row is empty: {p}")
+        ws = wb[sheet] if sheet else wb.active
+        if ws is None:
+            raise IngestError(f"workbook has no active worksheet: {p}")
 
-    out: list[dict[str, str]] = []
-    for row in rows:
-        values = [_cell_to_str(v) for v in row]
-        # Pad with blanks if row is shorter than the header.
-        values += [""] * (len(headers) - len(values))
-        if all(v == "" for v in values[: len(headers)]):
-            continue
-        out.append({h: v for h, v in zip(headers, values[: len(headers)]) if h})
-    wb.close()
-    return out
+        rows = ws.iter_rows(values_only=True)
+        try:
+            header_raw = next(rows)
+        except StopIteration:
+            return []
+        headers = [_cell_to_str(h) for h in header_raw]
+        if not any(headers):
+            raise IngestError(f"Excel header row is empty: {p}")
+
+        out: list[dict[str, str]] = []
+        for row in rows:
+            values = [_cell_to_str(v) for v in row]
+            values += [""] * (len(headers) - len(values))
+            if all(v == "" for v in values[: len(headers)]):
+                continue
+            out.append({h: v for h, v in zip(headers, values[: len(headers)]) if h})
+        return out
+    finally:
+        wb.close()

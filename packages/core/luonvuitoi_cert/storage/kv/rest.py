@@ -56,7 +56,12 @@ class RestKV:
             resp.raise_for_status()
         except httpx.HTTPError as e:
             raise KVError(f"RestKV transport error: {e}") from e
-        body = resp.json()
+        try:
+            body = resp.json()
+        except ValueError as e:
+            raise KVError(
+                f"RestKV returned non-JSON body (status={resp.status_code}): {e}"
+            ) from e
         if isinstance(body, dict) and "error" in body:
             raise KVError(f"RestKV command error: {body['error']}")
         return body.get("result") if isinstance(body, dict) else body

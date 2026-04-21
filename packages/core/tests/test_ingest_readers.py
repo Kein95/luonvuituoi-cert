@@ -67,6 +67,24 @@ def test_csv_empty_rows_dropped(tmp_path: Path) -> None:
     assert len(read_csv(p)) == 2
 
 
+def test_csv_preserves_quoted_multiline_fields(tmp_path: Path) -> None:
+    """Regression: Phase 04 review H1 — text.splitlines() joined lines inside quotes."""
+    p = tmp_path / "in.csv"
+    # Write bytes directly to avoid Windows newline translation altering the fixture.
+    p.write_bytes(b'sbd,note\n001,"line1\nline2\nline3"\n')
+    rows = read_csv(p)
+    # Normalize to compare — csv.reader may return \n or \r\n depending on platform/newline args.
+    assert rows[0]["note"].replace("\r\n", "\n") == "line1\nline2\nline3"
+
+
+def test_csv_preserves_falsy_strings(tmp_path: Path) -> None:
+    p = tmp_path / "in.csv"
+    p.write_text("sbd,score\n001,0\n002,False\n", encoding="utf-8")
+    rows = read_csv(p)
+    assert rows[0]["score"] == "0"
+    assert rows[1]["score"] == "False"
+
+
 def test_csv_missing_file_raises(tmp_path: Path) -> None:
     with pytest.raises(IngestError, match="not found"):
         read_csv(tmp_path / "absent.csv")

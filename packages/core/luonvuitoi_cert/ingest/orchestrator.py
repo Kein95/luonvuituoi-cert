@@ -21,14 +21,27 @@ The orchestrator owns three concerns:
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
-from typing import Iterable, Literal
+from typing import Any, Iterable, Literal
 
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.ingest.base import IngestError, IngestResult
 from luonvuitoi_cert.storage.sqlite_schema import build_schema
 
 DuplicatePolicy = Literal["warn", "skip", "replace"]
+
+
+def _coerce(value: Any) -> str:
+    """Stringify a source-row cell without dropping falsy-but-meaningful values.
+
+    The previous ``str(v or "")`` idiom swallowed ``0`` / ``False`` / ``0.0`` —
+    real data when the column is a score or a boolean flag. Only ``None`` is
+    skipped; everything else is preserved as a stripped string.
+    """
+    if value is None:
+        return ""
+    return str(value).strip()
 
 
 def _target_columns(config: CertConfig) -> list[str]:
@@ -77,23 +90,24 @@ def ingest_rows(
     db_path = Path(db_path).expanduser().resolve()
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with sqlite3.connect(str(db_path)) as conn:
+    # ``closing`` guarantees conn.close() runs on exit; the inner ``with conn``
+    # context commits on success / rolls back on exception.
+    with closing(sqlite3.connect(str(db_path))) as conn, conn:
         _apply_schema(conn, config)
         for idx, row in enumerate(rows, start=1):
-            sbd = str(row.get(sbd_col, "")).strip()
+            sbd = _coerce(row.get(sbd_col))
             if not sbd:
                 result.rows_skipped += 1
                 result.warn(f"row #{idx} missing {sbd_col!r}; skipped")
                 continue
-            values = [sbd] + [str(row.get(c, "") or "").strip() for c in columns[1:]]
+            values = [sbd] + [_coerce(row.get(c)) for c in columns[1:]]
             before = conn.total_changes
             conn.execute(sql, values)
-            if conn.total_changes == before:
+            if conn.total_changes == before and on_duplicate != "replace":
                 # INSERT OR IGNORE no-op → duplicate SBD
                 result.rows_skipped += 1
                 if on_duplicate == "warn":
                     result.warn(f"duplicate {sbd_col}={sbd!r} at row #{idx}; kept first entry")
                 continue
             result.rows_inserted += 1
-        conn.commit()
     return result

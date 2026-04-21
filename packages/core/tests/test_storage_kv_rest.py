@@ -97,6 +97,17 @@ def test_command_error_surface() -> None:
         kv.get("foo")
 
 
+def test_non_json_response_wrapped_in_kv_error() -> None:
+    """Regression: Phase 04 review H3 — json.JSONDecodeError used to leak through."""
+
+    def handler(_):  # type: ignore[no-untyped-def]
+        return httpx.Response(200, content=b"not actually json")
+
+    kv = _make_kv(handler)
+    with pytest.raises(KVError, match="non-JSON"):
+        kv.get("foo")
+
+
 def test_scan_prefix_paginates_until_cursor_zero() -> None:
     responses = iter(
         [

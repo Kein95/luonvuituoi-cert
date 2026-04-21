@@ -143,3 +143,30 @@ def test_sbd_is_stripped(tmp_path: Path) -> None:
     db = tmp_path / "test.db"
     ingest_rows(cfg, db, "main", [{"sbd": "  001  ", "full_name": "A"}])
     assert _fetch(db, "students")[0]["sbd"] == "001"
+
+
+def test_falsy_numeric_values_preserved(tmp_path: Path) -> None:
+    """Regression: Phase 04 review C1 — 0 / False / 0.0 used to become empty strings."""
+    cfg = _cfg()
+    db = tmp_path / "test.db"
+    ingest_rows(
+        cfg,
+        db,
+        "main",
+        [
+            {"sbd": "001", "full_name": "A", "science_result": 0},
+            {"sbd": "002", "full_name": "B", "science_result": False},
+            {"sbd": "003", "full_name": "C", "science_result": 0.0},
+        ],
+    )
+    stored = {r["sbd"]: r["science_result"] for r in _fetch(db, "students")}
+    assert stored["001"] == "0"
+    assert stored["002"] == "False"
+    assert stored["003"] == "0.0"
+
+
+def test_none_value_stays_blank(tmp_path: Path) -> None:
+    cfg = _cfg()
+    db = tmp_path / "test.db"
+    ingest_rows(cfg, db, "main", [{"sbd": "001", "full_name": "A", "science_result": None}])
+    assert _fetch(db, "students")[0]["science_result"] == ""
