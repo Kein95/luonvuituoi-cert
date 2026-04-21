@@ -1,0 +1,50 @@
+"""Pure-function request handlers for search, download, CAPTCHA, and admin.
+
+Every public entry point takes an input dict and the runtime dependencies
+(config, DB path, KV backend, project root) and returns a typed response.
+This lets the same logic run under Vercel's ``BaseHTTPRequestHandler`` in
+production and under Flask in the local dev server — both wrap these pure
+functions with transport-specific glue.
+"""
+
+from luonvuitoi_cert.api.captcha import (
+    CaptchaChallenge,
+    CaptchaError,
+    issue_challenge,
+    verify_challenge,
+)
+from luonvuitoi_cert.api.download import DownloadResponse, download_certificate
+from luonvuitoi_cert.api.rate_limiter import RateLimitError, check_rate_limit
+from luonvuitoi_cert.api.search import (
+    SearchError,
+    SearchResult,
+    search_student,
+)
+from luonvuitoi_cert.api.security import (
+    DEFAULT_ALLOWED_ORIGINS,
+    SecurityError,
+    clean_sbd,
+    sanitize_filename,
+    validate_request_size,
+    validate_sbd,
+)
+
+__all__ = [
+    "CaptchaChallenge",
+    "CaptchaError",
+    "DEFAULT_ALLOWED_ORIGINS",
+    "DownloadResponse",
+    "RateLimitError",
+    "SearchError",
+    "SearchResult",
+    "SecurityError",
+    "check_rate_limit",
+    "clean_sbd",
+    "download_certificate",
+    "issue_challenge",
+    "sanitize_filename",
+    "search_student",
+    "validate_request_size",
+    "validate_sbd",
+    "verify_challenge",
+]

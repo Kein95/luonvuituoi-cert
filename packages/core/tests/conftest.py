@@ -60,6 +60,13 @@ def config_dict() -> dict:
         "rounds": [{"id": "main", "label": "Main", "table": "students", "pdf": "templates/main.pdf"}],
         "subjects": [{"code": "S", "en": "Science", "db_col": "s"}],
         "results": {"S": {"GOLD": 1, "SILVER": 2}},
+        "data_mapping": {
+            "sbd_col": "sbd",
+            "name_col": "full_name",
+            "dob_col": "dob",
+            "school_col": "school",
+            "phone_col": "phone",
+        },
         "layout": {
             "page_size": [842, 595],
             "fields": {
@@ -85,3 +92,34 @@ def _reset_font_registry():
     FontRegistry._psname_by_path.clear()
     yield
     FontRegistry._psname_by_path.clear()
+
+
+@pytest.fixture
+def populated_db(cert_config, project_root, tmp_path):  # type: ignore[no-untyped-def]
+    """Create a SQLite DB pre-populated with one student for search/download tests."""
+    from luonvuitoi_cert.ingest import ingest_rows
+
+    db = tmp_path / "test.db"
+    ingest_rows(
+        cert_config,
+        db,
+        "main",
+        [
+            {
+                "sbd": "12345",
+                "full_name": "Nguyễn Văn A",
+                "dob": "01-06-2010",
+                "school": "Test School",
+                "phone": "0901234567",
+                "s": "GOLD",
+            }
+        ],
+    )
+    return db
+
+
+@pytest.fixture
+def kv_memory():  # type: ignore[no-untyped-def]
+    from luonvuitoi_cert.storage.kv import MemoryKV
+
+    return MemoryKV()
