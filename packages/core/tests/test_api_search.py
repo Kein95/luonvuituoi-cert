@@ -79,20 +79,38 @@ def test_dob_accepts_iso_and_dotted_and_whitespace(cert_config, populated_db, kv
 # ── Admin mode ──────────────────────────────────────────────────────
 
 
+def _admin_token() -> str:
+    from luonvuitoi_cert.auth import Role, issue_admin_token
+
+    return issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN)
+
+
 def test_admin_mode_skips_captcha(cert_config, populated_db, kv_memory) -> None:  # type: ignore[no-untyped-def]
     res = search_student(
         config=cert_config,
         db_path=populated_db,
         kv=kv_memory,
-        params={"sbd": "12345", "token": "any-token"},
+        params={"sbd": "12345", "token": _admin_token()},
         client_id="ip-1",
         mode="admin",
     )
     assert res.sbd == "12345"
 
 
-def test_admin_mode_requires_token(cert_config, populated_db, kv_memory) -> None:  # type: ignore[no-untyped-def]
-    with pytest.raises(SecurityError, match="token"):
+def test_admin_mode_requires_valid_jwt(cert_config, populated_db, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    with pytest.raises(SecurityError):
+        search_student(
+            config=cert_config,
+            db_path=populated_db,
+            kv=kv_memory,
+            params={"sbd": "12345", "token": "not-a-real-jwt"},
+            client_id="ip-1",
+            mode="admin",
+        )
+
+
+def test_admin_mode_rejects_empty_token(cert_config, populated_db, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    with pytest.raises(SecurityError):
         search_student(
             config=cert_config,
             db_path=populated_db,

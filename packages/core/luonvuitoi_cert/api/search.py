@@ -31,6 +31,7 @@ from typing import Any, Literal
 from luonvuitoi_cert.api.captcha import verify_challenge
 from luonvuitoi_cert.api.rate_limiter import check_rate_limit
 from luonvuitoi_cert.api.security import SecurityError, validate_sbd
+from luonvuitoi_cert.auth.tokens import TokenError, verify_admin_token
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.storage.kv.base import KVBackend
 
@@ -188,8 +189,10 @@ def search_student(
     if mode == "student":
         _verify_student_gate(kv, params, client_id)
     elif mode == "admin":
-        if not params.get("token"):
-            raise SecurityError("admin token is required")
+        try:
+            verify_admin_token(str(params.get("token", "")))
+        except TokenError as e:
+            raise SecurityError(str(e)) from e
     else:
         raise SearchError(f"unknown mode: {mode!r}")
 

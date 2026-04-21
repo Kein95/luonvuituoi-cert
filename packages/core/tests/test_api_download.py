@@ -87,6 +87,9 @@ def test_unknown_subject_raises(cert_config, populated_db, project_root, kv_memo
 
 
 def test_admin_mode_works_without_captcha(cert_config, populated_db, project_root, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    from luonvuitoi_cert.auth import Role, issue_admin_token
+
+    admin_token = issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN)
     resp = download_certificate(
         config=cert_config,
         project_root=project_root,
@@ -96,7 +99,7 @@ def test_admin_mode_works_without_captcha(cert_config, populated_db, project_roo
             "sbd": "12345",
             "round_id": "main",
             "subject_code": "S",
-            "token": "any-admin-token",
+            "token": admin_token,
         },
         client_id="ip-1",
         mode="admin",

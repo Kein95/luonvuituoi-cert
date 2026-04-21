@@ -94,6 +94,12 @@ def _reset_font_registry():
     FontRegistry._psname_by_path.clear()
 
 
+@pytest.fixture(autouse=True)
+def _jwt_secret_for_tests(monkeypatch):  # type: ignore[no-untyped-def]
+    """Ensure JWT_SECRET is long enough to silence PyJWT's InsecureKeyLengthWarning."""
+    monkeypatch.setenv("JWT_SECRET", "pytest-default-secret-padded-32-bytes-min")
+
+
 @pytest.fixture
 def populated_db(cert_config, project_root, tmp_path):  # type: ignore[no-untyped-def]
     """Create a SQLite DB pre-populated with one student for search/download tests."""
