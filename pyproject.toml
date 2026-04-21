@@ -1,0 +1,22 @@
+[project]
+name = "luonvuitoi-cert-workspace"
+version = "0.1.0"
+description = "LUONVUITUOI-CERT monorepo root (config-driven certificate portal toolkit)"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict_optional = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["packages/core/tests", "packages/cli/tests"]
+addopts = "-ra -q"

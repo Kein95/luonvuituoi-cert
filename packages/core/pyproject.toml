@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "luonvuitoi-cert"
+version = "0.1.0"
+description = "Config-driven certificate portal engine (search / download / QR verify / admin)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "LUONVUITUOI-CERT contributors" }]
+keywords = ["certificate", "pdf", "qr-verify", "vercel", "serverless"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+]
+dependencies = [
+    "reportlab>=4.0.0",
+    "PyPDF2>=3.0.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "cryptography>=41.0.0",
+    "PyJWT>=2.8.0",
+    "pydantic>=2.0.0",
+    "jinja2>=3.1.0",
+    "qrcode[pil]>=7.4.2",
+    "httpx>=0.25.0",
+    "faker>=20.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4.0", "pytest-cov>=4.1.0", "ruff>=0.1.0", "mypy>=1.7.0"]
+e2e = ["playwright>=1.40.0"]
+
+[project.urls]
+Homepage = "https://github.com/luonvuitoi/cert"
+Documentation = "https://luonvuitoi.github.io/cert"
+Issues = "https://github.com/luonvuitoi/cert/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["luonvuitoi_cert"]

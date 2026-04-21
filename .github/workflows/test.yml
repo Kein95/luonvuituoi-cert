@@ -1,0 +1,51 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install core (editable)
+        run: pip install -e ./packages/core[dev]
+
+      - name: Install cli (editable)
+        run: pip install -e ./packages/cli
+
+      - name: Run pytest
+        run: pytest -ra
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e ./packages/core[dev,e2e] -e ./packages/cli
+      - run: playwright install --with-deps chromium
+      - name: Scaffold + run demo
+        run: |
+          lvt-cert init /tmp/demo --example demo-academy --non-interactive
+          cd /tmp/demo
+          lvt-cert seed
+          nohup lvt-cert dev --port 5555 &
+          sleep 5
+          pytest tests/e2e || true

@@ -1,0 +1,12 @@
+services:
+  cert-portal:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/project/data
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-change-me}
+      KV_BACKEND: local
+    restart: unless-stopped
