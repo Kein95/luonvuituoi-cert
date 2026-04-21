@@ -1,0 +1,37 @@
+{
+  "portal": {
+    "title": "Cổng Chứng chỉ",
+    "subtitle": "Tra cứu và tải chứng chỉ của bạn",
+    "search_button": "Tra cứu",
+    "download_button": "Tải về",
+    "verify_button": "Xác minh",
+    "captcha_label": "Vui lòng nhập captcha"
+  },
+  "search": {
+    "label_name": "Họ và tên",
+    "label_dob": "Ngày sinh",
+    "label_registration": "Số báo danh",
+    "label_phone": "Số điện thoại (4 số cuối)"
+  },
+  "errors": {
+    "not_found": "Không tìm thấy chứng chỉ phù hợp với thông tin đã nhập.",
+    "captcha_invalid": "Captcha không chính xác — vui lòng thử lại.",
+    "rate_limited": "Bạn thao tác quá nhanh. Vui lòng chờ một lát rồi thử lại.",
+    "admin_required": "Cần đăng nhập quản trị.",
+    "expired": "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại."
+  },
+  "verify": {
+    "title": "Xác minh Chứng chỉ",
+    "subtitle": "Quét mã QR trên chứng chỉ in để xác minh tính xác thực.",
+    "valid": "Chữ ký hợp lệ",
+    "tampered": "Chữ ký không khớp — chứng chỉ có thể đã bị chỉnh sửa."
+  },
+  "admin": {
+    "title": "Trang Quản trị",
+    "sign_in": "Đăng nhập",
+    "sign_out": "Đăng xuất",
+    "students": "Học sinh",
+    "shipments": "Vận chuyển",
+    "activity_log": "Nhật ký hoạt động"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "portal": {
+    "title": "Certificate Portal",
+    "subtitle": "Look up and download your certificate",
+    "search_button": "Search",
+    "download_button": "Download",
+    "verify_button": "Verify",
+    "captcha_label": "Please solve the captcha"
+  },
+  "search": {
+    "label_name": "Full name",
+    "label_dob": "Date of birth",
+    "label_registration": "Registration number",
+    "label_phone": "Phone (last 4 digits)"
+  },
+  "errors": {
+    "not_found": "No certificate found for the provided details.",
+    "captcha_invalid": "Captcha is incorrect — please try again.",
+    "rate_limited": "Too many attempts. Please wait a moment before retrying.",
+    "admin_required": "Admin sign-in required.",
+    "expired": "Your session has expired. Please sign in again."
+  },
+  "verify": {
+    "title": "Certificate Verification",
+    "subtitle": "Scan the QR from a printed certificate to confirm authenticity.",
+    "valid": "Signature valid",
+    "tampered": "Signature does not match — certificate may be altered."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "sign_in": "Sign in",
+    "sign_out": "Sign out",
+    "students": "Students",
+    "shipments": "Shipments",
+    "activity_log": "Activity log"
+  }
+}
