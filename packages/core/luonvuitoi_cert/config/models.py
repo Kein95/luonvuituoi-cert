@@ -252,6 +252,34 @@ class Shipment(_Strict):
     statuses: list[str] = Field(default_factory=lambda: ["pending", "shipped", "delivered"])
     fields: list[str] = Field(default_factory=lambda: ["tracking_code", "carrier", "shipped_at"])
 
+    @field_validator("statuses")
+    @classmethod
+    def _statuses_non_empty_unique(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("shipment.statuses must contain at least one status")
+        if len(v) != len({s.strip().lower() for s in v}):
+            raise ValueError(f"shipment.statuses must be unique (case-insensitive): {v}")
+        for s in v:
+            if not s.strip():
+                raise ValueError("shipment.statuses entries must not be empty")
+        return v
+
+    @field_validator("fields")
+    @classmethod
+    def _fields_sql_idents(cls, v: list[str]) -> list[str]:
+        """Dropped straight into CREATE TABLE; must survive ``_SQL_IDENT``."""
+        reserved = {"id", "round_id", "sbd", "status", "created_at", "updated_at"}
+        seen: set[str] = set()
+        for col in v:
+            if not _SQL_IDENT.match(col):
+                raise ValueError(f"shipment.fields entries must be SQL identifiers, got {col!r}")
+            if col in reserved:
+                raise ValueError(f"shipment.fields entry {col!r} clashes with a reserved column")
+            if col in seen:
+                raise ValueError(f"shipment.fields entries must be unique, got duplicate {col!r}")
+            seen.add(col)
+        return v
+
 
 class OtpEmail(_Strict):
     enabled: bool = False

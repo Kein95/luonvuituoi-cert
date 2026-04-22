@@ -28,6 +28,12 @@ from luonvuitoi_cert.api.security import (
     validate_request_size,
     validate_sbd,
 )
+from luonvuitoi_cert.api.shipment import (
+    ShipmentHandlerError,
+    ShipmentLookupResponse,
+    lookup_shipment,
+    upsert_shipment_record,
+)
 from luonvuitoi_cert.api.verify import VerifyError, VerifyResponse, verify_qr
 
 __all__ = [
@@ -39,14 +45,18 @@ __all__ = [
     "SearchError",
     "SearchResult",
     "SecurityError",
+    "ShipmentHandlerError",
+    "ShipmentLookupResponse",
     "VerifyError",
     "VerifyResponse",
     "check_rate_limit",
     "clean_sbd",
     "download_certificate",
     "issue_challenge",
+    "lookup_shipment",
     "sanitize_filename",
     "search_student",
+    "upsert_shipment_record",
     "validate_request_size",
     "validate_sbd",
     "verify_challenge",
