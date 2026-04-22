@@ -1,0 +1,75 @@
+# Quickstart
+
+From zero to a running certificate portal in five minutes.
+
+## Prerequisites
+
+- Python 3.11 or newer
+- A PDF template with one page per (subject, result) variant — or use the `demo-academy` example, which draws one at runtime.
+- A TrueType font per role you want to style (e.g. one serif, one script).
+
+## 1. Install
+
+```bash
+pip install luonvuitoi-cert-cli
+```
+
+The CLI package depends on the engine (`luonvuitoi-cert`), so that lands transitively.
+
+## 2. Scaffold a project
+
+```bash
+lvt-cert init my-portal
+cd my-portal
+```
+
+Answer the prompts (name, slug, locale) or pass `--non-interactive` with `--name`/`--slug`/`--locale` to skip them. The scaffolder writes:
+
+```text
+my-portal/
+├── cert.config.json      # fill in rounds / subjects / layout
+├── vercel.json
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── README.md
+└── (templates/, assets/fonts/, data/ — you populate these)
+```
+
+## 3. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set at minimum:
+
+- `JWT_SECRET` — 32+ random characters. The server refuses to issue admin tokens without this.
+- `ADMIN_DEFAULT_PASSWORD` — used by one-off admin bootstrap scripts; change for real deploys.
+
+## 4. Add your PDF template + fonts
+
+1. Drop your certificate template PDF into `templates/main.pdf`. Each page corresponds to one cell in `cert.config.json#results` (e.g. `G.GOLD → page 1`).
+2. Drop your font TTFs into `assets/fonts/` using the filenames referenced by `cert.config.json#fonts`.
+
+For a taste without real assets, run the demo-academy example (see [Deploy — Docker](deploy-docker.md) or the repo's `examples/demo-academy/README.md`).
+
+## 5. Seed test data + run
+
+```bash
+lvt-cert seed --count 10 --seed 42     # writes data/students.xlsx
+lvt-cert gen-keys                      # only if features.qr_verify.enabled
+lvt-cert dev                           # http://127.0.0.1:5000
+```
+
+Visit:
+
+- `/` — public student portal (search + download)
+- `/admin` — admin panel (create the first admin via `luonvuitoi_cert.auth.create_admin_user`; see [Admin auth](admin-auth.md))
+- `/certificate-checker` — public QR verification page
+
+## Next
+
+- [Configuration reference](config-reference.md) — every key in `cert.config.json`
+- [PDF overlay guide](pdf-overlay-guide.md) — coordinates, fonts, field positioning
+- [Deploy to Vercel](deploy-vercel.md) or [Docker](deploy-docker.md)
