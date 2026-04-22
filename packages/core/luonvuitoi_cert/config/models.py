@@ -316,7 +316,10 @@ class CertConfig(_Strict):
     """Root document for ``cert.config.json``. All handlers read from this."""
 
     project: Project
-    rounds: list[Round] = Field(min_length=1)
+    # H3: cap rounds so public /api/search doesn't fan out to N SQLite queries
+    # without bound. 20 is generous (most competitions run 1-5 rounds) while
+    # keeping the worst-case search cost predictable.
+    rounds: list[Round] = Field(min_length=1, max_length=20)
     subjects: list[Subject] = Field(min_length=1)
     results: dict[str, dict[str, int]] = Field(
         description="subject_code → { result_name: page_number_in_pdf }."

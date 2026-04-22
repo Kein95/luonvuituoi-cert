@@ -515,6 +515,7 @@
       "items": {
         "$ref": "#/$defs/Round"
       },
+      "maxItems": 20,
       "minItems": 1,
       "title": "Rounds",
       "type": "array"
