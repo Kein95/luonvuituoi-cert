@@ -21,8 +21,7 @@ theme:
     text: Inter
     code: JetBrains Mono
   features:
-    - navigation.instant
-    - navigation.instant.progress
+    # navigation.instant incompatible with mkdocs-static-i18n language switcher.
     - navigation.tracking
     - navigation.tabs
     - navigation.tabs.sticky
@@ -123,3 +122,31 @@ markdown_extensions:
 plugins:
   - search:
       separator: '[\s\u200b\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: en
+          name: English
+          build: true
+          default: true
+        - locale: vi
+          name: Tiếng Việt
+          build: true
+          nav_translations:
+            Home: Trang chủ
+            Quickstart: Bắt đầu nhanh
+            User guide: Hướng dẫn sử dụng
+            Configuration: Cấu hình
+            Architecture: Kiến trúc
+            Guides: Hướng dẫn
+            PDF Overlay: Tạo template PDF
+            Admin Auth: Xác thực quản trị
+            Security: Bảo mật
+            Operations: Vận hành
+            Troubleshooting: Khắc phục sự cố
+            Deploy: Triển khai
+            Vercel: Vercel
+            Docker: Docker
+            Features: Tính năng
+            QR Verify: Xác thực QR
+            Shipment Tracking: Theo dõi vận chuyển
