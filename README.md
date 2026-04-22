@@ -1,6 +1,6 @@
 # LUONVUITUOI-CERT
 
-> 🙏 Thank you teammate [@Liamlenguyen](https://github.com/Liamlenguyen)
+> 🙏 Thank you teammate [@Liamlenguyen](https://github.com/Liamlenguyen) — stay tuned for more collabs from **LUONVUITUOI TEAM** ✨
 
 > Config-driven certificate portal toolkit. Bring your own PDF template + student list → ship a search / download / QR-verify / admin portal to Vercel or Docker in an afternoon.
 

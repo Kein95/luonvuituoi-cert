@@ -4,7 +4,7 @@ hide:
   - toc
 ---
 
-<p class="lvt-credits">🙏 Cảm ơn đồng đội <a href="https://github.com/Liamlenguyen" target="_blank" rel="noopener">@Liamlenguyen</a></p>
+<p class="lvt-credits">🙏 Cảm ơn đồng đội <a href="https://github.com/Liamlenguyen" target="_blank" rel="noopener">@Liamlenguyen</a> — hãy đón chờ những bản colab tiếp theo từ <strong>LUONVUITUOI TEAM</strong> ✨</p>
 
 <div class="lvt-hero" markdown>
 
