@@ -21,19 +21,18 @@ RUN pip install /app/_build/core /app/_build/cli gunicorn && rm -rf /app/_build
 # Placeholder so cold-starts don't crash before a volume is mounted.
 RUN mkdir -p /app/project/data
 
-# Minimal WSGI shim — gunicorn targets 'wsgi:app', build_app reads the bind-
-# mounted project directory at import time.
-RUN printf '%s\n' \
-    'from pathlib import Path' \
-    'import os' \
-    'from luonvuitoi_cert_cli.server import build_app' \
-    '' \
-    'ROOT = Path(os.environ.get("PROJECT_ROOT", "/app/project")).resolve()' \
-    'app = build_app(ROOT / "cert.config.json", ROOT)' \
-    > /app/wsgi.py
+# Real WSGI entrypoint committed to the repo; no more printf shim drift.
+COPY wsgi.py /app/wsgi.py
+
+# Run as a non-root user. Create /app writable dir for pycache under the user.
+RUN groupadd --system app && useradd --system --gid app --home /app --no-create-home app \
+    && chown -R app:app /app
+USER app
 
 EXPOSE 8000
+# M4: /health is a cheap, dependency-free probe — no KV write, no rate-limit
+# impact, no attack surface. Replaces the POST /api/captcha probe.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD curl -fsS -X POST http://127.0.0.1:8000/api/captcha -H 'Content-Type: application/json' -d '{}' || exit 1
+  CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --timeout 60 --access-logfile - wsgi:app"]

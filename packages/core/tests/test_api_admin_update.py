@@ -44,7 +44,12 @@ def test_admin_updates_field(cert_config, populated_db, tmp_path: Path) -> None:
     assert _fetch_value(populated_db, "students", "12345", "school") == "Updated School"
     entries = log.recent()
     assert entries[0].action == "student.update"
-    assert entries[0].metadata["new"] == "Updated School"
+    # M5: audit log no longer persists raw old/new values (PII hygiene). Check
+    # only that the change event + column name + changed flag are recorded.
+    assert entries[0].metadata["column"] == "school"
+    assert entries[0].metadata["changed"] is True
+    assert "new" not in entries[0].metadata
+    assert "old" not in entries[0].metadata
 
 
 def test_viewer_role_is_read_only(cert_config, populated_db, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]

@@ -56,12 +56,28 @@ class ActivityLogEntry:
     ip: str | None = None
 
 
+def _validated_webhook_url(url: str | None) -> str | None:
+    """Accept https:// only; drop everything else with a warning."""
+    if not url:
+        return None
+    if not url.strip().lower().startswith("https://"):
+        _LOGGER.warning(
+            "activity log webhook must be https://; got scheme prefix %r — disabled.",
+            url[:20],
+        )
+        return None
+    return url.strip()
+
+
 class ActivityLog:
     """Helper wrapper over the SQLite audit table. Instantiate once per DB path."""
 
     def __init__(self, db_path: str | Path, *, gsheet_webhook_url: str | None = None) -> None:
         self._db_path = Path(db_path).expanduser().resolve()
-        self._webhook = gsheet_webhook_url
+        # M6: filter the URL through the same validator that resolve_webhook_url
+        # applies so direct instantiation (e.g. tests, CLI, Vercel shim) gets
+        # the same SSRF guard.
+        self._webhook = _validated_webhook_url(gsheet_webhook_url)
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         with closing(sqlite3.connect(str(self._db_path))) as conn, conn:
             conn.execute(_CREATE_SQL)
@@ -165,6 +181,21 @@ def log_admin_action(
 
 
 def resolve_webhook_url(env: dict[str, str] | None = None) -> str | None:
+    """Return the configured webhook URL if it's an ``https://`` target, else ``None``.
+
+    M6: env-provided URL previously accepted any scheme — including ``http://``
+    internal hosts or ``file://`` paths, giving a would-be attacker an SSRF
+    vector if they could set the env var. We require explicit ``https://`` and
+    log-then-drop anything else so operators notice misconfig.
+    """
     source = env if env is not None else os.environ
     url = source.get("GSHEET_WEBHOOK_URL", "").strip()
-    return url or None
+    if not url:
+        return None
+    if not url.lower().startswith("https://"):
+        _LOGGER.warning(
+            "GSHEET_WEBHOOK_URL must be https:// (got scheme from %r); webhook disabled.",
+            url[:20],
+        )
+        return None
+    return url

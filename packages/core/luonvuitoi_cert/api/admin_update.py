@@ -104,13 +104,21 @@ def update_student_field(
             )
             changed = True
 
+    # M5: never persist raw cell values in the audit log. The caller knows what
+    # they sent (via the API response); downstream webhook forwarders (GSheet)
+    # should only see that a change happened, not phone/DOB/address contents.
+    # ``value_length_delta`` preserves rough observability without leaking PII.
     log_admin_action(
         activity,
         user_id=token.user_id,
         user_email=token.email,
         action="student.update",
         target_id=f"{table}:{sbd}",
-        metadata={"column": column, "old": old_value, "new": new_value_str, "changed": changed},
+        metadata={
+            "column": column,
+            "changed": changed,
+            "value_length_delta": len(new_value_str) - len(old_value),
+        },
         ip=client_ip,
     )
     return UpdateResponse(
