@@ -68,8 +68,10 @@ def update_student_field(
         token = verify_admin_token(token_raw, env=env)
     except TokenError as e:
         raise AdminUpdateError(str(e)) from e
-    if token.role == Role.VIEWER:
-        raise AdminUpdateError("viewer role is read-only")
+    # Allowlist rather than denylist — any future role (e.g. Role.AUDITOR) is
+    # read-only by default until explicitly granted write access.
+    if token.role not in (Role.ADMIN, Role.SUPER_ADMIN):
+        raise AdminUpdateError(f"role {token.role.value!r} is read-only")
 
     sbd = validate_sbd(params.get("sbd"))
     round_id = str(params.get("round_id", "")).strip()

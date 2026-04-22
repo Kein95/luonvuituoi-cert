@@ -78,41 +78,40 @@ def upsert_shipment(
     fields: dict[str, object] | None = None,
     clock=None,  # type: ignore[no-untyped-def]
 ) -> ShipmentRecord:
-    """Create or update the shipment for ``(round_id, sbd)``. Returns the stored record."""
+    """Create or update the shipment for ``(round_id, sbd)`` atomically.
+
+    Uses SQLite ``ON CONFLICT DO UPDATE`` so concurrent admins pressing Save
+    on the same record don't race each other into an IntegrityError. Patch
+    semantics on conflict: ``status`` + ``updated_at`` always land; each
+    extra field lands only when the caller includes it in ``fields``,
+    otherwise the existing value is preserved.
+    """
     _validate_status(config, status)
     cleaned_fields = _validate_extra_fields(config, fields or {})
     now = ((clock or _iso_now)() if callable(clock) else _iso_now())
     ensure_shipment_schema(db_path, config)
 
     extra_cols = list(config.features.shipment.fields)
+    new_id = str(uuid.uuid4())
+    insert_cols = ["id", "round_id", "sbd", "status", "created_at", "updated_at", *extra_cols]
+    insert_values: list[object] = [new_id, round_id, sbd, status, now, now] + [
+        cleaned_fields.get(c, "") for c in extra_cols
+    ]
+    placeholders = ", ".join(["?"] * len(insert_cols))
+    quoted_insert = ", ".join(f'"{c}"' for c in insert_cols)
+
+    update_parts = ['"status" = excluded."status"', '"updated_at" = excluded."updated_at"']
+    for col in extra_cols:
+        if col in cleaned_fields:
+            update_parts.append(f'"{col}" = excluded."{col}"')
+
+    sql = (
+        f"INSERT INTO shipments ({quoted_insert}) VALUES ({placeholders}) "
+        f'ON CONFLICT("round_id", "sbd") DO UPDATE SET {", ".join(update_parts)}'
+    )
     with closing(sqlite3.connect(str(Path(db_path).expanduser().resolve()))) as conn, conn:
         conn.row_factory = sqlite3.Row
-        existing = conn.execute(
-            'SELECT * FROM shipments WHERE round_id = ? AND sbd = ? LIMIT 1',
-            (round_id, sbd),
-        ).fetchone()
-        if existing is None:
-            new_id = str(uuid.uuid4())
-            cols = ["id", "round_id", "sbd", "status", "created_at", "updated_at", *extra_cols]
-            values = [new_id, round_id, sbd, status, now, now] + [
-                cleaned_fields.get(c, "") for c in extra_cols
-            ]
-            placeholders = ", ".join(["?"] * len(cols))
-            quoted = ", ".join(f'"{c}"' for c in cols)
-            conn.execute(f"INSERT INTO shipments ({quoted}) VALUES ({placeholders})", values)
-        else:
-            set_parts = ['"status" = ?', '"updated_at" = ?']
-            params: list[object] = [status, now]
-            for col in extra_cols:
-                if col in cleaned_fields:
-                    set_parts.append(f'"{col}" = ?')
-                    params.append(cleaned_fields[col])
-            params.extend([round_id, sbd])
-            conn.execute(
-                f"UPDATE shipments SET {', '.join(set_parts)} "
-                f'WHERE round_id = ? AND sbd = ?',
-                params,
-            )
+        conn.execute(sql, insert_values)
         row = conn.execute(
             'SELECT * FROM shipments WHERE round_id = ? AND sbd = ? LIMIT 1',
             (round_id, sbd),
@@ -135,6 +134,9 @@ def get_shipment(
     return _row_to_record(row, extra_cols) if row else None
 
 
+MAX_LIST_LIMIT = 500
+
+
 def list_shipments(
     db_path: str | Path,
     config: CertConfig,
@@ -145,6 +147,7 @@ def list_shipments(
 ) -> list[ShipmentRecord]:
     ensure_shipment_schema(db_path, config)
     extra_cols = list(config.features.shipment.fields)
+    clamped_limit = max(1, min(int(limit), MAX_LIST_LIMIT))
     sql = "SELECT * FROM shipments"
     where: list[str] = []
     params: list[object] = []
@@ -158,7 +161,7 @@ def list_shipments(
     if where:
         sql += " WHERE " + " AND ".join(where)
     sql += ' ORDER BY "updated_at" DESC LIMIT ?'
-    params.append(limit)
+    params.append(clamped_limit)
     with closing(sqlite3.connect(str(Path(db_path).expanduser().resolve()))) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(sql, params).fetchall()

@@ -422,6 +422,13 @@
           },
           "title": "Fields",
           "type": "array"
+        },
+        "public_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Public Fields",
+          "type": "array"
         }
       },
       "title": "Shipment",

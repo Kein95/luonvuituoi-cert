@@ -70,8 +70,10 @@ def upsert_shipment_record(
         token = verify_admin_token(str(params.get("token", "")), env=env)
     except TokenError as e:
         raise ShipmentHandlerError(str(e)) from e
-    if token.role == Role.VIEWER:
-        raise ShipmentHandlerError("viewer role cannot update shipments")
+    # Allowlist — any future role (e.g. Role.AUDITOR) starts read-only until
+    # explicitly opted-in, instead of silently inheriting write access.
+    if token.role not in (Role.ADMIN, Role.SUPER_ADMIN):
+        raise ShipmentHandlerError(f"role {token.role.value!r} cannot update shipments")
 
     sbd = validate_sbd(params.get("sbd"))
     round_id = str(params.get("round_id", "")).strip()
@@ -95,13 +97,15 @@ def upsert_shipment_record(
     except ShipmentError as e:
         raise ShipmentHandlerError(str(e)) from e
 
+    # Record which fields were touched but not the raw values — tracking codes
+    # and addresses shouldn't flow through the webhook-forwarded audit trail.
     log_admin_action(
         activity,
         user_id=token.user_id,
         user_email=token.email,
         action="shipment.upsert",
         target_id=f"{round_id}:{sbd}",
-        metadata={"status": status, "fields": {k: str(v) for k, v in updates_raw.items()}},
+        metadata={"status": status, "fields_touched": sorted(updates_raw.keys())},
         ip=client_ip,
     )
     return record
@@ -140,8 +144,12 @@ def lookup_shipment(
     record = get_shipment(db_path, config, round_id=round_id, sbd=sbd)
     if record is None:
         raise ShipmentHandlerError("no shipment recorded for this certificate yet")
+    # Only fields the operator explicitly allowlisted leave the server —
+    # defaults to empty, so a fresh deploy doesn't leak tracking codes.
+    public_keys = set(config.features.shipment.public_fields)
+    safe_fields = {k: v for k, v in record.fields.items() if k in public_keys}
     return ShipmentLookupResponse(
         status=record.status,
         updated_at=record.updated_at,
-        fields=record.fields,
+        fields=safe_fields,
     )

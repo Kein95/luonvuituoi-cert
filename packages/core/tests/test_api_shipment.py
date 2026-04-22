@@ -23,7 +23,14 @@ def _env() -> dict[str, str]:
     return {"JWT_SECRET": "pytest-default-secret-padded-32-bytes-min"}
 
 
-def _cfg(enabled: bool = True) -> CertConfig:
+def _cfg(enabled: bool = True, public_fields: list[str] | None = None) -> CertConfig:
+    shipment_cfg: dict = {
+        "enabled": enabled,
+        "statuses": ["pending", "shipped", "delivered"],
+        "fields": ["tracking_code", "carrier"],
+    }
+    if public_fields is not None:
+        shipment_cfg["public_fields"] = public_fields
     return CertConfig.model_validate(
         {
             "project": {"name": "T", "slug": "t"},
@@ -35,13 +42,7 @@ def _cfg(enabled: bool = True) -> CertConfig:
                 "fields": {"n": {"x": 0, "y": 0, "font": "f", "size": 10, "align": "left"}},
             },
             "fonts": {"f": "f.ttf"},
-            "features": {
-                "shipment": {
-                    "enabled": enabled,
-                    "statuses": ["pending", "shipped", "delivered"],
-                    "fields": ["tracking_code", "carrier"],
-                }
-            },
+            "features": {"shipment": shipment_cfg},
         }
     )
 
@@ -100,6 +101,30 @@ def test_admin_viewer_role_rejected(tmp_path: Path) -> None:
             params={"token": token, "sbd": "1", "round_id": "main", "status": "shipped"},
             env=_env(),
         )
+
+
+def test_audit_log_redacts_field_values(tmp_path: Path) -> None:
+    """Regression: Phase 09 review M1 — audit must not echo raw field values into the webhook stream."""
+    cfg = _cfg()
+    db = tmp_path / "s.db"
+    audit = ActivityLog(tmp_path / "a.db")
+    token = issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env=_env())
+    upsert_shipment_record(
+        config=cfg,
+        db_path=db,
+        activity=audit,
+        params={
+            "token": token,
+            "sbd": "12345",
+            "round_id": "main",
+            "status": "shipped",
+            "updates": {"tracking_code": "SECRET-TRACKING-123"},
+        },
+        env=_env(),
+    )
+    entry = audit.recent()[0]
+    assert "SECRET-TRACKING-123" not in str(entry.metadata)
+    assert entry.metadata["fields_touched"] == ["tracking_code"]
 
 
 def test_admin_rejects_unknown_round(tmp_path: Path) -> None:
@@ -172,7 +197,7 @@ def test_admin_disabled_feature(tmp_path: Path) -> None:
 
 
 def test_public_lookup_returns_status(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
-    cfg = _cfg()
+    cfg = _cfg(public_fields=["tracking_code"])
     db = tmp_path / "s.db"
     audit = ActivityLog(tmp_path / "a.db")
     token = issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env=_env())
@@ -185,7 +210,7 @@ def test_public_lookup_returns_status(tmp_path: Path, kv_memory) -> None:  # typ
             "sbd": "12345",
             "round_id": "main",
             "status": "shipped",
-            "updates": {"tracking_code": "VN1"},
+            "updates": {"tracking_code": "VN1", "carrier": "GHN"},
         },
         env=_env(),
     )
@@ -193,7 +218,32 @@ def test_public_lookup_returns_status(tmp_path: Path, kv_memory) -> None:  # typ
         config=cfg, db_path=db, kv=kv_memory, params=_lookup_params(kv_memory), client_id="ip-1"
     )
     assert resp.status == "shipped"
-    assert resp.fields["tracking_code"] == "VN1"
+    assert resp.fields == {"tracking_code": "VN1"}  # carrier NOT in public_fields
+
+
+def test_public_lookup_defaults_to_no_fields(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """Regression: Phase 09 review H1 — lookup used to return ALL fields."""
+    cfg = _cfg()  # no public_fields
+    db = tmp_path / "s.db"
+    audit = ActivityLog(tmp_path / "a.db")
+    token = issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env=_env())
+    upsert_shipment_record(
+        config=cfg,
+        db_path=db,
+        activity=audit,
+        params={
+            "token": token,
+            "sbd": "12345",
+            "round_id": "main",
+            "status": "shipped",
+            "updates": {"tracking_code": "VN1", "carrier": "GHN"},
+        },
+        env=_env(),
+    )
+    resp = lookup_shipment(
+        config=cfg, db_path=db, kv=kv_memory, params=_lookup_params(kv_memory), client_id="ip-1"
+    )
+    assert resp.fields == {}  # default empty allowlist
 
 
 def test_public_lookup_unknown_student(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]

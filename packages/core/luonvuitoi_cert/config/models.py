@@ -251,6 +251,14 @@ class Shipment(_Strict):
     enabled: bool = False
     statuses: list[str] = Field(default_factory=lambda: ["pending", "shipped", "delivered"])
     fields: list[str] = Field(default_factory=lambda: ["tracking_code", "carrier", "shipped_at"])
+    public_fields: list[str] = Field(default_factory=list)
+    """Subset of ``fields`` the public lookup endpoint may return.
+
+    Default empty — public responses carry only ``status`` + ``updated_at``.
+    Enumerate non-sensitive fields here (e.g. carrier name) when you want
+    students to see them. Tracking codes + recipient addresses should stay
+    out unless your threat model tolerates SBD-only enumeration leaks.
+    """
 
     @field_validator("statuses")
     @classmethod
@@ -279,6 +287,16 @@ class Shipment(_Strict):
                 raise ValueError(f"shipment.fields entries must be unique, got duplicate {col!r}")
             seen.add(col)
         return v
+
+    @model_validator(mode="after")
+    def _public_fields_subset_of_fields(self) -> "Shipment":
+        declared = set(self.fields)
+        extras = set(self.public_fields) - declared
+        if extras:
+            raise ValueError(
+                f"shipment.public_fields has entries not in shipment.fields: {sorted(extras)}"
+            )
+        return self
 
 
 class OtpEmail(_Strict):

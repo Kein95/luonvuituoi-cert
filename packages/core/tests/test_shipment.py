@@ -193,3 +193,67 @@ def test_list_shipments_filters_and_sorts(tmp_path: Path) -> None:
     shipped_only = list_shipments(db, cfg, status="shipped")
     assert len(shipped_only) == 2
     assert {r.sbd for r in shipped_only} == {"2", "3"}
+
+
+def test_list_shipments_clamps_limit(tmp_path: Path) -> None:
+    """Regression: Phase 09 review M2 — limit must not be unbounded."""
+    from luonvuitoi_cert.shipment.repository import MAX_LIST_LIMIT
+
+    cfg = _cfg()
+    db = tmp_path / "ship.db"
+    rows = list_shipments(db, cfg, limit=1_000_000)
+    assert isinstance(rows, list)
+    rows = list_shipments(db, cfg, limit=0)
+    assert isinstance(rows, list)
+    assert MAX_LIST_LIMIT == 500
+
+
+def test_upsert_concurrent_inserts_do_not_race(tmp_path: Path) -> None:
+    """Regression: Phase 09 review H2 — racing inserts used to hit IntegrityError."""
+    import threading
+
+    cfg = _cfg()
+    db = tmp_path / "ship.db"
+    errors: list[Exception] = []
+    lock = threading.Lock()
+
+    def worker(status: str) -> None:
+        try:
+            upsert_shipment(db, cfg, round_id="main", sbd="same", status=status)
+        except Exception as e:  # noqa: BLE001
+            with lock:
+                errors.append(e)
+
+    threads = [threading.Thread(target=worker, args=(s,)) for s in ("pending", "shipped") * 4]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors, f"racing upserts raised: {errors}"
+    rows = list_shipments(db, cfg)
+    assert len(rows) == 1
+
+
+def test_config_rejects_public_fields_outside_fields() -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError, match="public_fields"):
+        CertConfig.model_validate(
+            {
+                "project": {"name": "T", "slug": "t"},
+                "rounds": [{"id": "main", "label": "Main", "table": "students", "pdf": "t.pdf"}],
+                "subjects": [{"code": "S", "en": "S", "db_col": "s"}],
+                "results": {"S": {"GOLD": 1}},
+                "layout": {
+                    "page_size": [100, 100],
+                    "fields": {"n": {"x": 0, "y": 0, "font": "f", "size": 10, "align": "left"}},
+                },
+                "fonts": {"f": "f.ttf"},
+                "features": {
+                    "shipment": {
+                        "fields": ["tracking_code"],
+                        "public_fields": ["bogus_not_declared"],
+                    }
+                },
+            }
+        )
