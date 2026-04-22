@@ -2,6 +2,47 @@
 
 All notable changes to LUONVUITUOI-CERT. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); project uses [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+Post-1.0 security + ops hardening pass (PRs #3-#12).
+
+### Added
+
+- **`POST /api/admin/logout`** endpoint. JWTs can be revoked without rotating `JWT_SECRET`. Denylist stored in KV (`jwt_denylist:<jti>`) with TTL = remaining session life. `verify_admin_token(kv=…)` checks denylist; opt-in per-endpoint for backwards compat. (M7)
+- **`GET /health`** — cheap dependency-free health probe for container / k8s probes. Replaces the `POST /api/captcha` probe (which burned KV writes every 30s). (M4)
+- **`/api/*` CORS**: `Access-Control-Allow-Origin` echoed per `ALLOWED_ORIGINS`, OPTIONS preflight handler, `Vary: Origin` + 600s `Max-Age`. Previously CORS was advertised in docstring but no headers emitted. (C1)
+- **`/api/captcha` rate limit** (30/min/IP) — closes the unbounded-KV-write DoS. (C2)
+- **`_resolve_email_provider()`** — `build_app` now resolves a real `ResendProvider` when `RESEND_API_KEY` + `RESEND_FROM_ADDRESS` (or `CERT_EMAIL_FROM`) are set; falls back to `NullEmailProvider` with a warning. Previously hardcoded to Null. (C3)
+- **Dependabot config** covering pip (core + cli), github-actions, docker. Weekly pip cadence, monthly other. (M2)
+- **Real `/app/wsgi.py`** committed to the repo; Dockerfile drops the `printf` heredoc shim. (M3)
+- **Non-root container**: Dockerfile runs as `app:app` system user.
+- **JWT denylist TTL regression tests**, CORS preflight tests, captcha rate-limit test, email-provider resolution tests, rounds-cap test, webhook-HTTPS-only test, `/health` test, `X-Frame-Options` test.
+- **New docs**: `architecture.md`, `security.md`, `operations.md`, `troubleshooting.md`. Full environment-variable reference in `config-reference.md`.
+
+### Changed
+
+- **mypy now blocking** in CI. 3 pre-existing type errors cleared (`rate_limiter.Callable`, `captcha._Op.symbol` read-only, `activity_log` dict invariance). (M1)
+- **`X-Forwarded-For` opt-in**: trusted only when `TRUST_PROXY_HEADERS=1`. Previously trusted unconditionally — clients could spoof the header to bypass rate limits. (H5)
+- **`rounds` capped at 20** in Pydantic config validation; public search can't fan out unbounded queries. (H3)
+- **Activity-log webhook** uses a module-level `ThreadPoolExecutor(4)` instead of one daemon thread per call. (H4)
+- **Activity-log webhook URLs** must be `https://`; non-HTTPS rejected with a warning (SSRF guard). (M6)
+- **`admin.student.update` audit metadata** no longer persists raw `old`/`new` values; records `{column, changed, value_length_delta}` only — PII never reaches the GSheet forward. (M5)
+- **`verify_admin_password`** now issues a single `SELECT` instead of two. (M8)
+- **Docker image** sets `WEB_CONCURRENCY=2` env, healthcheck probes `/health`. (M4)
+- **Security headers**: `X-Frame-Options: DENY` on every response, `Strict-Transport-Security` behind `FORCE_HSTS=1`.
+- **GitHub Actions** bumped to Node 24-compatible versions (`checkout@v5`, `setup-python@v6`, `configure-pages@v5`, `upload-pages-artifact@v4`, `deploy-pages@v5`).
+
+### Fixed
+
+- **Flaky `test_search_rate_limit_kicks_in`**: now loops up to 2× the rate limit + 2 buffer, tolerates window-boundary rollover. (T1)
+- **README tests badge**: dynamic GitHub Actions shield instead of static "tests: 383". (L1)
+- **KV multi-worker warning**: `open_kv` logs a loud warning when `KV_BACKEND=local` and `WEB_CONCURRENCY > 1`. (H2)
+
+### Docs
+
+- Explicit H1 (SQL-identifier allowlist model) + H6 (CSRF posture guardrail) notes in `SECURITY.md`.
+- Per-project audit-log PII hygiene rule in `CONTRIBUTING.md`.
+
 ## [1.0.0] — 2026-04-22
 
 First public release. Extracts a config-driven certificate portal toolkit from three internal competition-certificate portals. Zero-leak policy enforced throughout: no strings, fonts, data, or domain artifacts from the source projects ship in the public codebase.

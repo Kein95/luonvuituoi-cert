@@ -57,6 +57,11 @@ Edit `.env` and set at minimum:
 
 - `JWT_SECRET` — 32+ random characters. The server refuses to issue admin tokens without this.
 - `ADMIN_DEFAULT_PASSWORD` — used by one-off admin bootstrap scripts; change for real deploys.
+- `PUBLIC_BASE_URL` — your deploy's HTTPS origin; pins magic-link + QR URLs.
+
+For production you'll also want `ALLOWED_ORIGINS`, `TRUST_PROXY_HEADERS=1` (if
+behind a reverse proxy), and `FORCE_HSTS=1` (after TLS cutover). See the
+[security guide](security.md) for the full hardening checklist.
 
 ## 4. Add your PDF template + fonts
 
@@ -81,6 +86,11 @@ Visit:
 
 ## Next
 
-- [Configuration reference](config-reference.md) — every key in `cert.config.json`
+- [Architecture](architecture.md) — how the pieces fit
+- [Configuration reference](config-reference.md) — every key in `cert.config.json` + env vars
+- [Security guide](security.md) — hardening checklist for production
 - [PDF overlay guide](pdf-overlay-guide.md) — coordinates, fonts, field positioning
+- [Admin auth](admin-auth.md) — login modes + session revocation
+- [Operations](operations.md) — health probe, logs, audit trail
+- [Troubleshooting](troubleshooting.md) — common failure modes
 - [Deploy to Vercel](deploy-vercel.md) or [Docker](deploy-docker.md)

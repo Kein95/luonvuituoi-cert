@@ -124,6 +124,51 @@ Field keys are the logical names the engine fills (e.g. `name`, `school`, `grade
 - `otp_email.enabled` + `otp_email.provider: "resend"` — wires OTP login. Needs `RESEND_API_KEY` and `CERT_EMAIL_FROM` env vars.
 - `gsheet_log.enabled` — forwards admin activity to `GSHEET_WEBHOOK_URL` on a background thread.
 
+## Environment variables
+
+Config file handles _what_ the portal does; env vars handle _where_ it runs.
+Full list with defaults:
+
+### Required
+
+| Name | Notes |
+|------|-------|
+| `JWT_SECRET` | 32+ random chars. No ephemeral fallback — missing value raises `TokenError` at startup. Rotate on compromise (nukes all sessions). |
+| `PUBLIC_BASE_URL` | Pins magic-link emails + QR verify URLs against Host-header injection. Set to the exact HTTPS origin. |
+
+### Commonly set
+
+| Name | Default | Notes |
+|------|---------|-------|
+| `ALLOWED_ORIGINS` | `*` | Comma-separated CORS whitelist. Leave as `*` only if the portal is fully public. |
+| `TRUST_PROXY_HEADERS` | `0` | Set to `1` when deploying behind Nginx / Caddy / Vercel / Cloud Run so the app reads `X-Forwarded-For` for rate-limit bucketing. Do NOT enable on direct binds — clients could spoof the header to bypass the limiter. |
+| `FORCE_HSTS` | `0` | Set to `1` once the site is reachable only via HTTPS. Emits `Strict-Transport-Security: max-age=31536000; includeSubDomains` on every response. Browsers cache HSTS — enabling on HTTP locks users out. |
+| `WEB_CONCURRENCY` | `2` | Gunicorn worker count. Dockerfile sets this; if paired with `KV_BACKEND=local` and >1 worker, a startup warning fires (local KV is not cross-process safe). |
+| `KV_BACKEND` | `local` | `local` / `upstash` / `vercel-kv`. See [operations](operations.md#kv-backends). |
+
+### Auth / email
+
+| Name | Notes |
+|------|-------|
+| `ADMIN_DEFAULT_PASSWORD` | Used by the one-off admin-bootstrap script. Rotate immediately after first login. |
+| `RESEND_API_KEY` | Required for `otp_email` / `magic_link` auth modes. Without it, `_resolve_email_provider` falls back to `NullEmailProvider` and logs a warning — OTP / magic-link flows will silently drop messages. |
+| `RESEND_FROM_ADDRESS` / `CERT_EMAIL_FROM` | Verified Resend sender. Either name works (alias for backwards compat with `.env.example`). |
+
+### Storage backends
+
+| Name | When set |
+|------|----------|
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | `KV_BACKEND=upstash` |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | `KV_BACKEND=vercel-kv` (auto-injected by Vercel) |
+| `KV_LOCAL_PATH` | Override default `./.kv/store.json` location |
+
+### Optional integrations
+
+| Name | Notes |
+|------|-------|
+| `GSHEET_WEBHOOK_URL` | Must be `https://…`. Non-HTTPS URLs are rejected with a warning (SSRF guard). Fire-and-forget — local audit table is authoritative. |
+| `GUNICORN_WORKERS` / `UVICORN_WORKERS` | Detected by the KV factory alongside `WEB_CONCURRENCY` for the multi-worker warning. |
+
 ## Validation errors
 
 If a value is rejected at config load time you'll see a message like:
