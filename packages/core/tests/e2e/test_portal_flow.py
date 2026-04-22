@@ -51,7 +51,14 @@ def test_search_flow_finds_seeded_student(live_server: str, captcha_solver) -> N
 
 
 def test_search_rate_limit_kicks_in(live_server: str, captcha_solver) -> None:  # type: ignore[no-untyped-def]
-    for _ in range(20):
+    """T1: loop until 429 with enough headroom that a cross-window-boundary
+    roll-over won't flake. The fixed-window limiter resets at 60s ticks; if the
+    first batch lands 59.9s into a window, req #21 arrives after rollover and
+    comes back 200 — so the previous hard-coded "exactly 21 reqs" was timing-
+    sensitive. Cap at 2× the limit (40 reqs) and assert *some* 429 appears.
+    """
+    codes: list[int] = []
+    for _ in range(42):  # 2× STUDENT_RATE_LIMIT (20) + 2 buffer
         resp = httpx.post(
             live_server + "/api/search",
             json={
@@ -61,18 +68,11 @@ def test_search_rate_limit_kicks_in(live_server: str, captcha_solver) -> None:  
                 **captcha_solver(live_server),
             },
         )
-        assert resp.status_code == 200
-    resp = httpx.post(
-        live_server + "/api/search",
-        json={
-            "sbd": "12345",
-            "name": "Alice Example",
-            "dob": "01-06-2010",
-            **captcha_solver(live_server),
-        },
-    )
-    assert resp.status_code == 429
-    assert "Retry-After" in resp.headers
+        codes.append(resp.status_code)
+        if resp.status_code == 429:
+            assert "Retry-After" in resp.headers
+            break
+    assert 429 in codes, f"expected a 429 within 42 reqs, got {codes!r}"
 
 
 def test_download_emits_pdf_with_qr_and_verifies(
