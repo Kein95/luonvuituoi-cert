@@ -9,6 +9,7 @@ not the algorithm.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from luonvuitoi_cert.storage.kv.base import KVBackend
@@ -38,7 +39,7 @@ def check_rate_limit(
     *,
     limit: int,
     window_seconds: int = 60,
-    clock: callable[[], float] | None = None,  # type: ignore[type-arg]
+    clock: Callable[[], float] | None = None,
 ) -> RateLimitStatus:
     """Record a request and raise :class:`RateLimitError` if it exceeds ``limit``.
 

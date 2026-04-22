@@ -131,7 +131,7 @@ class ActivityLog:
         """
         if not self._webhook:
             return
-        payload = {
+        payload: dict[str, object] = {
             "id": entry.id,
             "timestamp": entry.timestamp,
             "user_id": entry.user_id,
