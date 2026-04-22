@@ -23,7 +23,8 @@ class CaptchaError(Exception):
 
 
 class _Op(Protocol):
-    symbol: str
+    @property
+    def symbol(self) -> str: ...
 
     def apply(self, a: int, b: int) -> int: ...
 
@@ -52,7 +53,7 @@ class _MulOp:
         return a * b
 
 
-_OPS: tuple[_Op, ...] = (_AddOp(), _SubOp(), _MulOp())
+_OPS: list[_Op] = [_AddOp(), _SubOp(), _MulOp()]
 
 
 @dataclass(frozen=True, slots=True)

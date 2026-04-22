@@ -23,10 +23,9 @@ jobs:
 
   mypy:
     runs-on: ubuntu-latest
-    # Type checking is advisory while we iterate; failures are surfaced but
-    # don't block the merge. Flip continue-on-error once the codebase is
-    # clean under strict mode.
-    continue-on-error: true
+    # M1: promoted from advisory to blocking once the codebase cleared under
+    # strict mode (2026-04-22). Re-adding continue-on-error here requires
+    # explicit justification in CONTRIBUTING.md.
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
