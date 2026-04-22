@@ -25,7 +25,4 @@ class IngestResult:
         self.warnings.append(message)
 
     def summary(self) -> str:
-        return (
-            f"inserted={self.rows_inserted} skipped={self.rows_skipped} "
-            f"warnings={len(self.warnings)}"
-        )
+        return f"inserted={self.rows_inserted} skipped={self.rows_skipped} warnings={len(self.warnings)}"

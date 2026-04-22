@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import os
-
 import pytest
-
 from luonvuitoi_cert.api.security import (
     DEFAULT_ALLOWED_ORIGINS,
     MAX_REQUEST_BYTES_DEFAULT,
@@ -16,7 +13,6 @@ from luonvuitoi_cert.api.security import (
     validate_request_size,
     validate_sbd,
 )
-
 
 # ── clean_sbd ───────────────────────────────────────────────────────
 

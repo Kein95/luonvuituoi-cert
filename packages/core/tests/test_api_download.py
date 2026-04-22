@@ -6,11 +6,10 @@ import re
 from io import BytesIO
 
 import pytest
-from pypdf import PdfReader
-
 from luonvuitoi_cert.api.captcha import issue_challenge
 from luonvuitoi_cert.api.download import download_certificate
 from luonvuitoi_cert.api.search import SearchError
+from pypdf import PdfReader
 
 
 def _solve(question: str) -> int:
@@ -92,7 +91,6 @@ def test_download_requires_verify_url_builder_when_qr_enabled(
     """Regression: Phase 07 review M2 — missing builder would otherwise ship a footgun QR."""
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
-
     from luonvuitoi_cert.config import CertConfig
     from luonvuitoi_cert.ingest import ingest_rows
 
@@ -115,7 +113,16 @@ def test_download_requires_verify_url_builder_when_qr_enabled(
         cfg,
         db,
         "main",
-        [{"sbd": "12345", "full_name": "A", "dob": "01-06-2010", "school": "S", "phone": "0901234567", "s": "GOLD"}],
+        [
+            {
+                "sbd": "12345",
+                "full_name": "A",
+                "dob": "01-06-2010",
+                "school": "S",
+                "phone": "0901234567",
+                "s": "GOLD",
+            }
+        ],
     )
     ch = issue_challenge(kv_memory)
     with pytest.raises(SearchError, match="verify_url_builder is required"):
@@ -138,13 +145,10 @@ def test_download_requires_verify_url_builder_when_qr_enabled(
         )
 
 
-def test_download_embeds_signed_qr_when_enabled(
-    project_root, tmp_path, kv_memory, config_dict
-) -> None:  # type: ignore[no-untyped-def]
+def test_download_embeds_signed_qr_when_enabled(project_root, tmp_path, kv_memory, config_dict) -> None:  # type: ignore[no-untyped-def]
     """Regression: Phase 07 — QR pipeline renders + signs + embeds + roundtrips through /api/verify."""
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
-
     from luonvuitoi_cert.api import verify_qr
     from luonvuitoi_cert.config import CertConfig
     from luonvuitoi_cert.ingest import ingest_rows
@@ -169,7 +173,16 @@ def test_download_embeds_signed_qr_when_enabled(
         cfg,
         db,
         "main",
-        [{"sbd": "12345", "full_name": "A", "dob": "01-06-2010", "school": "S", "phone": "0901234567", "s": "GOLD"}],
+        [
+            {
+                "sbd": "12345",
+                "full_name": "A",
+                "dob": "01-06-2010",
+                "school": "S",
+                "phone": "0901234567",
+                "s": "GOLD",
+            }
+        ],
     )
     ch = issue_challenge(kv_memory)
 

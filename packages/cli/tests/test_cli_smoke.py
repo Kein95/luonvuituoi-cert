@@ -6,9 +6,8 @@ dispatcher wiring is verified before subcommand implementations land.
 
 from __future__ import annotations
 
-from typer.testing import CliRunner
-
 from luonvuitoi_cert_cli.main import app
+from typer.testing import CliRunner
 
 runner = CliRunner()
 

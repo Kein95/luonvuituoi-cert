@@ -7,11 +7,18 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - ".github/workflows/publish-docs.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+# Only one docs deploy in flight at a time; a new push supersedes an
+# in-progress one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -25,8 +32,11 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - run: pip install mkdocs-material mkdocs-awesome-pages-plugin
-      - run: mkdocs build --strict
+      - name: Install mkdocs + material
+        run: pip install mkdocs-material
+      - name: Build site (--strict catches broken links)
+        run: mkdocs build --strict
+      - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

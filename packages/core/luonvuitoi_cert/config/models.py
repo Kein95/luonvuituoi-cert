@@ -80,9 +80,7 @@ class Branding(_Strict):
         if v is None or v == "":
             return v
         if not any(v.startswith(prefix) for prefix in _SAFE_LOGO_SCHEMES):
-            raise ValueError(
-                f"branding.logo_url must start with {list(_SAFE_LOGO_SCHEMES)}; got {v!r}"
-            )
+            raise ValueError(f"branding.logo_url must start with {list(_SAFE_LOGO_SCHEMES)}; got {v!r}")
         return v
 
 
@@ -289,13 +287,11 @@ class Shipment(_Strict):
         return v
 
     @model_validator(mode="after")
-    def _public_fields_subset_of_fields(self) -> "Shipment":
+    def _public_fields_subset_of_fields(self) -> Shipment:
         declared = set(self.fields)
         extras = set(self.public_fields) - declared
         if extras:
-            raise ValueError(
-                f"shipment.public_fields has entries not in shipment.fields: {sorted(extras)}"
-            )
+            raise ValueError(f"shipment.public_fields has entries not in shipment.fields: {sorted(extras)}")
         return self
 
 
@@ -337,6 +333,7 @@ class CertConfig(_Strict):
                 raise ValueError(f"fonts key {key!r} must match {_IDENT.pattern}")
             _validate_relative_path(path, f"fonts[{key!r}]")
         return v
+
     student_search: StudentSearch = Field(default_factory=StudentSearch)
     admin: AdminConfig = Field(default_factory=AdminConfig)
     features: Features = Field(default_factory=Features)
@@ -387,7 +384,5 @@ class CertConfig(_Strict):
             if spec.font not in registered:
                 missing.append(f"{name}→{spec.font}")
         if missing:
-            raise ValueError(
-                f"layout.fields reference unregistered fonts (add to ``fonts``): {missing}"
-            )
+            raise ValueError(f"layout.fields reference unregistered fonts (add to ``fonts``): {missing}")
         return self

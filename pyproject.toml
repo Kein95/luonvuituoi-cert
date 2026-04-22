@@ -10,7 +10,13 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
-ignore = ["E501"]
+ignore = [
+    "E501",  # line length — formatter handles this
+    "B008",  # typer.Option in defaults is the idiomatic Typer pattern
+    "B905",  # zip(strict=...) — noisy false-positive for simple helpers
+    "UP007",  # typing.Union vs X | Y — some Pydantic codepaths still need Union
+    "UP042",  # StrEnum upgrade — deferred; our str-Enum works fine on 3.11
+]
 
 [tool.mypy]
 python_version = "3.11"

@@ -27,7 +27,9 @@ def dev(
     try:
         from luonvuitoi_cert_cli.server import build_app
     except ImportError as e:
-        console.print(f"[red]ERR[/] Flask isn't installed: {e}\n  run [cyan]pip install 'luonvuitoi-cert-cli[dev]'[/]")
+        console.print(
+            f"[red]ERR[/] Flask isn't installed: {e}\n  run [cyan]pip install 'luonvuitoi-cert-cli[dev]'[/]"
+        )
         raise typer.Exit(code=1) from e
 
     config_path = config_path.expanduser().resolve()

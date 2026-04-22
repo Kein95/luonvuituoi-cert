@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.locale import load_locale
 from luonvuitoi_cert.ui import render_admin_page, render_student_portal_page

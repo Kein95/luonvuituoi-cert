@@ -5,7 +5,6 @@ from __future__ import annotations
 import sqlite3
 
 import pytest
-
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.storage import SchemaError, build_schema, render_create_sql
 

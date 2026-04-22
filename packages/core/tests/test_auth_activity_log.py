@@ -9,7 +9,9 @@ from luonvuitoi_cert.auth.activity_log import ActivityLog, log_admin_action, res
 
 def test_log_and_recent_roundtrip(tmp_path: Path) -> None:
     log = ActivityLog(tmp_path / "db.sqlite")
-    log_admin_action(log, user_id="u1", user_email="a@b.co", action="student.update", target_id="s:1", metadata={"k": "v"})
+    log_admin_action(
+        log, user_id="u1", user_email="a@b.co", action="student.update", target_id="s:1", metadata={"k": "v"}
+    )
     log_admin_action(log, user_id="u1", user_email="a@b.co", action="login", target_id=None)
     entries = log.recent(limit=10)
     assert len(entries) == 2

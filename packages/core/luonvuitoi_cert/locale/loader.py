@@ -37,7 +37,7 @@ class LocaleError(Exception):
 class Locale:
     """In-memory view of one locale bundle (loaded JSON dict)."""
 
-    def __init__(self, code: str, data: dict[str, Any], fallback: "Locale | None" = None) -> None:
+    def __init__(self, code: str, data: dict[str, Any], fallback: Locale | None = None) -> None:
         self.code = code
         self._data = data
         self._fallback = fallback

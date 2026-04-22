@@ -29,10 +29,12 @@ def _normalize_email(email: str) -> str:
 
 def _hash_code(code: str, email: str) -> str:
     """Salt the code with the email so two users can't collide on the same digits."""
-    return hashlib.sha256(f"{email}|{code}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"{email}|{code}".encode()).hexdigest()
 
 
-def issue_otp(kv: KVBackend, email_provider: EmailProvider, *, email: str, subject: str = "Your verification code") -> str:
+def issue_otp(
+    kv: KVBackend, email_provider: EmailProvider, *, email: str, subject: str = "Your verification code"
+) -> str:
     """Generate, store hashed, and email a fresh 6-digit code. Returns the ID client submits with verify."""
     email = _normalize_email(email)
     if "@" not in email:

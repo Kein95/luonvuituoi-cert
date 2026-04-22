@@ -69,9 +69,7 @@ def config_dict() -> dict:
         },
         "layout": {
             "page_size": [842, 595],
-            "fields": {
-                "name": {"x": 421, "y": 400, "font": "serif", "size": 24, "align": "center"}
-            },
+            "fields": {"name": {"x": 421, "y": 400, "font": "serif", "size": 24, "align": "center"}},
         },
         "fonts": {"serif": "assets/fonts/serif.ttf"},
     }

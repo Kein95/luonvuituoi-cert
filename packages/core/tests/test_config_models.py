@@ -10,10 +10,9 @@ from __future__ import annotations
 import copy
 
 import pytest
-from pydantic import ValidationError
-
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.config.models import Branding, Project
+from pydantic import ValidationError
 
 
 def _valid_raw() -> dict:
@@ -24,9 +23,7 @@ def _valid_raw() -> dict:
         "results": {"S": {"GOLD": 1, "SILVER": 2}},
         "layout": {
             "page_size": [842, 595],
-            "fields": {
-                "name": {"x": 421, "y": 300, "font": "serif", "size": 36, "align": "center"}
-            },
+            "fields": {"name": {"x": 421, "y": 300, "font": "serif", "size": 36, "align": "center"}},
         },
         "fonts": {"serif": "fonts/serif.ttf"},
     }

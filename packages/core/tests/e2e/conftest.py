@@ -41,9 +41,7 @@ DEMO_CONFIG = {
     },
     "layout": {
         "page_size": [842, 595],
-        "fields": {
-            "name": {"x": 421, "y": 330, "font": "serif", "size": 24, "align": "center"}
-        },
+        "fields": {"name": {"x": 421, "y": 330, "font": "serif", "size": 24, "align": "center"}},
     },
     "fonts": {"serif": "assets/fonts/serif.ttf"},
     "admin": {"auth_mode": "password", "multi_user": True},
@@ -61,10 +59,9 @@ def scaffolded_project(tmp_path: Path, _vera_ttf: Path) -> Path:
     """A complete, disk-backed demo project: config + font + template + keypair + seeded student."""
     import json
 
-    from reportlab.pdfgen import canvas
-
     from luonvuitoi_cert.config import load_config
     from luonvuitoi_cert.ingest import ingest_rows
+    from reportlab.pdfgen import canvas
 
     root = tmp_path / "e2e-root"
     root.mkdir()

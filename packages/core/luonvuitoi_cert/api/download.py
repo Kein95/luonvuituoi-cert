@@ -155,9 +155,7 @@ def download_certificate(
     )
     cert = _pick_certificate(result.certificates, round_id, subject_code)
 
-    qr_png = _maybe_sign_qr(
-        config, Path(project_root), result.sbd, cert, verify_url_builder, allow_raw_qr
-    )
+    qr_png = _maybe_sign_qr(config, Path(project_root), result.sbd, cert, verify_url_builder, allow_raw_qr)
 
     pdf_bytes = render_certificate_bytes(
         OverlayRequest(

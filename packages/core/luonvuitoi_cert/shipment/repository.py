@@ -50,9 +50,7 @@ def _validate_extra_fields(config: CertConfig, fields_patch: dict[str, object]) 
     allowed = set(config.features.shipment.fields)
     unknown = set(fields_patch) - allowed
     if unknown:
-        raise ShipmentError(
-            f"unknown shipment fields: {sorted(unknown)}; allowed: {sorted(allowed)}"
-        )
+        raise ShipmentError(f"unknown shipment fields: {sorted(unknown)}; allowed: {sorted(allowed)}")
     return {k: "" if v is None else str(v) for k, v in fields_patch.items()}
 
 
@@ -88,7 +86,7 @@ def upsert_shipment(
     """
     _validate_status(config, status)
     cleaned_fields = _validate_extra_fields(config, fields or {})
-    now = ((clock or _iso_now)() if callable(clock) else _iso_now())
+    now = (clock or _iso_now)() if callable(clock) else _iso_now()
     ensure_shipment_schema(db_path, config)
 
     extra_cols = list(config.features.shipment.fields)
@@ -113,7 +111,7 @@ def upsert_shipment(
         conn.row_factory = sqlite3.Row
         conn.execute(sql, insert_values)
         row = conn.execute(
-            'SELECT * FROM shipments WHERE round_id = ? AND sbd = ? LIMIT 1',
+            "SELECT * FROM shipments WHERE round_id = ? AND sbd = ? LIMIT 1",
             (round_id, sbd),
         ).fetchone()
     assert row is not None
@@ -128,7 +126,7 @@ def get_shipment(
     with closing(sqlite3.connect(str(Path(db_path).expanduser().resolve()))) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
-            'SELECT * FROM shipments WHERE round_id = ? AND sbd = ? LIMIT 1',
+            "SELECT * FROM shipments WHERE round_id = ? AND sbd = ? LIMIT 1",
             (round_id, sbd),
         ).fetchone()
     return _row_to_record(row, extra_cols) if row else None

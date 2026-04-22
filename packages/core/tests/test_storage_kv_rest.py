@@ -10,7 +10,6 @@ import json
 
 import httpx
 import pytest
-
 from luonvuitoi_cert.storage.kv import KVError, RestKV
 
 

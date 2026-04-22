@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 
 import pytest
-
 from luonvuitoi_cert.auth.admin_db import Role
 from luonvuitoi_cert.auth.tokens import TokenError, issue_admin_token, verify_admin_token
 
@@ -40,17 +39,13 @@ def test_wrong_secret_rejected() -> None:
         env={"JWT_SECRET": "secretA-padded-long-enough-for-sha256"},
     )
     with pytest.raises(TokenError):
-        verify_admin_token(
-            token, env={"JWT_SECRET": "secretB-padded-long-enough-for-sha256"}
-        )
+        verify_admin_token(token, env={"JWT_SECRET": "secretB-padded-long-enough-for-sha256"})
 
 
 def test_expired_token_rejected() -> None:
     env = _env()
     past = int(time.time()) - 100
-    token = issue_admin_token(
-        user_id="u1", email="a@b.co", role=Role.ADMIN, ttl_seconds=1, now=past, env=env
-    )
+    token = issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, ttl_seconds=1, now=past, env=env)
     with pytest.raises(TokenError, match="expired"):
         verify_admin_token(token, env=env)
 

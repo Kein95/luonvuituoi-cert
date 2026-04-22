@@ -36,7 +36,7 @@ class QRPayload:
         result: str,
         sbd: str,
         clock=None,  # type: ignore[no-untyped-def]
-    ) -> "QRPayload":
+    ) -> QRPayload:
         return cls(
             project_slug=project_slug,
             round_id=round_id,
@@ -51,7 +51,7 @@ class QRPayload:
         return json.dumps(asdict(self), sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     @classmethod
-    def from_json(cls, blob: bytes | str) -> "QRPayload":
+    def from_json(cls, blob: bytes | str) -> QRPayload:
         data = json.loads(blob)
         return cls(
             project_slug=str(data["project_slug"]),

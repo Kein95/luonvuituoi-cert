@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.auth.admin_db import (
     AdminUserError,
     Role,

@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-
 from luonvuitoi_cert.api.verify import VerifyError, verify_qr
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.qr import QRPayload, encode_blob, load_private_key, sign_payload
@@ -120,7 +119,11 @@ def test_bad_signature_rejected(qr_project) -> None:  # type: ignore[no-untyped-
 def test_qr_disabled_raises(qr_project) -> None:  # type: ignore[no-untyped-def]
     config, project_root, priv = qr_project
     disabled = config.model_copy(
-        update={"features": config.features.model_copy(update={"qr_verify": config.features.qr_verify.model_copy(update={"enabled": False})})}
+        update={
+            "features": config.features.model_copy(
+                update={"qr_verify": config.features.qr_verify.model_copy(update={"enabled": False})}
+            )
+        }
     )
     with pytest.raises(VerifyError, match="disabled"):
         verify_qr(config=disabled, project_root=project_root, blob=_make_blob(config, priv))
@@ -141,7 +144,11 @@ def test_expired_cert_rejected_when_max_age_set(qr_project) -> None:  # type: ig
     """Regression: Phase 07 review H1 — issued_at TTL is enforced."""
     config, project_root, priv = qr_project
     aged = config.model_copy(
-        update={"features": config.features.model_copy(update={"qr_verify": config.features.qr_verify.model_copy(update={"max_age_seconds": 3600})})}
+        update={
+            "features": config.features.model_copy(
+                update={"qr_verify": config.features.qr_verify.model_copy(update={"max_age_seconds": 3600})}
+            )
+        }
     )
     # Issue a cert stamped 2 days ago.
     blob = _make_blob(aged, priv, issued_at=1_700_000_000)
@@ -153,7 +160,11 @@ def test_expired_cert_rejected_when_max_age_set(qr_project) -> None:  # type: ig
 def test_future_dated_cert_rejected(qr_project) -> None:  # type: ignore[no-untyped-def]
     config, project_root, priv = qr_project
     aged = config.model_copy(
-        update={"features": config.features.model_copy(update={"qr_verify": config.features.qr_verify.model_copy(update={"max_age_seconds": 3600})})}
+        update={
+            "features": config.features.model_copy(
+                update={"qr_verify": config.features.qr_verify.model_copy(update={"max_age_seconds": 3600})}
+            )
+        }
     )
     blob = _make_blob(aged, priv, issued_at=1_700_000_000 + 10_000)
     resp = verify_qr(config=aged, project_root=project_root, blob=blob, clock=lambda: 1_700_000_000)

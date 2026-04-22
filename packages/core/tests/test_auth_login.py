@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.auth import (
     LoginError,
     NullEmailProvider,

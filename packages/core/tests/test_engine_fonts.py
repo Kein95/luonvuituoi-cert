@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.engine.fonts import FontRegistry, FontRegistryError
 
 
@@ -54,8 +53,9 @@ def test_same_key_different_paths_do_not_collide(tmp_path: Path, config_dict: di
     import reportlab as rl
 
     rl_fonts = Path(rl.__file__).parent / "fonts"
-    from luonvuitoi_cert.config import CertConfig
     import shutil as _sh
+
+    from luonvuitoi_cert.config import CertConfig
 
     root_a = tmp_path / "a"
     root_b = tmp_path / "b"

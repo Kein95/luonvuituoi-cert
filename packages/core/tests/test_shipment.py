@@ -6,7 +6,6 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.shipment import (
     ShipmentError,
@@ -156,7 +155,9 @@ def test_upsert_updates_existing_record(tmp_path: Path) -> None:
     cfg = _cfg()
     db = tmp_path / "ship.db"
     upsert_shipment(db, cfg, round_id="main", sbd="12345", status="pending", fields={"tracking_code": "A"})
-    rec = upsert_shipment(db, cfg, round_id="main", sbd="12345", status="delivered", fields={"carrier": "GHN"})
+    rec = upsert_shipment(
+        db, cfg, round_id="main", sbd="12345", status="delivered", fields={"carrier": "GHN"}
+    )
     assert rec.status == "delivered"
     assert rec.fields["tracking_code"] == "A"  # previous value preserved
     assert rec.fields["carrier"] == "GHN"

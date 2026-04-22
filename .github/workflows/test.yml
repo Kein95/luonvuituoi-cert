@@ -7,9 +7,11 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  pytest:
+    name: pytest (py ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
     steps:
@@ -21,31 +23,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Install core (editable)
-        run: pip install -e ./packages/core[dev]
-
-      - name: Install cli (editable)
-        run: pip install -e ./packages/cli
-
-      - name: Run pytest
-        run: pytest -ra
-
-  e2e:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-      - run: pip install -e ./packages/core[dev,e2e] -e ./packages/cli
-      - run: playwright install --with-deps chromium
-      - name: Scaffold + run demo
+      - name: Install core + cli (editable, with dev extras)
         run: |
-          lvt-cert init /tmp/demo --example demo-academy --non-interactive
-          cd /tmp/demo
-          lvt-cert seed
-          nohup lvt-cert dev --port 5555 &
-          sleep 5
-          pytest tests/e2e || true
+          pip install --upgrade pip
+          pip install -e ./packages/core[dev] -e ./packages/cli
+
+      - name: Run unit + E2E test suite
+        env:
+          JWT_SECRET: ci-default-secret-padded-to-32-bytes-min
+        run: pytest -ra --tb=short
+
+      - name: Verify scaffolder scaffold round-trips
+        run: |
+          lvt-cert init /tmp/smoke --slug ci-smoke --non-interactive
+          test -f /tmp/smoke/cert.config.json
+          test -f /tmp/smoke/api/index.py
+          test -f /tmp/smoke/vercel.json

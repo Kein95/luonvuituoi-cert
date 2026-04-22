@@ -12,12 +12,9 @@ import json
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.config import load_config
 
-EXAMPLE_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent / "examples" / "demo-academy"
-)
+EXAMPLE_DIR = Path(__file__).resolve().parent.parent.parent.parent / "examples" / "demo-academy"
 
 
 @pytest.mark.skipif(

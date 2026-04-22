@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from luonvuitoi_cert.auth.passwords import hash_password, verify_password
 
 

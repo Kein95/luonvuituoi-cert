@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 from jinja2 import Environment
-
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.locale import load_locale
 from luonvuitoi_cert.ui import (
@@ -59,7 +58,14 @@ def test_render_certificate_checker_returns_html() -> None:
 
 
 def test_render_uses_branding_colors() -> None:
-    cfg = _cfg(project={"name": "X", "slug": "x", "locale": "en", "branding": {"primary_color": "#663399", "accent_color": "#ffcc00"}})
+    cfg = _cfg(
+        project={
+            "name": "X",
+            "slug": "x",
+            "locale": "en",
+            "branding": {"primary_color": "#663399", "accent_color": "#ffcc00"},
+        }
+    )
     html = render_certificate_checker_page(config=cfg, locale=load_locale("en"))
     assert "#663399" in html
     assert "#ffcc00" in html
@@ -122,9 +128,7 @@ def test_branding_logo_url_rejects_javascript_uri() -> None:
 
 def test_branding_logo_url_accepts_safe_schemes() -> None:
     for url in ("/static/logo.png", "https://cdn/img.png", "http://x/y.png", "data:image/png;base64,iVBOR"):
-        cfg = _cfg(
-            project={"name": "X", "slug": "x", "locale": "en", "branding": {"logo_url": url}}
-        )
+        cfg = _cfg(project={"name": "X", "slug": "x", "locale": "en", "branding": {"logo_url": url}})
         assert cfg.project.branding.logo_url == url
 
 

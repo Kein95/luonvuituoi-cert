@@ -43,7 +43,7 @@ def _burn_equivalent_kv_write(kv: KVBackend, email: str) -> None:
     the outward-facing response is identical (``challenge_issued=True``).
     """
     decoy_code = secrets.token_urlsafe(6)
-    hashlib.sha256(f"{email}|{decoy_code}".encode("utf-8")).hexdigest()
+    hashlib.sha256(f"{email}|{decoy_code}".encode()).hexdigest()
     kv.set(
         f"decoy:{secrets.token_urlsafe(12)}",
         decoy_code,

@@ -13,8 +13,8 @@ values can be mixed numeric/string without penalty. Handlers cast when needed.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.config.models import _SQL_IDENT

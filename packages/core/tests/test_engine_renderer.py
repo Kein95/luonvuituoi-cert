@@ -5,9 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pypdf import PdfReader
-
 from luonvuitoi_cert.engine import OverlayError, OverlayRequest, render_certificate_bytes
+from pypdf import PdfReader
 
 
 def _make_request(config, project_root: Path, page: int = 1, **values: str) -> OverlayRequest:  # type: ignore[no-untyped-def]

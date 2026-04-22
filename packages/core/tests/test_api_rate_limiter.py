@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from luonvuitoi_cert.api.rate_limiter import RateLimitError, check_rate_limit
 
 

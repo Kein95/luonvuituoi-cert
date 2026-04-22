@@ -21,9 +21,10 @@ The orchestrator owns three concerns:
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterable
 from contextlib import closing
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Literal
 
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.ingest.base import IngestError, IngestResult
@@ -55,8 +56,7 @@ def _find_round_table(config: CertConfig, round_id: str) -> str:
         if r.id == round_id:
             return r.table
     raise IngestError(
-        f"round_id {round_id!r} not found in config.rounds "
-        f"(available: {[r.id for r in config.rounds]})"
+        f"round_id {round_id!r} not found in config.rounds (available: {[r.id for r in config.rounds]})"
     )
 
 

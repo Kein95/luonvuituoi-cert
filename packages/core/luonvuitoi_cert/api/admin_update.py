@@ -48,9 +48,7 @@ def _find_round_table(config: CertConfig, round_id: str) -> str:
     for r in config.rounds:
         if r.id == round_id:
             return r.table
-    raise AdminUpdateError(
-        f"unknown round_id {round_id!r}; available: {[r.id for r in config.rounds]}"
-    )
+    raise AdminUpdateError(f"unknown round_id {round_id!r}; available: {[r.id for r in config.rounds]}")
 
 
 def update_student_field(
@@ -93,9 +91,7 @@ def update_student_field(
 
     with closing(sqlite3.connect(str(Path(db_path).expanduser().resolve()))) as conn, conn:
         conn.row_factory = sqlite3.Row
-        existing = conn.execute(
-            f'SELECT * FROM "{table}" WHERE "{sbd_col}" = ? LIMIT 1', (sbd,)
-        ).fetchone()
+        existing = conn.execute(f'SELECT * FROM "{table}" WHERE "{sbd_col}" = ? LIMIT 1', (sbd,)).fetchone()
         if existing is None:
             raise AdminUpdateError(f"no row in {table!r} with {sbd_col}={sbd!r}")
         old_value = str(existing[column] or "")

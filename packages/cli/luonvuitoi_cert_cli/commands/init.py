@@ -59,9 +59,7 @@ def _render_context(name: str, slug: str, locale: str) -> dict[str, str]:
 
 def _validate_slug_or_exit(slug: str) -> None:
     if not _SLUG_RE.match(slug):
-        console.print(
-            f"[red]ERR[/] slug {slug!r} must be lowercase kebab-case (e.g. ``demo-academy``)."
-        )
+        console.print(f"[red]ERR[/] slug {slug!r} must be lowercase kebab-case (e.g. ``demo-academy``).")
         raise typer.Exit(code=2)
 
 

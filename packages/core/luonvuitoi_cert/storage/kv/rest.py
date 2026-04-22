@@ -34,7 +34,7 @@ class RestKV:
         )
 
     @classmethod
-    def from_upstash_env(cls, env: dict[str, str]) -> "RestKV":
+    def from_upstash_env(cls, env: dict[str, str]) -> RestKV:
         url = env.get("UPSTASH_REDIS_REST_URL", "")
         token = env.get("UPSTASH_REDIS_REST_TOKEN", "")
         if not url or not token:
@@ -42,7 +42,7 @@ class RestKV:
         return cls(url, token)
 
     @classmethod
-    def from_vercel_env(cls, env: dict[str, str]) -> "RestKV":
+    def from_vercel_env(cls, env: dict[str, str]) -> RestKV:
         url = env.get("KV_REST_API_URL", "")
         token = env.get("KV_REST_API_TOKEN", "")
         if not url or not token:
@@ -59,9 +59,7 @@ class RestKV:
         try:
             body = resp.json()
         except ValueError as e:
-            raise KVError(
-                f"RestKV returned non-JSON body (status={resp.status_code}): {e}"
-            ) from e
+            raise KVError(f"RestKV returned non-JSON body (status={resp.status_code}): {e}") from e
         if isinstance(body, dict) and "error" in body:
             raise KVError(f"RestKV command error: {body['error']}")
         return body.get("result") if isinstance(body, dict) else body

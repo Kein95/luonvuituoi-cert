@@ -6,7 +6,6 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.api.admin_update import AdminUpdateError, update_student_field
 from luonvuitoi_cert.auth import ActivityLog, Role, issue_admin_token
 

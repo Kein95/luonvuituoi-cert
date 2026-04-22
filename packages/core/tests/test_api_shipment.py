@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.api.captcha import issue_challenge
 from luonvuitoi_cert.api.rate_limiter import RateLimitError
 from luonvuitoi_cert.api.security import SecurityError
@@ -251,7 +250,11 @@ def test_public_lookup_unknown_student(tmp_path: Path, kv_memory) -> None:  # ty
     db = tmp_path / "s.db"
     with pytest.raises(ShipmentHandlerError, match="no shipment"):
         lookup_shipment(
-            config=cfg, db_path=db, kv=kv_memory, params=_lookup_params(kv_memory, sbd="99999"), client_id="ip-1"
+            config=cfg,
+            db_path=db,
+            kv=kv_memory,
+            params=_lookup_params(kv_memory, sbd="99999"),
+            client_id="ip-1",
         )
 
 

@@ -1,0 +1,62 @@
+name: build-examples
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "packages/**"
+      - ".github/workflows/build-examples.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "packages/**"
+
+jobs:
+  demo-academy:
+    name: examples/demo-academy builds + serves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install core + cli
+        run: |
+          pip install --upgrade pip
+          pip install -e ./packages/core -e ./packages/cli
+
+      - name: Provision demo assets
+        run: |
+          cd examples/demo-academy
+          python prepare_demo.py
+          lvt-cert gen-keys
+          test -f templates/main.pdf
+          test -f assets/fonts/serif.ttf
+          test -f assets/fonts/script.ttf
+          test -f data/students.xlsx
+          test -f private_key.pem
+          test -f public_key.pem
+
+      - name: Smoke-test the Flask app
+        env:
+          JWT_SECRET: ci-default-secret-padded-to-32-bytes-min
+          PUBLIC_BASE_URL: http://127.0.0.1:5000
+        run: |
+          cd examples/demo-academy
+          python - <<'PY'
+          from pathlib import Path
+          from luonvuitoi_cert_cli.server import build_app
+
+          app = build_app(Path("cert.config.json"), Path("."))
+          client = app.test_client()
+          for path in ("/", "/admin", "/certificate-checker"):
+              resp = client.get(path)
+              assert resp.status_code == 200, (path, resp.status_code)
+          captcha = client.post("/api/captcha")
+          assert captcha.status_code == 200 and "id" in captcha.get_json()
+          print("demo-academy smoke OK")
+          PY

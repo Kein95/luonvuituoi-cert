@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 
 import pytest
-
 from luonvuitoi_cert.api.captcha import issue_challenge
 from luonvuitoi_cert.api.rate_limiter import RateLimitError
 from luonvuitoi_cert.api.search import SearchError, search_student

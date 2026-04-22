@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
@@ -76,7 +75,9 @@ def test_search_rate_limit_kicks_in(live_server: str, captcha_solver) -> None:  
     assert "Retry-After" in resp.headers
 
 
-def test_download_emits_pdf_with_qr_and_verifies(live_server: str, captcha_solver, scaffolded_project: Path) -> None:  # type: ignore[no-untyped-def]
+def test_download_emits_pdf_with_qr_and_verifies(
+    live_server: str, captcha_solver, scaffolded_project: Path
+) -> None:  # type: ignore[no-untyped-def]
     challenge = captcha_solver(live_server)
     resp = httpx.post(
         live_server + "/api/download",
@@ -142,9 +143,7 @@ def test_verify_url_honors_public_base_url(live_server: str, monkeypatch) -> Non
         # We don't fully exercise the magic-link email here; just confirm the
         # _public_base_url helper reads the env in request context.
         from luonvuitoi_cert_cli.server.app import _public_base_url
-
         from werkzeug.test import EnvironBuilder
-        from werkzeug.wrappers import Request
 
         builder = EnvironBuilder(method="POST", path="/x", headers={"Host": "evil.example"})
         env = builder.get_environ()

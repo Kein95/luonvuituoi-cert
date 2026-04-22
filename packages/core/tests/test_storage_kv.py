@@ -9,7 +9,6 @@ import time
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.storage.kv import KVError, LocalFileKV, MemoryKV, open_kv
 

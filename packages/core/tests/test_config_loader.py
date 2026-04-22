@@ -12,7 +12,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.config import CertConfig, load_config, load_config_dict
 from luonvuitoi_cert.config.loader import ConfigError
 

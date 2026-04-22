@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import httpx
 import pytest
 
@@ -11,9 +9,7 @@ pytestmark = pytest.mark.e2e
 
 
 def _login(base_url: str, email: str = "e2e@admin.test", password: str = "hunter2-long-enough") -> str:
-    resp = httpx.post(
-        base_url + "/api/admin/login", json={"email": email, "password": password}
-    )
+    resp = httpx.post(base_url + "/api/admin/login", json={"email": email, "password": password})
     assert resp.status_code == 200, resp.text
     token = resp.json().get("token")
     assert token
@@ -63,7 +59,8 @@ def test_admin_search_invalid_jwt_rejected(live_server: str) -> None:
 
 
 def test_shipment_upsert_then_public_lookup(
-    live_server: str, captcha_solver  # type: ignore[no-untyped-def]
+    live_server: str,
+    captcha_solver,  # type: ignore[no-untyped-def]
 ) -> None:
     token = _login(live_server)
     # Admin writes the shipment row.

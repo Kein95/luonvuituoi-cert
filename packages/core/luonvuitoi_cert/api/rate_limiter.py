@@ -38,7 +38,7 @@ def check_rate_limit(
     *,
     limit: int,
     window_seconds: int = 60,
-    clock: "callable[[], float] | None" = None,  # type: ignore[type-arg]
+    clock: callable[[], float] | None = None,  # type: ignore[type-arg]
 ) -> RateLimitStatus:
     """Record a request and raise :class:`RateLimitError` if it exceeds ``limit``.
 
@@ -65,8 +65,7 @@ def check_rate_limit(
 
     if current >= limit:
         raise RateLimitError(
-            f"rate limit exceeded for {scope!r} (identifier={identifier!r}); "
-            f"retry in {retry_after}s",
+            f"rate limit exceeded for {scope!r} (identifier={identifier!r}); retry in {retry_after}s",
             retry_after_seconds=retry_after,
         )
 

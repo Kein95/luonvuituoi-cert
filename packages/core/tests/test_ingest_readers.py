@@ -6,10 +6,8 @@ import json
 from pathlib import Path
 
 import pytest
-from openpyxl import Workbook
-
 from luonvuitoi_cert.ingest import IngestError, read_csv, read_excel, read_json
-
+from openpyxl import Workbook
 
 # ── Excel ───────────────────────────────────────────────────────────
 

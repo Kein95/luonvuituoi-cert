@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import re
-import time
 
 import pytest
-
 from luonvuitoi_cert.api.captcha import (
-    CAPTCHA_TTL_SECONDS,
     KV_PREFIX,
     CaptchaError,
     issue_challenge,

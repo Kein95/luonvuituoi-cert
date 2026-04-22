@@ -16,7 +16,6 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 
 from flask import Flask, Response, g, jsonify, make_response, request
-
 from luonvuitoi_cert import api as handlers
 from luonvuitoi_cert.api.admin_update import AdminUpdateError
 from luonvuitoi_cert.auth import (
@@ -167,12 +166,14 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
         result = handlers.search_student(
             config=config, db_path=db_path, kv=kv, params=params, client_id=_client_id(), mode=mode
         )
-        return jsonify({
-            "sbd": result.sbd,
-            "name": result.name,
-            "fields": result.fields,
-            "certificates": [_to_jsonable(c) for c in result.certificates],
-        })
+        return jsonify(
+            {
+                "sbd": result.sbd,
+                "name": result.name,
+                "fields": result.fields,
+                "certificates": [_to_jsonable(c) for c in result.certificates],
+            }
+        )
 
     @app.post("/api/download")
     def _download():  # type: ignore[no-untyped-def]

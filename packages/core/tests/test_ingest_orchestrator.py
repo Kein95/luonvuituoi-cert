@@ -6,7 +6,6 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.ingest import IngestError, ingest_rows
 

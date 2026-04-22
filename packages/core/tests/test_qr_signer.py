@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-
 from luonvuitoi_cert.qr import (
     CodecError,
     QRPayload,
@@ -62,7 +61,14 @@ def test_sign_verify_roundtrip(keypair: tuple[Path, Path]) -> None:
 def test_tampered_payload_rejected(keypair: tuple[Path, Path]) -> None:
     priv, pub = keypair
     sig = sign_payload(load_private_key(priv), _payload())
-    tampered = QRPayload(project_slug="demo", round_id="main", subject_code="S", result="SILVER", sbd="12345", issued_at=1_700_000_000)
+    tampered = QRPayload(
+        project_slug="demo",
+        round_id="main",
+        subject_code="S",
+        result="SILVER",
+        sbd="12345",
+        issued_at=1_700_000_000,
+    )
     with pytest.raises(SignatureError):
         verify_payload(load_public_key(pub), tampered, sig)
 

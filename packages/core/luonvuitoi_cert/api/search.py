@@ -139,9 +139,7 @@ def _collect_certificates(
 # ── Public entry points ─────────────────────────────────────────────
 
 
-def _verify_student_gate(
-    kv: KVBackend, params: dict[str, Any], client_id: str
-) -> None:
+def _verify_student_gate(kv: KVBackend, params: dict[str, Any], client_id: str) -> None:
     """CAPTCHA first, rate-limit after — a wrong guess must not burn the caller's quota.
 
     Ordering rationale: the CAPTCHA is single-use and consumed on failure, so
@@ -151,12 +149,12 @@ def _verify_student_gate(
     itself is rate-limited at the transport layer (Phase 07).
     """
     verify_challenge(kv, str(params.get("captcha_id", "")), params.get("captcha_answer"))
-    check_rate_limit(kv, "search", client_id, limit=STUDENT_RATE_LIMIT, window_seconds=STUDENT_RATE_WINDOW_SECONDS)
+    check_rate_limit(
+        kv, "search", client_id, limit=STUDENT_RATE_LIMIT, window_seconds=STUDENT_RATE_WINDOW_SECONDS
+    )
 
 
-def _match_predicate(
-    config: CertConfig, row: dict[str, str], params: dict[str, Any]
-) -> bool:
+def _match_predicate(config: CertConfig, row: dict[str, str], params: dict[str, Any]) -> bool:
     mode = config.student_search.mode
     m = config.data_mapping
     if mode == "name_dob_captcha":

@@ -27,7 +27,9 @@ def _format_validation_error(err: ValidationError, source: str | None = None) ->
     every error (noisy for end users) and never echoes the raw input (which may
     contain secrets). Groups multiple errors with a leading bullet per field.
     """
-    header = f"cert.config.json failed validation ({source})" if source else "cert.config.json failed validation"
+    header = (
+        f"cert.config.json failed validation ({source})" if source else "cert.config.json failed validation"
+    )
     lines = [header + ":"]
     for e in err.errors():
         loc = ".".join(str(p) for p in e.get("loc", ())) or "<root>"

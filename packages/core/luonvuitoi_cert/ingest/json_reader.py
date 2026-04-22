@@ -14,7 +14,6 @@ from typing import Any
 
 from luonvuitoi_cert.ingest.base import IngestError
 
-
 _ENVELOPE_KEYS = ("records", "data", "students", "rows")
 
 
@@ -26,8 +25,7 @@ def _unwrap(raw: Any) -> list[dict[str, Any]]:
             if isinstance(raw.get(key), list):
                 return raw[key]  # type: ignore[no-any-return]
     raise IngestError(
-        f"JSON root must be a list or an object with one of {_ENVELOPE_KEYS!r}; "
-        f"got {type(raw).__name__}"
+        f"JSON root must be a list or an object with one of {_ENVELOPE_KEYS!r}; got {type(raw).__name__}"
     )
 
 
