@@ -59,6 +59,13 @@ extra_css:
 
 extra:
   generator: false
+  alternate:
+    - name: English
+      link: /luonvuituoi-cert/
+      lang: en
+    - name: Tiếng Việt
+      link: /luonvuituoi-cert/vi/
+      lang: vi
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/Kein95/luonvuituoi-cert
