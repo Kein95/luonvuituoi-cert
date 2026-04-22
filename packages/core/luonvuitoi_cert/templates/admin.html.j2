@@ -1,0 +1,186 @@
+{% extends "base.html.j2" %}
+
+{% block title %}{{ t("admin.title", default="Admin Panel") }} — {{ project.name }}{% endblock %}
+
+{% block main %}
+<section id="login-card" class="card">
+  <h2>{{ t("admin.title", default="Admin Panel") }}</h2>
+  <p class="subtitle">{{ t("admin.login_subtitle", default="Sign in with your admin account.") }}</p>
+
+  <form id="login-form" autocomplete="off">
+    <label for="email">{{ t("admin.label_email", default="Email") }}</label>
+    <input id="email" name="email" type="email" autocomplete="username" required maxlength="120">
+    {% if auth_mode == "password" %}
+      <label for="password" style="margin-top:12px;">{{ t("admin.label_password", default="Password") }}</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+    {% endif %}
+    {% if auth_mode == "otp_email" %}
+      <label for="code" id="code-label" style="margin-top:12px; display:none;">{{ t("admin.label_otp", default="Verification code") }}</label>
+      <input id="code" name="code" type="text" inputmode="numeric" maxlength="6" style="display:none;">
+    {% endif %}
+    <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+      <button type="submit" id="submit-btn">{{ t("admin.sign_in", default="Sign in") }}</button>
+      <span id="status" class="badge" role="status" aria-live="polite" hidden></span>
+    </div>
+  </form>
+</section>
+
+<section id="dashboard" class="card" role="region" aria-live="polite" hidden>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 id="dashboard-title">{{ t("admin.title", default="Admin Panel") }}</h2>
+    <button type="button" id="sign-out">{{ t("admin.sign_out", default="Sign out") }}</button>
+  </div>
+  <p id="dashboard-user" class="subtitle"></p>
+
+  <h3 style="margin-top:20px; font-size:1.05rem;">{{ t("admin.students", default="Students") }}</h3>
+  <form id="lookup-form">
+    <label for="lookup-sbd">{{ t("search.label_registration", default="Registration number") }}</label>
+    <div style="display:flex; gap:10px;">
+      <input id="lookup-sbd" type="text" required maxlength="64">
+      <button type="submit">{{ t("portal.search_button", default="Search") }}</button>
+    </div>
+  </form>
+  <div id="lookup-result" style="margin-top:16px;" hidden>
+    <dl id="lookup-fields"></dl>
+    <p id="lookup-reason" class="reason" hidden></p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  const endpoints = {
+    login: {{ login_endpoint | tojson }},
+    search: {{ search_endpoint | tojson }},
+  };
+  const authMode = {{ auth_mode | tojson }};
+  const labels = {
+    invalid: {{ t("errors.invalid_credentials", default="Invalid credentials.") | tojson }},
+    otpSent: {{ t("admin.otp_sent", default="Check your email for a verification code.") | tojson }},
+    magicSent: {{ t("admin.magic_sent", default="Check your email for a sign-in link.") | tojson }},
+  };
+  const TOKEN_KEY = "lvt_admin_token";
+
+  const loginCard = document.getElementById("login-card");
+  const loginForm = document.getElementById("login-form");
+  const loginBtn = document.getElementById("submit-btn");
+  const loginBadge = document.getElementById("status");
+  const dashboard = document.getElementById("dashboard");
+  const dashboardUser = document.getElementById("dashboard-user");
+  const signOutBtn = document.getElementById("sign-out");
+  const lookupForm = document.getElementById("lookup-form");
+  const lookupSbd = document.getElementById("lookup-sbd");
+  const lookupResult = document.getElementById("lookup-result");
+  const lookupFields = document.getElementById("lookup-fields");
+  const lookupReason = document.getElementById("lookup-reason");
+
+  function readToken() {
+    try { return sessionStorage.getItem(TOKEN_KEY) || ""; } catch (_) { return ""; }
+  }
+  function writeToken(t) {
+    try { t ? sessionStorage.setItem(TOKEN_KEY, t) : sessionStorage.removeItem(TOKEN_KEY); } catch (_) { /* noop */ }
+  }
+
+  function showBadge(ok, text) {
+    loginBadge.hidden = false;
+    loginBadge.classList.remove("ok", "bad");
+    loginBadge.classList.add(ok ? "ok" : "bad");
+    loginBadge.textContent = text;
+  }
+
+  function enterDashboard(token, email) {
+    writeToken(token);
+    loginCard.hidden = true;
+    dashboard.hidden = false;
+    dashboardUser.textContent = email || "";
+  }
+
+  function exitDashboard() {
+    writeToken("");
+    loginCard.hidden = false;
+    dashboard.hidden = true;
+    loginBadge.hidden = true;
+    loginForm.reset();
+  }
+
+  async function submitLogin(event) {
+    event.preventDefault();
+    loginBtn.disabled = true;
+    showBadge(true, "…");
+    const payload = Object.fromEntries(new FormData(loginForm).entries());
+    try {
+      const resp = await fetch(endpoints.login, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        showBadge(false, "✗");
+        loginBadge.textContent = data.error || labels.invalid;
+        return;
+      }
+      if (data.challenge_issued) {
+        showBadge(true, authMode === "otp_email" ? labels.otpSent : labels.magicSent);
+        if (authMode === "otp_email") {
+          document.getElementById("code").style.display = "";
+          document.getElementById("code-label").style.display = "";
+        }
+        return;
+      }
+      if (data.token) {
+        enterDashboard(data.token, payload.email);
+      }
+    } catch (err) {
+      showBadge(false, "✗");
+    } finally {
+      loginBtn.disabled = false;
+    }
+  }
+
+  async function submitLookup(event) {
+    event.preventDefault();
+    lookupResult.hidden = false;
+    lookupFields.innerHTML = "";
+    lookupReason.hidden = true;
+    const token = readToken();
+    if (!token) { exitDashboard(); return; }
+    try {
+      const resp = await fetch(endpoints.search, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sbd: lookupSbd.value.trim(), token, mode: "admin" }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        lookupReason.hidden = false;
+        lookupReason.textContent = data.error || labels.invalid;
+        return;
+      }
+      for (const [k, v] of Object.entries(data.fields || {})) {
+        if (!v) continue;
+        const dt = document.createElement("dt");
+        dt.textContent = k;
+        const dd = document.createElement("dd");
+        dd.textContent = v;
+        lookupFields.appendChild(dt);
+        lookupFields.appendChild(dd);
+      }
+    } catch (err) {
+      lookupReason.hidden = false;
+      lookupReason.textContent = "network error";
+    }
+  }
+
+  signOutBtn.addEventListener("click", exitDashboard);
+  loginForm.addEventListener("submit", submitLogin);
+  lookupForm.addEventListener("submit", submitLookup);
+
+  if (readToken()) {
+    enterDashboard(readToken(), "");
+  }
+})();
+</script>
+{% endblock %}

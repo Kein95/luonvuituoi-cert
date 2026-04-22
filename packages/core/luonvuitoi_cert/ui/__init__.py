@@ -12,7 +12,9 @@ config value or a user request without explicit justification.
 
 from luonvuitoi_cert.ui.pages import (
     PageRenderError,
+    render_admin_page,
     render_certificate_checker_page,
+    render_student_portal_page,
 )
 from luonvuitoi_cert.ui.templates import build_environment, build_page_context
 
@@ -20,5 +22,7 @@ __all__ = [
     "PageRenderError",
     "build_environment",
     "build_page_context",
+    "render_admin_page",
     "render_certificate_checker_page",
+    "render_student_portal_page",
 ]

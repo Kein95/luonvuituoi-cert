@@ -1,0 +1,219 @@
+{% extends "base.html.j2" %}
+
+{% block title %}{{ t("portal.title", default="Certificate Portal") }} — {{ project.name }}{% endblock %}
+
+{% block main %}
+<section class="card">
+  <h2>{{ t("portal.title", default="Certificate Portal") }}</h2>
+  <p class="subtitle">{{ t("portal.subtitle", default="Look up and download your certificate") }}</p>
+  <form id="search-form" autocomplete="off">
+    {% if search_mode == "name_dob_captcha" %}
+      <label for="name">{{ t("search.label_name", default="Full name") }}</label>
+      <input id="name" name="name" type="text" required maxlength="120" autocomplete="off">
+      <label for="dob" style="margin-top:12px;">{{ t("search.label_dob", default="Date of birth") }}</label>
+      <input id="dob" name="dob" type="text" placeholder="DD-MM-YYYY" required>
+      <label for="sbd" style="margin-top:12px;">{{ t("search.label_registration", default="Registration number") }}</label>
+      <input id="sbd" name="sbd" type="text" required maxlength="64">
+    {% elif search_mode == "name_sbd_captcha" %}
+      <label for="name">{{ t("search.label_name", default="Full name") }}</label>
+      <input id="name" name="name" type="text" required maxlength="120">
+      <label for="sbd" style="margin-top:12px;">{{ t("search.label_registration", default="Registration number") }}</label>
+      <input id="sbd" name="sbd" type="text" required maxlength="64">
+    {% elif search_mode == "sbd_phone" %}
+      <label for="sbd">{{ t("search.label_registration", default="Registration number") }}</label>
+      <input id="sbd" name="sbd" type="text" required maxlength="64">
+      <label for="phone" style="margin-top:12px;">{{ t("search.label_phone", default="Phone (last 4 digits)") }}</label>
+      <input id="phone" name="phone" type="text" required inputmode="numeric" maxlength="20">
+    {% endif %}
+
+    {% if captcha_required %}
+    <div id="captcha-block" style="margin-top:12px;">
+      <label for="captcha-answer">{{ t("portal.captcha_label", default="Please solve the captcha") }}</label>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span id="captcha-question" style="font-family:ui-monospace,monospace; font-weight:600;"></span>
+        <input id="captcha-answer" name="captcha-answer" type="text" inputmode="numeric" required style="max-width:120px;">
+        <button type="button" id="refresh-captcha" aria-label="{{ t('portal.captcha_refresh', default='Refresh') }}">⟳</button>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+      <button type="submit" id="submit-btn">{{ t("portal.search_button", default="Search") }}</button>
+      <span id="status" class="badge" role="status" aria-live="polite" hidden></span>
+    </div>
+  </form>
+</section>
+
+<section id="result" class="card" role="region" aria-live="polite" aria-atomic="true" hidden>
+  <h2 id="result-title"></h2>
+  <p id="result-reason" class="reason" hidden></p>
+  <dl id="student-fields"></dl>
+  <h3 style="margin-top:20px; font-size:1.05rem;">{{ t("portal.available_certs", default="Available certificates") }}</h3>
+  <ul id="cert-list" style="list-style:none; padding:0; margin:8px 0 0;"></ul>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  const searchEndpoint = {{ search_endpoint | tojson }};
+  const downloadEndpoint = {{ download_endpoint | tojson }};
+  const captchaEndpoint = {{ captcha_endpoint | tojson }};
+  const captchaRequired = {{ captcha_required | tojson }};
+  const labels = {
+    download: {{ t("portal.download_button", default="Download") | tojson }},
+    notFound: {{ t("errors.not_found", default="No certificate found for the provided details.") | tojson }},
+    serverError: {{ t("errors.server", default="Something went wrong. Please try again.") | tojson }},
+  };
+
+  const form = document.getElementById("search-form");
+  const btn = document.getElementById("submit-btn");
+  const badge = document.getElementById("status");
+  const result = document.getElementById("result");
+  const resultTitle = document.getElementById("result-title");
+  const resultReason = document.getElementById("result-reason");
+  const fieldsEl = document.getElementById("student-fields");
+  const certListEl = document.getElementById("cert-list");
+
+  let currentCaptchaId = null;
+
+  function showBadge(ok, text) {
+    badge.hidden = false;
+    badge.classList.remove("ok", "bad");
+    badge.classList.add(ok ? "ok" : "bad");
+    badge.textContent = text;
+  }
+
+  async function refreshCaptcha() {
+    if (!captchaRequired) return;
+    const questionEl = document.getElementById("captcha-question");
+    const answerEl = document.getElementById("captcha-answer");
+    questionEl.textContent = "…";
+    answerEl.value = "";
+    try {
+      const resp = await fetch(captchaEndpoint, { method: "POST" });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      currentCaptchaId = data.id;
+      questionEl.textContent = data.question;
+    } catch (err) {
+      questionEl.textContent = "?";
+      currentCaptchaId = null;
+    }
+  }
+
+  function renderResult(data) {
+    result.hidden = false;
+    fieldsEl.innerHTML = "";
+    certListEl.innerHTML = "";
+    if (!data || data.error) {
+      resultTitle.textContent = labels.notFound;
+      resultTitle.style.color = "var(--bad)";
+      resultReason.hidden = !data || !data.error;
+      resultReason.textContent = data && data.error ? data.error : "";
+      return;
+    }
+    resultTitle.textContent = data.name || "—";
+    resultTitle.style.color = "var(--ink)";
+    resultReason.hidden = true;
+    for (const [key, value] of Object.entries(data.fields || {})) {
+      if (!value) continue;
+      const dt = document.createElement("dt");
+      dt.textContent = key;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      fieldsEl.appendChild(dt);
+      fieldsEl.appendChild(dd);
+    }
+    for (const cert of data.certificates || []) {
+      const li = document.createElement("li");
+      li.style.cssText = "display:flex; justify-content:space-between; padding:10px 0; border-top:1px solid var(--border);";
+      const label = document.createElement("span");
+      label.textContent = (cert.round_label || cert.round_id) + " — " + (cert.subject_label || cert.subject_code) + " — " + cert.result_name;
+      const download = document.createElement("button");
+      download.type = "button";
+      download.textContent = labels.download;
+      download.addEventListener("click", () => submitDownload(cert));
+      li.appendChild(label);
+      li.appendChild(download);
+      certListEl.appendChild(li);
+    }
+  }
+
+  function formPayload() {
+    const data = Object.fromEntries(new FormData(form).entries());
+    if (captchaRequired) {
+      data.captcha_id = currentCaptchaId;
+      data.captcha_answer = data["captcha-answer"];
+      delete data["captcha-answer"];
+    }
+    return data;
+  }
+
+  async function submitSearch(event) {
+    event.preventDefault();
+    btn.disabled = true;
+    showBadge(true, "…");
+    try {
+      const resp = await fetch(searchEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formPayload()),
+      });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        showBadge(false, "✗");
+        renderResult({ error: body.error || labels.notFound });
+        return;
+      }
+      const data = await resp.json();
+      showBadge(true, "✓");
+      renderResult(data);
+    } catch (err) {
+      showBadge(false, "✗");
+      renderResult({ error: labels.serverError });
+    } finally {
+      btn.disabled = false;
+      await refreshCaptcha();  // consume-then-rotate; attacker can't replay
+    }
+  }
+
+  async function submitDownload(cert) {
+    try {
+      const payload = Object.assign(formPayload(), {
+        round_id: cert.round_id,
+        subject_code: cert.subject_code,
+      });
+      const resp = await fetch(downloadEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        showBadge(false, "✗");
+        return;
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = (resp.headers.get("Content-Disposition") || "").split("filename=")[1] || "certificate.pdf";
+      a.download = a.download.replace(/^"|"$/g, "");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      await refreshCaptcha();
+    }
+  }
+
+  form.addEventListener("submit", submitSearch);
+  if (captchaRequired) {
+    document.getElementById("refresh-captcha").addEventListener("click", refreshCaptcha);
+    refreshCaptcha();
+  }
+})();
+</script>
+{% endblock %}
