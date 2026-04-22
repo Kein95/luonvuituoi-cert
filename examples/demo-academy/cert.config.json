@@ -1,0 +1,72 @@
+{
+  "$schema": "../../cert.schema.json",
+  "project": {
+    "name": "DEMO ACADEMY",
+    "slug": "demo-academy",
+    "locale": "en",
+    "branding": {
+      "primary_color": "#1E3A8A",
+      "accent_color": "#60A5FA"
+    }
+  },
+  "rounds": [
+    {
+      "id": "main",
+      "label": "Demo Championship",
+      "table": "students",
+      "pdf": "templates/main.pdf"
+    }
+  ],
+  "subjects": [
+    { "code": "G", "en": "General", "vi": "Tổng hợp", "db_col": "result" }
+  ],
+  "results": {
+    "G": { "GOLD": 1, "SILVER": 2 }
+  },
+  "data_mapping": {
+    "sbd_col": "sbd",
+    "name_col": "full_name",
+    "dob_col": "dob",
+    "school_col": "school",
+    "phone_col": "phone"
+  },
+  "layout": {
+    "page_size": [842, 595],
+    "fields": {
+      "name": {
+        "x": 421, "y": 330, "font": "script", "size": 44, "color": "#1E3A8A", "align": "center"
+      },
+      "school": {
+        "x": 421, "y": 265, "font": "serif", "size": 18, "color": "#0F172A", "align": "center", "wrap": 60
+      }
+    }
+  },
+  "fonts": {
+    "script": "assets/fonts/script.ttf",
+    "serif": "assets/fonts/serif.ttf"
+  },
+  "student_search": {
+    "mode": "name_dob_captcha",
+    "admin_mode": "sbd_auth"
+  },
+  "admin": {
+    "auth_mode": "password",
+    "multi_user": true,
+    "roles": ["super-admin", "admin", "viewer"]
+  },
+  "features": {
+    "qr_verify": {
+      "enabled": true,
+      "x": 720,
+      "y": 40,
+      "size_pt": 80
+    },
+    "shipment": {
+      "enabled": true,
+      "statuses": ["pending", "shipped", "delivered"],
+      "fields": ["tracking_code", "carrier"],
+      "public_fields": ["carrier"]
+    },
+    "kv_backend": "local"
+  }
+}

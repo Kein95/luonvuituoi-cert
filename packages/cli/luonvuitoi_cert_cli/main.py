@@ -39,3 +39,7 @@ def _root(
     if ctx.invoked_subcommand is None:
         console.print(ctx.get_help())
         raise typer.Exit()
+
+
+if __name__ == "__main__":  # pragma: no cover — hit via ``python -m luonvuitoi_cert_cli.main``
+    app()
