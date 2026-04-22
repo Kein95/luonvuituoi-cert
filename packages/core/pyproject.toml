@@ -39,9 +39,9 @@ dev = ["pytest>=7.4.0", "pytest-cov>=4.1.0", "ruff>=0.1.0", "mypy>=1.7.0"]
 e2e = ["playwright>=1.40.0"]
 
 [project.urls]
-Homepage = "https://github.com/luonvuitoi/cert"
-Documentation = "https://luonvuitoi.github.io/cert"
-Issues = "https://github.com/luonvuitoi/cert/issues"
+Homepage = "https://github.com/Kein95/luonvuituoi-cert"
+Documentation = "https://kein95.github.io/luonvuituoi-cert"
+Issues = "https://github.com/Kein95/luonvuituoi-cert/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["luonvuitoi_cert"]

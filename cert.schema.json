@@ -574,5 +574,5 @@
   "title": "LUONVUITUOI-CERT configuration",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://luonvuitoi.github.io/cert/cert.schema.json"
+  "$id": "https://kein95.github.io/luonvuituoi-cert/cert.schema.json"
 }

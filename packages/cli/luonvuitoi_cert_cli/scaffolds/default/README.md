@@ -1,6 +1,6 @@
 # {{ project_name }}
 
-A certificate portal scaffolded by [`lvt-cert init`](https://github.com/luonvuitoi/cert).
+A certificate portal scaffolded by [`lvt-cert init`](https://github.com/Kein95/luonvuituoi-cert).
 
 ## Quickstart
 

@@ -1,8 +1,8 @@
 site_name: LUONVUITUOI-CERT
 site_description: Config-driven certificate portal toolkit
-site_url: https://luonvuitoi.github.io/cert
-repo_url: https://github.com/luonvuitoi/cert
-repo_name: luonvuitoi/cert
+site_url: https://kein95.github.io/luonvuituoi-cert
+repo_url: https://github.com/Kein95/luonvuituoi-cert
+repo_name: Kein95/luonvuituoi-cert
 docs_dir: docs
 
 theme:
@@ -34,6 +34,7 @@ theme:
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - User guide: user-guide.md
   - Configuration: config-reference.md
   - Guides:
       - PDF Overlay: pdf-overlay-guide.md

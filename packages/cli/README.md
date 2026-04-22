@@ -1,6 +1,6 @@
 # luonvuitoi-cert-cli
 
-`lvt-cert` — the scaffolder CLI for [LUONVUITUOI-CERT](https://github.com/luonvuitoi/cert).
+`lvt-cert` — the scaffolder CLI for [LUONVUITUOI-CERT](https://github.com/Kein95/luonvuituoi-cert).
 
 ## Install
 

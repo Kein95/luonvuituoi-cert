@@ -29,7 +29,7 @@ def build_schema() -> dict:
     schema = CertConfig.model_json_schema(mode="validation")
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
     schema["title"] = "LUONVUITUOI-CERT configuration"
-    schema["$id"] = "https://luonvuitoi.github.io/cert/cert.schema.json"
+    schema["$id"] = "https://kein95.github.io/luonvuituoi-cert/cert.schema.json"
     return schema
 
 

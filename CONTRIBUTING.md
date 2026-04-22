@@ -5,7 +5,7 @@ Thanks for taking an interest. This project is a small-surface toolkit; the bar 
 ## Dev setup
 
 ```bash
-git clone https://github.com/luonvuitoi/cert
+git clone https://github.com/Kein95/luonvuituoi-cert
 cd cert
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ./packages/core[dev] -e ./packages/cli

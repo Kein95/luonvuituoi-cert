@@ -62,4 +62,4 @@ First public release. Extracts a config-driven certificate portal toolkit from t
 - Postgres/Turso data-layer adapter for deployments that outgrow SQLite.
 - CLI for managing admin users (today: the Python API in `luonvuitoi_cert.auth`).
 
-[1.0.0]: https://github.com/luonvuitoi/cert/releases/tag/v1.0.0
+[1.0.0]: https://github.com/Kein95/luonvuituoi-cert/releases/tag/v1.0.0

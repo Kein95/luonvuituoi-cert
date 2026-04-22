@@ -68,7 +68,7 @@ docs/                  # MkDocs Material source
 
 ## Documentation
 
-Quickstart, configuration reference, PDF overlay guide, admin auth, deploy guides, QR verify + shipment feature docs live under [docs/](docs/) and build to **<https://luonvuitoi.github.io/cert>** once the Pages workflow publishes.
+Quickstart, configuration reference, PDF overlay guide, admin auth, deploy guides, QR verify + shipment feature docs live under [docs/](docs/) and build to **<https://kein95.github.io/luonvuituoi-cert>** once the Pages workflow publishes.
 
 ## Security
 
