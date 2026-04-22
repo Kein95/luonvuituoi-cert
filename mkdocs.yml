@@ -39,6 +39,13 @@ theme:
     - content.action.edit
     - content.tooltips
   palette:
+    # Auto — follows OS preference. Must come first; no scheme key.
+    - media: "(prefers-color-scheme)"
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: custom
@@ -52,7 +59,7 @@ theme:
       accent: custom
       toggle:
         icon: material/weather-night
-        name: Switch to light mode
+        name: Switch to system preference
 
 extra_css:
   - stylesheets/extra.css
