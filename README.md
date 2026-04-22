@@ -1,32 +1,33 @@
 # LUONVUITUOI-CERT
 
-> Config-driven certificate portal toolkit — build your own certificate distribution + QR verification website in minutes.
+> Config-driven certificate portal toolkit. Bring your own PDF template + student list → ship a search / download / QR-verify / admin portal to Vercel or Docker in an afternoon.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
+[![Tests: 383](https://img.shields.io/badge/tests-383%20passing-brightgreen.svg)](#)
 
-## What is it?
+## Why
 
-A batteries-included toolkit for organizations (schools, competitions, training centers) who need to:
+Running a competition, issuing training diplomas, or distributing awards to a cohort? You typically need:
 
-- Let students **search and download their personalized certificate PDF** (auto-overlay of name/school/grade onto a pre-designed template)
-- Provide a **public QR verification page** so anyone holding a printed certificate can check authenticity
-- Manage students, shipments, and access via a **multi-user admin panel**
-- Deploy to **Vercel serverless** (free tier) or **Docker** (self-host)
+- A **public page** where recipients look up and download their personalized PDF.
+- An **admin backend** to manage records, corrections, and shipments.
+- A **verification page** so third parties (employers, schools) can confirm a certificate is genuine.
 
-No coding required for the basics — just prepare a PDF template, an Excel/CSV of students, and a `cert.config.json`.
+LUONVUITUOI-CERT ships all three — config-driven, zero-code — deployable to Vercel's free tier or a Docker host.
 
 ## Features
 
-- Student portal: search by name+DOB+CAPTCHA or name+ID+CAPTCHA
-- Certificate download: dynamic PDF overlay (name, school, grade, subject)
-- **Certificate-Checker page**: public QR scan → Fernet decrypt + RSA signature verify
-- Multi-user admin: RBAC (super-admin / admin / viewer), JWT, 3 auth modes (password / OTP email / magic-link)
-- Shipment tracking: config-driven statuses and fields
-- Activity log: SQLite local + optional Google Sheets webhook
-- Rate limiting + CAPTCHA + security headers
-- i18n: English + Vietnamese out-of-the-box, extensible
-- Config-mapped DB: import Excel/CSV/Google Sheets/JSON with your own column names
+- Three public surfaces: student portal (`/`), admin panel (`/admin`), Certificate-Checker (`/certificate-checker`).
+- Student search: name + DOB + CAPTCHA (or name + SBD, or SBD + phone — configurable).
+- PDF overlay: reportlab + pypdf, TrueType fonts, per-field positioning.
+- RSA-PSS-signed QR verification with optional expiry.
+- Multi-user admin: RBAC (`super-admin` / `admin` / `viewer`), JWT sessions, 3 auth modes (password / OTP email / magic link).
+- Shipment tracking with a `public_fields` allowlist.
+- Activity log: SQLite local + optional Google Sheets webhook forwarding.
+- Rate limiting + CAPTCHA + security headers (CSP with per-request nonce on admin).
+- Ingest Excel / CSV / JSON with config-mapped column names.
+- i18n: English + Vietnamese out-of-the-box, extensible per project.
 
 ## Quickstart
 
@@ -34,34 +35,56 @@ No coding required for the basics — just prepare a PDF template, an Excel/CSV 
 pip install luonvuitoi-cert-cli
 lvt-cert init my-award
 cd my-award
-lvt-cert gen-keys          # QR signing keys
-lvt-cert seed              # Generate 10 fake students
-lvt-cert dev               # Local Flask server at http://localhost:5000
+cp .env.example .env                     # set JWT_SECRET + ADMIN_DEFAULT_PASSWORD
+lvt-cert gen-keys                        # QR signing keys (if features.qr_verify.enabled)
+lvt-cert seed --count 10                 # fake students in data/students.xlsx
+lvt-cert dev                             # http://localhost:5000
 ```
 
-Deploy to Vercel:
+Want every feature wired up against a fabricated "DEMO ACADEMY"?
 
 ```bash
-vercel deploy
+cd examples/demo-academy
+python prepare_demo.py
+lvt-cert gen-keys
+lvt-cert dev
 ```
 
-Full docs: **https://luonvuitoi.github.io/cert**
+## Deploy
 
-## Repo Layout
+- **Vercel** — `vercel deploy` against the scaffolded `api/index.py` + `vercel.json`. See [docs/deploy-vercel.md](docs/deploy-vercel.md).
+- **Docker** — `docker compose up -d` against the repo-root Dockerfile + compose file. See [docs/deploy-docker.md](docs/deploy-docker.md).
+
+## Repo layout
 
 ```text
 packages/
-  core/               # luonvuitoi-cert — engine + handlers + templates
-  cli/                # luonvuitoi-cert-cli — lvt-cert scaffolder
+  core/                # luonvuitoi-cert — engine + handlers + UI templates
+  cli/                 # luonvuitoi-cert-cli — lvt-cert scaffolder + Flask dev server
 examples/
-  demo-academy/       # 10 fake students, custom PDF, full-feature demo
-docs/                 # MkDocs Material
+  demo-academy/        # full-feature reference project
+docs/                  # MkDocs Material source
 ```
 
-## Status
+## Documentation
 
-Alpha — v0.1.0. See [plan.md](https://github.com/luonvuitoi/cert/blob/main/PLAN.md) for roadmap.
+Quickstart, configuration reference, PDF overlay guide, admin auth, deploy guides, QR verify + shipment feature docs live under [docs/](docs/) and build to **<https://luonvuitoi.github.io/cert>** once the Pages workflow publishes.
+
+## Security
+
+This is a public-facing portal. See [SECURITY.md](SECURITY.md) for the threat model, hardening checklist, and how to report vulnerabilities.
+
+Highlights:
+
+- `JWT_SECRET` mandatory (no ephemeral fallback).
+- `PUBLIC_BASE_URL` pins magic-link + QR URLs against Host-header injection.
+- CAPTCHA / OTP / magic-link use atomic `kv.consume()` — no race.
+- PBKDF2 passwords, RSA-PSS QR signatures, CSP nonce on admin.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). One rule worth calling out: this repo was extracted from three internal certificate portals, and nothing of theirs ships in the public code. Please keep it that way.
 
 ## License
 
-MIT © LUONVUITUOI-CERT contributors
+MIT © LUONVUITUOI-CERT contributors. See [LICENSE](LICENSE).

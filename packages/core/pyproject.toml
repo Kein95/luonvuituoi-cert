@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "luonvuitoi-cert"
-version = "0.1.0"
+version = "1.0.0"
 description = "Config-driven certificate portal engine (search / download / QR verify / admin)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -12,11 +12,13 @@ requires-python = ">=3.11"
 authors = [{ name = "LUONVUITUOI-CERT contributors" }]
 keywords = ["certificate", "pdf", "qr-verify", "vercel", "serverless"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Office/Business",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+    "Typing :: Typed",
 ]
 dependencies = [
     "reportlab>=4.0.0",
