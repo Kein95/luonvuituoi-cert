@@ -63,11 +63,15 @@ def upsert_shipment_record(
     params: dict[str, Any],
     client_ip: str | None = None,
     env: dict[str, str] | None = None,
+    kv: object | None = None,
 ) -> ShipmentRecord:
-    """Admin entry point — write-through for shipment state. Audits every change."""
+    """Admin entry point — write-through for shipment state. Audits every change.
+
+    ``kv`` is optional and, when provided, enables JWT-revocation checks (M7).
+    """
     _require_enabled(config)
     try:
-        token = verify_admin_token(str(params.get("token", "")), env=env)
+        token = verify_admin_token(str(params.get("token", "")), env=env, kv=kv)  # type: ignore[arg-type]
     except TokenError as e:
         raise ShipmentHandlerError(str(e)) from e
     # Allowlist — any future role (e.g. Role.AUDITOR) starts read-only until

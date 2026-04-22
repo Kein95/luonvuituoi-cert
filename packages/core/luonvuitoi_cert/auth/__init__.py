@@ -40,6 +40,7 @@ from luonvuitoi_cert.auth.tokens import (
     AdminToken,
     TokenError,
     issue_admin_token,
+    revoke_admin_token,
     verify_admin_token,
 )
 
@@ -67,6 +68,7 @@ __all__ = [
     "list_admin_users",
     "log_admin_action",
     "perform_login",
+    "revoke_admin_token",
     "update_admin_password",
     "verify_admin_token",
     "verify_magic_link",
