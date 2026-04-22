@@ -6,7 +6,7 @@ hide:
 
 <div class="lvt-hero" markdown>
 
-<img src="assets/logo.svg" alt="Logo LUONVUITUOI-CERT" class="lvt-hero-logo">
+<img src="../assets/logo.svg" alt="Logo LUONVUITUOI-CERT" class="lvt-hero-logo">
 
 # LUONVUITUOI-CERT
 
