@@ -190,6 +190,12 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
         return jsonify({"error": str(e)}), 400
 
     # ── Pages ─────────────────────────────────────────────────────────
+    @app.get("/health")
+    def _health():  # type: ignore[no-untyped-def]
+        # M4: dependency-free probe — no KV, no DB, no rate-limit. Container
+        # healthchecks and k8s liveness probes can hit this cheaply.
+        return jsonify({"ok": True}), 200
+
     @app.get("/")
     def _portal():  # type: ignore[no-untyped-def]
         return render_student_portal_page(config=config, locale=locale, csp_nonce=g.csp_nonce)
@@ -343,6 +349,13 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
             )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        # P2 polish: frame-ancestors 'none' equivalent for every non-admin
+        # response; admin.html.j2 already carries it via CSP.
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        # Opt-in HSTS: deploys behind HTTPS (FORCE_HSTS=1) get the header;
+        # HTTP dev doesn't, so browsers don't cache a bad cert pin.
+        if os.getenv("FORCE_HSTS", "").strip().lower() in {"1", "true", "yes"}:
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         if request.path.startswith("/api/"):
             _apply_cors_headers(response)
         return response
