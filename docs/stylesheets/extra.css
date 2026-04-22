@@ -86,7 +86,7 @@ body, .md-typeset {
 .lvt-hero {
   position: relative;
   padding: 4rem 1.5rem 3rem;
-  margin: -1.5rem -0.8rem 2rem;
+  margin: 1rem -0.8rem 2rem;
   border-radius: 0 0 24px 24px;
   overflow: hidden;
   background:
@@ -340,18 +340,28 @@ body, .md-typeset {
   position: absolute;
   top: calc(100% + 0.4rem);
   right: 0;
-  min-width: 220px;
+  min-width: 240px;
   padding: 0.35rem;
-  background: var(--md-default-bg-color, #ffffff);
-  border: 1px solid var(--md-default-fg-color--lightest, rgba(0,0,0,0.08));
+  /* Solid opaque background — Material header sits at z-index up to 4;
+     popover needs to be unambiguously above the nav tabs + hero content. */
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-  z-index: 50;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+  z-index: 1000;
+  backdrop-filter: none;
+}
+
+[data-md-color-scheme="slate"] .lvt-theme-picker-menu,
+[data-md-color-scheme="default"] .lvt-theme-picker-menu {
+  /* Explicit color per scheme so neither auto nor manual mode inherits
+     a translucent hero gradient. */
 }
 
 [data-md-color-scheme="slate"] .lvt-theme-picker-menu {
-  background: #14213a;
-  border-color: rgba(255,255,255,0.08);
+  background: #1a2a44;
+  border-color: rgba(255,255,255,0.1);
+  color: #e6ebf5;
 }
 
 .lvt-theme-picker-menu button {
@@ -406,12 +416,21 @@ body, .md-typeset {
 
 /* Credits strip — compact attribution shown above the hero. */
 .lvt-credits {
+  position: relative;
+  z-index: 2;
   max-width: 980px;
-  margin: 0.5rem auto 0;
-  padding: 0.35rem 1rem;
+  margin: 0.75rem auto 1rem;
+  padding: 0.6rem 1rem;
   text-align: center;
-  font-size: 0.85rem;
-  color: var(--md-default-fg-color--light);
+  font-size: 0.9rem;
+  color: var(--md-default-fg-color);
+  background: linear-gradient(90deg, rgba(204,251,241,0.35), rgba(251,191,36,0.2), rgba(204,251,241,0.35));
+  border-radius: 999px;
+}
+
+[data-md-color-scheme="slate"] .lvt-credits {
+  color: var(--lvt-teal-100);
+  background: linear-gradient(90deg, rgba(20,184,166,0.15), rgba(251,191,36,0.15), rgba(20,184,166,0.15));
 }
 .lvt-credits a {
   color: var(--lvt-teal-700);
