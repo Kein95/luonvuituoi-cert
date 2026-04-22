@@ -62,6 +62,11 @@
     magicSent: {{ t("admin.magic_sent", default="Check your email for a sign-in link.") | tojson }},
   };
   const TOKEN_KEY = "lvt_admin_token";
+  // NOTE: The JWT lives in sessionStorage (survives reload, not a new tab). Any
+  // script that runs on this origin can read it, so the transport layer MUST
+  // emit `Content-Security-Policy: script-src 'self'` on /admin to keep
+  // reflected-XSS injection sites from lifting the token. Phase 11 / Phase 15
+  // wire that header at the Flask + Vercel edges.
 
   const loginCard = document.getElementById("login-card");
   const loginForm = document.getElementById("login-form");
@@ -98,11 +103,21 @@
   }
 
   function exitDashboard() {
+    // Regression: Phase 10 review B1 — previous admin's lookup data used to
+    // linger on screen after sign-out. On shared machines that's a session
+    // bleed. Wipe every mutable UI region the dashboard writes to.
     writeToken("");
     loginCard.hidden = false;
     dashboard.hidden = true;
     loginBadge.hidden = true;
     loginForm.reset();
+    lookupForm.reset();
+    lookupResult.hidden = true;
+    lookupFields.innerHTML = "";
+    lookupReason.hidden = true;
+    lookupReason.textContent = "";
+    lookupSbd.value = "";
+    dashboardUser.textContent = "";
   }
 
   async function submitLogin(event) {

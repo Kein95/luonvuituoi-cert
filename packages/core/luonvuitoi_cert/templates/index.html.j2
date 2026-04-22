@@ -78,6 +78,24 @@
 
   let currentCaptchaId = null;
 
+  // Regression: Phase 10 review B2 — ``.split("filename=")[1]`` used to match
+  // RFC 5987 ``filename*=UTF-8''...`` and spit the encoding prefix into the
+  // download name, and miss semicolon-terminated values. Handle both forms
+  // and strip surrounding quotes.
+  function parseFilename(header) {
+    if (!header) return "certificate.pdf";
+    // Prefer RFC 5987 ``filename*=UTF-8''...`` form when present.
+    const extMatch = header.match(/filename\*\s*=\s*(?:[\w-]+)'[^']*'([^;\r\n]+)/i);
+    if (extMatch) {
+      try { return decodeURIComponent(extMatch[1]).trim() || "certificate.pdf"; }
+      catch (_) { /* fall through to plain filename */ }
+    }
+    // Plain ``filename="..."`` / ``filename=foo.pdf`` — stop at ; or EOL, strip quotes.
+    const plain = header.match(/filename\s*=\s*("([^"]*)"|([^;\r\n]+))/i);
+    if (plain) return (plain[2] || plain[3] || "").trim() || "certificate.pdf";
+    return "certificate.pdf";
+  }
+
   function showBadge(ok, text) {
     badge.hidden = false;
     badge.classList.remove("ok", "bad");
@@ -198,8 +216,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = (resp.headers.get("Content-Disposition") || "").split("filename=")[1] || "certificate.pdf";
-      a.download = a.download.replace(/^"|"$/g, "");
+      a.download = parseFilename(resp.headers.get("Content-Disposition"));
       document.body.appendChild(a);
       a.click();
       a.remove();
