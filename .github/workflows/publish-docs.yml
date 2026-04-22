@@ -32,8 +32,8 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - name: Install mkdocs + material
-        run: pip install mkdocs-material
+      - name: Install mkdocs + material + i18n
+        run: pip install mkdocs-material mkdocs-static-i18n
       - name: Build site (--strict catches broken links)
         run: mkdocs build --strict
       - uses: actions/configure-pages@v5
