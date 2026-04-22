@@ -10,11 +10,22 @@ From zero to a running certificate portal in five minutes.
 
 ## 1. Install
 
+Once the packages are on PyPI:
+
 ```bash
 pip install luonvuitoi-cert-cli
 ```
 
-The CLI package depends on the engine (`luonvuitoi-cert`), so that lands transitively.
+Pre-PyPI (install from source — recommended while v1.0.0 is not yet published):
+
+```bash
+git clone https://github.com/Kein95/luonvuituoi-cert
+cd luonvuituoi-cert
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ./packages/core -e ./packages/cli
+```
+
+Either path gives you the `lvt-cert` command. The CLI depends on the engine (`luonvuitoi-cert`), so that lands transitively.
 
 ## 2. Scaffold a project
 

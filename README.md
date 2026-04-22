@@ -32,7 +32,14 @@ LUONVUITUOI-CERT ships all three — config-driven, zero-code — deployable to 
 ## Quickstart
 
 ```bash
-pip install luonvuitoi-cert-cli
+# Pre-PyPI: install from source
+git clone https://github.com/Kein95/luonvuituoi-cert
+cd luonvuituoi-cert
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ./packages/core -e ./packages/cli
+
+# (once published: pip install luonvuitoi-cert-cli)
+
 lvt-cert init my-award
 cd my-award
 cp .env.example .env                     # set JWT_SECRET + ADMIN_DEFAULT_PASSWORD
