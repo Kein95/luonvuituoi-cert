@@ -20,3 +20,6 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["packages/core/tests", "packages/cli/tests"]
 addopts = "-ra -q"
+markers = [
+    "e2e: end-to-end tests that spin up a live Flask server (slower; skip with `-m 'not e2e'`).",
+]
