@@ -26,7 +26,9 @@ from luonvuitoi_cert.auth import (
     LoginError,
     NullEmailProvider,
     ResendProvider,
+    TokenError,
     perform_login,
+    revoke_admin_token,
 )
 from luonvuitoi_cert.config import load_config
 from luonvuitoi_cert.locale import load_locale
@@ -286,11 +288,30 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
             return jsonify({"error": str(e)}), 401
         return jsonify({"token": result.token, "challenge_issued": result.challenge_issued})
 
+    @app.post("/api/admin/logout")
+    def _logout():  # type: ignore[no-untyped-def]
+        # M7: revoke the caller's JTI by storing it in the KV denylist with
+        # TTL = remaining-life. verify_admin_token treats any hit as an
+        # expired session, so follow-up requests with the same token bounce.
+        params = _json_body()
+        try:
+            jti = revoke_admin_token(kv, token=str(params.get("token", "")).strip())
+        except TokenError as e:
+            # Already-invalid token: nothing to revoke, treat as 200 for
+            # idempotency — the client side is signing out anyway.
+            return jsonify({"revoked": False, "error": str(e)}), 200
+        return jsonify({"revoked": True, "jti": jti})
+
     @app.post("/api/shipment/upsert")
     def _shipment_upsert():  # type: ignore[no-untyped-def]
         params = _json_body()
         rec = handlers.upsert_shipment_record(
-            config=config, db_path=db_path, activity=activity, params=params, client_ip=_client_id()
+            config=config,
+            db_path=db_path,
+            activity=activity,
+            params=params,
+            client_ip=_client_id(),
+            kv=kv,
         )
         return jsonify(asdict(rec))
 

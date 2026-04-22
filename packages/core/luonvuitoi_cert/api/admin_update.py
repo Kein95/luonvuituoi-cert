@@ -59,11 +59,16 @@ def update_student_field(
     params: dict[str, Any],
     client_ip: str | None = None,
     env: dict[str, str] | None = None,
+    kv: object | None = None,
 ) -> UpdateResponse:
-    """Authorize the caller, apply the update, and write an audit entry."""
+    """Authorize the caller, apply the update, and write an audit entry.
+
+    ``kv`` is optional and, when provided, enables JWT-revocation checks
+    against the JTI denylist (M7). Callers are encouraged to pass it.
+    """
     token_raw = str(params.get("token", "")).strip()
     try:
-        token = verify_admin_token(token_raw, env=env)
+        token = verify_admin_token(token_raw, env=env, kv=kv)  # type: ignore[arg-type]
     except TokenError as e:
         raise AdminUpdateError(str(e)) from e
     # Allowlist rather than denylist — any future role (e.g. Role.AUDITOR) is

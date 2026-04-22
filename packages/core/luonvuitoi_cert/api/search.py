@@ -194,7 +194,7 @@ def search_student(
         _verify_student_gate(kv, params, client_id)
     elif mode == "admin":
         try:
-            verify_admin_token(str(params.get("token", "")), env=env)
+            verify_admin_token(str(params.get("token", "")), env=env, kv=kv)
         except TokenError as e:
             raise SecurityError(str(e)) from e
     else:

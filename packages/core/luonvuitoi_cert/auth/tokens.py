@@ -16,9 +16,13 @@ from dataclasses import dataclass
 import jwt
 
 from luonvuitoi_cert.auth.admin_db import Role
+from luonvuitoi_cert.storage.kv.base import KVBackend
 
 DEFAULT_TOKEN_TTL_SECONDS = 8 * 3600
 ALGORITHM = "HS256"
+# M7: KV prefix for the JTI denylist. Sign-out stores `{jti}` here with TTL =
+# `exp - now`; verify_admin_token treats any hit as an expired session.
+JTI_DENYLIST_PREFIX = "jwt_denylist:"
 
 
 class TokenError(Exception):
@@ -73,8 +77,18 @@ def issue_admin_token(
     return jwt.encode(payload, _resolve_secret(env), algorithm=ALGORITHM)
 
 
-def verify_admin_token(token: str, *, env: dict[str, str] | None = None) -> AdminToken:
-    """Decode and validate a JWT, returning the structured claims."""
+def verify_admin_token(
+    token: str,
+    *,
+    env: dict[str, str] | None = None,
+    kv: KVBackend | None = None,
+) -> AdminToken:
+    """Decode and validate a JWT, returning the structured claims.
+
+    If ``kv`` is provided, the decoded ``jti`` is also checked against the
+    denylist (M7). A revoked token is rejected with the same ``TokenError``
+    shape as an expired one — callers don't need to distinguish.
+    """
     if not token:
         raise TokenError("admin token is required")
     try:
@@ -87,11 +101,32 @@ def verify_admin_token(token: str, *, env: dict[str, str] | None = None) -> Admi
         role = Role(claims["role"])
     except (KeyError, ValueError) as e:
         raise TokenError(f"admin token has unknown role: {claims.get('role')!r}") from e
+    jti = claims.get("jti", "")
+    if kv is not None and jti and kv.get(f"{JTI_DENYLIST_PREFIX}{jti}"):
+        raise TokenError("admin session revoked")
     return AdminToken(
         user_id=claims.get("sub", ""),
         email=claims.get("email", ""),
         role=role,
-        jti=claims.get("jti", ""),
+        jti=jti,
         issued_at=int(claims.get("iat", 0)),
         expires_at=int(claims.get("exp", 0)),
     )
+
+
+def revoke_admin_token(kv: KVBackend, *, token: str, env: dict[str, str] | None = None) -> str:
+    """Add the token's ``jti`` to the denylist with TTL matching its remaining life.
+
+    Returns the revoked ``jti`` so callers can log the sign-out. Silently
+    succeeds for already-expired tokens (no point denylisting something the
+    JWT library will reject anyway).
+    """
+    # Decode without the kv check so a token revoked in a prior session can
+    # still be "revoked" idempotently.
+    decoded = verify_admin_token(token, env=env, kv=None)
+    remaining = decoded.expires_at - int(time.time())
+    if remaining <= 0:
+        return decoded.jti
+    if decoded.jti:
+        kv.set(f"{JTI_DENYLIST_PREFIX}{decoded.jti}", "1", ttl_seconds=remaining)
+    return decoded.jti
