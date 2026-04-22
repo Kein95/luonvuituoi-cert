@@ -37,6 +37,54 @@ def test_init_scaffolds_new_project(tmp_path: Path) -> None:
     assert (target / "vercel.json").exists()
     assert (target / "requirements.txt").exists()
     assert (target / "README.md").exists()
+    # Phase 15: scaffold ships the Vercel entrypoint.
+    assert (target / "api" / "index.py").exists()
+
+
+def test_scaffolded_vercel_entrypoint_builds_flask_app(tmp_path: Path) -> None:
+    """Regression: the scaffolded api/index.py must load a working Flask app."""
+    target = tmp_path / "v-portal"
+    runner.invoke(app, ["init", str(target), "--slug", "v-portal", "--non-interactive"])
+    # Scaffold the remaining assets the Flask build_app needs (templates + a
+    # placeholder PDF + a real font so the config validates at runtime).
+    (target / "templates").mkdir(exist_ok=True)
+    import shutil
+
+    import reportlab
+    from reportlab.pdfgen import canvas
+
+    vera = Path(reportlab.__file__).parent / "fonts" / "Vera.ttf"
+    (target / "assets" / "fonts").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(vera, target / "assets" / "fonts" / "serif.ttf")
+    pdf = target / "templates" / "main.pdf"
+    c = canvas.Canvas(str(pdf), pagesize=(842, 595))
+    c.drawString(100, 500, "T")
+    c.showPage()
+    c.save()
+
+    # Import the scaffolded entrypoint as a module, assert the app exists.
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("_scaffold_entry", target / "api" / "index.py")
+    module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
+    spec.loader.exec_module(module)  # type: ignore[union-attr]
+    assert hasattr(module, "app")
+    client = module.app.test_client()
+    resp = client.get("/")
+    assert resp.status_code == 200
+
+
+def test_vercel_json_rewrites_catch_all(tmp_path: Path) -> None:
+    """Regression: Phase 15 consolidates routes under /api/index."""
+    import json as _json
+
+    target = tmp_path / "vv"
+    runner.invoke(app, ["init", str(target), "--slug", "vv-portal", "--non-interactive"])
+    data = _json.loads((target / "vercel.json").read_text(encoding="utf-8"))
+    rewrites = data["rewrites"]
+    assert len(rewrites) == 1
+    assert rewrites[0]["source"] == "/(.*)"
+    assert rewrites[0]["destination"] == "/api/index"
 
 
 def test_init_refuses_non_empty_target(tmp_path: Path) -> None:

@@ -1,12 +1,12 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/", "destination": "/api/index" },
-    { "source": "/admin", "destination": "/api/admin" },
-    { "source": "/certificate-checker", "destination": "/api/certificate-checker" }
+    { "source": "/(.*)", "destination": "/api/index" }
   ],
   "functions": {
-    "api/*.py": {
-      "maxDuration": 30
+    "api/index.py": {
+      "maxDuration": 30,
+      "memory": 1024
     }
   }
 }

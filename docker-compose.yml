@@ -1,12 +1,34 @@
 services:
   cert-portal:
     build: .
+    image: luonvuitoi-cert:latest
+    container_name: cert-portal
     ports:
       - "8000:8000"
-    volumes:
-      - ./data:/app/project/data
     environment:
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      # Required — the app refuses to issue admin tokens without this.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
       ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-change-me}
-      KV_BACKEND: local
+      # Pins magic-link emails + QR URLs against Host-header injection.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      KV_BACKEND: ${KV_BACKEND:-local}
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-}
+      KV_REST_API_URL: ${KV_REST_API_URL:-}
+      KV_REST_API_TOKEN: ${KV_REST_API_TOKEN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      CERT_EMAIL_FROM: ${CERT_EMAIL_FROM:-onboarding@resend.dev}
+      GSHEET_WEBHOOK_URL: ${GSHEET_WEBHOOK_URL:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    volumes:
+      # Entire project directory is bind-mounted so editing cert.config.json
+      # on the host + restarting the container picks up the change without
+      # a rebuild.
+      - ./project:/app/project:rw
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -X POST http://127.0.0.1:8000/api/captcha -H 'Content-Type: application/json' -d '{}' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
