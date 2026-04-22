@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Certificate ribbon + check mark -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d6e6e"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <!-- Scroll body -->
+  <rect x="10" y="14" width="44" height="36" rx="4" fill="url(#g)"/>
+  <rect x="10" y="14" width="44" height="36" rx="4" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1"/>
+  <!-- Inner lines (text simulation) -->
+  <rect x="18" y="22" width="28" height="2" rx="1" fill="#ffffff" fill-opacity="0.85"/>
+  <rect x="18" y="28" width="20" height="2" rx="1" fill="#ffffff" fill-opacity="0.55"/>
+  <!-- Check seal -->
+  <circle cx="46" cy="44" r="10" fill="#fbbf24"/>
+  <path d="M41 44 L45 48 L52 41" stroke="#0d6e6e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Ribbon tails -->
+  <path d="M14 50 L10 60 L16 56 L18 60 L22 50" fill="#0d6e6e"/>
+</svg>

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{#
+  Custom Material override — LUONVUITUOI-CERT
+  - Adds announcement bar on top
+  - Cleaner title rendering for hero pages
+#}
+
+{% block announce %}
+  <a href="https://github.com/Kein95/luonvuituoi-cert" target="_blank" rel="noopener">
+    🎉 v1.0.0 shipped — free certificate portal toolkit. Star us on GitHub
+    <span class="twemoji">
+      {% include ".icons/octicons/mark-github-16.svg" %}
+    </span>
+  </a>
+{% endblock %}
+
+{% block extrahead %}
+  {{ super() }}
+  <meta name="theme-color" content="#0d6e6e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LUONVUITUOI-CERT — Certificate Portal Toolkit">
+  <meta property="og:description" content="Config-driven certificate portal: issue PDF certs with QR verify, admin panel, Vercel/Docker deploy. Zero boilerplate.">
+  <meta property="og:image" content="https://kein95.github.io/luonvuituoi-cert/assets/logo.svg">
+  <meta name="twitter:card" content="summary_large_image">
+{% endblock %}

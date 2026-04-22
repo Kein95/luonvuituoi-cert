@@ -1,0 +1,314 @@
+/* ============================================================
+   LUONVUITUOI-CERT — Custom Material Theme Overrides
+   Brand: deep teal + warm amber accent
+   ============================================================ */
+
+:root {
+  --lvt-teal-900: #0a5757;
+  --lvt-teal-700: #0d6e6e;
+  --lvt-teal-500: #14b8a6;
+  --lvt-teal-100: #ccfbf1;
+  --lvt-amber-500: #fbbf24;
+  --lvt-amber-600: #d97706;
+  --lvt-ink-900: #0f172a;
+  --lvt-ink-600: #475569;
+  --lvt-ink-300: #cbd5e1;
+  --lvt-surface: #ffffff;
+  --lvt-surface-alt: #f8fafc;
+}
+
+/* Light palette */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:        var(--lvt-teal-700);
+  --md-primary-fg-color--light: var(--lvt-teal-500);
+  --md-primary-fg-color--dark:  var(--lvt-teal-900);
+  --md-accent-fg-color:         var(--lvt-amber-600);
+  --md-typeset-a-color:         var(--lvt-teal-700);
+}
+
+/* Dark palette */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        var(--lvt-teal-500);
+  --md-primary-fg-color--light: var(--lvt-teal-100);
+  --md-primary-fg-color--dark:  var(--lvt-teal-900);
+  --md-accent-fg-color:         var(--lvt-amber-500);
+  --md-typeset-a-color:         var(--lvt-teal-500);
+  --md-default-bg-color:        #0b1220;
+  --md-code-bg-color:           #101a2c;
+}
+
+/* Smooth typography */
+body, .md-typeset {
+  font-feature-settings: "ss01", "cv11";
+  letter-spacing: -0.01em;
+}
+
+.md-typeset h1 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--lvt-teal-700) 0%, var(--lvt-teal-500) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1 {
+  background: linear-gradient(135deg, var(--lvt-teal-100) 0%, var(--lvt-teal-500) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.md-typeset h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  padding-bottom: 0.35em;
+  margin-top: 2.4em;
+}
+
+/* ============================================================
+   Header polish
+   ============================================================ */
+.md-header {
+  background: linear-gradient(100deg, var(--lvt-teal-900) 0%, var(--lvt-teal-700) 60%, var(--lvt-teal-500) 100%);
+  box-shadow: 0 2px 12px rgba(13, 110, 110, 0.25);
+}
+
+.md-tabs {
+  background: rgba(10, 87, 87, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================================
+   Hero section (used in index.md)
+   ============================================================ */
+.lvt-hero {
+  position: relative;
+  padding: 4rem 1.5rem 3rem;
+  margin: -1.5rem -0.8rem 2rem;
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(1200px 400px at 10% -10%, rgba(20, 184, 166, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 90% 0%, rgba(251, 191, 36, 0.18), transparent 55%),
+    linear-gradient(135deg, #083d3d 0%, #0d6e6e 55%, #14b8a6 100%);
+  color: #ffffff;
+  text-align: center;
+}
+
+.lvt-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+  pointer-events: none;
+}
+
+.lvt-hero > * { position: relative; z-index: 1; }
+
+.lvt-hero-logo {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 1.25rem;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.25));
+  animation: lvt-float 4s ease-in-out infinite;
+}
+
+@keyframes lvt-float {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-6px); }
+}
+
+.lvt-hero h1 {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-text-fill-color: #ffffff !important;
+  margin: 0 0 0.75rem;
+  line-height: 1.1;
+}
+
+.lvt-hero-tagline {
+  font-size: 1.15rem;
+  color: rgba(255,255,255,0.88);
+  max-width: 640px;
+  margin: 0 auto 2rem;
+  line-height: 1.55;
+}
+
+.lvt-cta-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.lvt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lvt-btn-primary {
+  background: var(--lvt-amber-500);
+  color: var(--lvt-ink-900) !important;
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.35);
+}
+
+.lvt-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(251, 191, 36, 0.5);
+}
+
+.lvt-btn-ghost {
+  background: rgba(255,255,255,0.08);
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.22);
+  backdrop-filter: blur(6px);
+}
+
+.lvt-btn-ghost:hover {
+  background: rgba(255,255,255,0.16);
+  transform: translateY(-2px);
+}
+
+.lvt-badges {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.lvt-badges img { height: 22px; }
+
+/* ============================================================
+   Feature grid cards
+   ============================================================ */
+.lvt-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0 3rem;
+}
+
+.lvt-feature {
+  padding: 1.5rem 1.25rem;
+  border-radius: 14px;
+  background: var(--lvt-surface-alt);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+[data-md-color-scheme="slate"] .lvt-feature {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.lvt-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(13, 110, 110, 0.12);
+  border-color: var(--lvt-teal-500);
+}
+
+.lvt-feature-icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.6rem;
+  display: block;
+}
+
+.lvt-feature h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.lvt-feature p {
+  margin: 0;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   Stats strip
+   ============================================================ */
+.lvt-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 2.5rem 0;
+  padding: 1.5rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--lvt-teal-900) 0%, var(--lvt-teal-700) 100%);
+  color: #ffffff;
+}
+
+.lvt-stat {
+  text-align: center;
+}
+
+.lvt-stat-num {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--lvt-amber-500);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.lvt-stat-label {
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  color: rgba(255,255,255,0.75);
+}
+
+/* ============================================================
+   Code blocks polish
+   ============================================================ */
+.highlight pre {
+  border-radius: 10px;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.md-typeset code {
+  border-radius: 4px;
+  padding: 0.12em 0.35em;
+}
+
+/* ============================================================
+   Footer polish
+   ============================================================ */
+.md-footer-meta {
+  background: linear-gradient(100deg, var(--lvt-teal-900), var(--lvt-teal-700));
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--lvt-teal-500);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--lvt-teal-700); }
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .lvt-hero { padding: 2.5rem 1rem 2rem; }
+  .lvt-hero-logo { width: 64px; height: 64px; }
+  .lvt-features { grid-template-columns: 1fr; }
+}
