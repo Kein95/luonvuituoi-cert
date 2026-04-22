@@ -125,15 +125,33 @@ Deploy your first portal in 10 minutes — CLI scaffold, config tour, local run.
 </div>
 
 <div class="lvt-feature" markdown>
-<span class="lvt-feature-icon">⚙️</span>
-### [Configuration →](config-reference.md)
-Every `cert.config.json` field documented with examples and defaults.
+<span class="lvt-feature-icon">🏛️</span>
+### [Architecture →](architecture.md)
+How the pieces fit — handlers, transport, KV, signing, data model.
 </div>
 
 <div class="lvt-feature" markdown>
-<span class="lvt-feature-icon">🖼️</span>
-### [PDF overlay guide →](pdf-overlay-guide.md)
-Design your template, measure coordinates, preview overlays.
+<span class="lvt-feature-icon">⚙️</span>
+### [Configuration →](config-reference.md)
+Every `cert.config.json` field + environment variable documented.
+</div>
+
+<div class="lvt-feature" markdown>
+<span class="lvt-feature-icon">🔐</span>
+### [Security →](security.md)
+Hardening checklist for production deploys.
+</div>
+
+<div class="lvt-feature" markdown>
+<span class="lvt-feature-icon">🛠️</span>
+### [Operations →](operations.md)
+Health probe, log triage, audit trail, incident checklist.
+</div>
+
+<div class="lvt-feature" markdown>
+<span class="lvt-feature-icon">🧭</span>
+### [Troubleshooting →](troubleshooting.md)
+Common failure modes and their root causes.
 </div>
 
 </div>

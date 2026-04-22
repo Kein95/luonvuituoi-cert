@@ -39,12 +39,14 @@ Set these in the Vercel dashboard or via `vercel env add`:
 | `JWT_SECRET` | yes | 32+ random chars. |
 | `ADMIN_DEFAULT_PASSWORD` | bootstrap | Used by seed scripts; rotate immediately. |
 | `PUBLIC_BASE_URL` | yes | e.g. `https://mycerts.example`. Pins magic-link + QR URLs against Host-header injection. |
-| `KV_BACKEND` | yes | `upstash` or `vercel-kv`. |
+| `KV_BACKEND` | yes | `upstash` or `vercel-kv` (never `local` on Vercel — `/tmp` is ephemeral). |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | if `KV_BACKEND=upstash` | |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | if `KV_BACKEND=vercel-kv` | Auto-injected when you link a Vercel KV store. |
-| `RESEND_API_KEY` / `CERT_EMAIL_FROM` | if `admin.auth_mode` is `otp_email` or `magic_link` | |
-| `GSHEET_WEBHOOK_URL` | optional | Fire-and-forget audit trail. |
-| `ALLOWED_ORIGINS` | optional | Comma-separated CORS whitelist. Defaults to `*`. |
+| `RESEND_API_KEY` / `CERT_EMAIL_FROM` | if `admin.auth_mode` is `otp_email` or `magic_link` | Missing key → `NullEmailProvider` fallback with warning; OTPs are silently dropped. |
+| `GSHEET_WEBHOOK_URL` | optional | Must be `https://…`. Other schemes rejected with a warning (SSRF guard). |
+| `ALLOWED_ORIGINS` | recommended | Comma-separated CORS whitelist; e.g. `https://mycerts.example`. Defaults to `*` — pin it once your front-end origin is known. |
+| `TRUST_PROXY_HEADERS` | **yes for Vercel** | Set to `1`. Vercel terminates TLS and forwards `X-Forwarded-For`; without this flag the rate limiter keys off Vercel's own proxy IP, making all requests share one bucket. |
+| `FORCE_HSTS` | recommended | Set to `1`. Vercel is HTTPS-only; emit HSTS so browsers refuse to downgrade. |
 
 ## `vercel.json`
 

@@ -72,6 +72,56 @@ with ResendProvider(api_key=os.environ["RESEND_API_KEY"], from_address="no-reply
 - Verify: atomic consume — clicking the link twice only works once.
 - Caller supplies a `link_builder(token) -> str` callback that assembles the click URL (Phase 11 dev server uses `PUBLIC_BASE_URL + "/admin?token="`).
 
+## Signing out / revoking sessions
+
+JWTs are stateless — rotating `JWT_SECRET` invalidates every active session.
+For the "one admin compromised, need to log them out without nuking everyone"
+case, the portal ships a KV-backed revocation list.
+
+### Client flow
+
+```http
+POST /api/admin/logout
+Content-Type: application/json
+
+{"token": "<the-current-jwt>"}
+```
+
+Response is always `200`:
+
+- `{"revoked": true, "jti": "<jti>"}` — token accepted, `jti` added to the denylist with TTL = remaining-life of the token
+- `{"revoked": false, "error": "admin session expired"}` — token was already invalid, nothing to do (the client is signing out anyway)
+
+### Server-side enforcement
+
+Any handler that threads `kv=` through to `verify_admin_token` will reject a
+revoked session with `TokenError("admin session revoked")`. In this repo, the
+Flask shim passes `kv` to:
+
+- `/api/admin/search` (admin-mode search)
+- `/api/shipment/upsert`
+- `/api/admin/logout` (idempotent — the revoke call itself doesn't block on prior denylist hits)
+
+Handlers that don't pass `kv` keep the pre-M7 behavior (token valid until `exp`).
+This is deliberate: your custom transport code can opt into revocation per
+endpoint as you thread the KV instance through.
+
+### Denylist storage
+
+Entries land in the configured KV backend under `jwt_denylist:<jti>` with
+TTL = `exp - now`. The denylist self-expires — no cron job needed. With the
+default 8-hour session TTL, the worst-case denylist size is bounded by the
+number of log-out events in any 8-hour window.
+
+### Programmatic revocation
+
+```python
+from luonvuitoi_cert.auth import revoke_admin_token
+
+jti = revoke_admin_token(kv, token=caller_jwt, env={"JWT_SECRET": "..."})
+# Subsequent verify_admin_token(jwt, kv=kv) calls raise TokenError('revoked').
+```
+
 ## Activity log
 
 When you pass an `ActivityLog` to `perform_login`, it records:

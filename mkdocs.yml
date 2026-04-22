@@ -72,9 +72,13 @@ nav:
   - Quickstart: quickstart.md
   - User guide: user-guide.md
   - Configuration: config-reference.md
+  - Architecture: architecture.md
   - Guides:
       - PDF Overlay: pdf-overlay-guide.md
       - Admin Auth: admin-auth.md
+      - Security: security.md
+      - Operations: operations.md
+      - Troubleshooting: troubleshooting.md
   - Deploy:
       - Vercel: deploy-vercel.md
       - Docker: deploy-docker.md

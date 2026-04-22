@@ -7,11 +7,10 @@ on:
       - "examples/**"
       - "packages/**"
       - ".github/workflows/build-examples.yml"
+  # Always run on PRs — the required-check ruleset on `main` needs this job
+  # to report, even on docs-only PRs. Job is ~30s, cheap enough to unconditional.
   pull_request:
     branches: [main]
-    paths:
-      - "examples/**"
-      - "packages/**"
 
 jobs:
   demo-academy:

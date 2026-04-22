@@ -17,15 +17,42 @@ docker run --rm -p 8000:8000 \
   -e JWT_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
   -e ADMIN_DEFAULT_PASSWORD="change-me" \
   -e PUBLIC_BASE_URL="https://mycerts.example" \
+  -e ALLOWED_ORIGINS="https://mycerts.example" \
+  -e TRUST_PROXY_HEADERS=1 \
+  -e FORCE_HSTS=1 \
   -v "$(pwd)/data:/app/project/data" \
   -v "$(pwd)/private_key.pem:/app/project/private_key.pem:ro" \
   my-portal:latest
 ```
 
-The mounted volumes give you:
+### Env checklist
+
+| Name | Why |
+|------|-----|
+| `JWT_SECRET` | Required. No ephemeral fallback. |
+| `PUBLIC_BASE_URL` | Pins magic-link + QR URLs. |
+| `ALLOWED_ORIGINS` | CORS whitelist; scope down from `*` once the front-end origin is known. |
+| `TRUST_PROXY_HEADERS=1` | Enable only when the Nginx/Caddy reverse proxy below is in place. Without a proxy rewriting `X-Forwarded-For`, leave at `0` — otherwise clients can spoof their IP and bypass rate limits. |
+| `FORCE_HSTS=1` | Enable once the reverse proxy terminates TLS. |
+| `WEB_CONCURRENCY` | Defaults to `2`. With `KV_BACKEND=local` + >1 worker, startup logs a warning — the local file KV is not cross-process safe. Switch to `upstash` when scaling. |
+| `GSHEET_WEBHOOK_URL` | Optional. Must be `https://…`. |
+
+### Mounted volumes
 
 - `data/` — persistent SQLite + optional local KV store survives container restarts.
 - `private_key.pem` — the QR signing key. Never bake this into the image.
+
+### Container user
+
+The image runs as non-root `app:app` (system UID/GID). If you bind-mount
+`data/` from the host, ensure the directory is writable by that UID
+(`chown $(id -u):$(id -g) data/` on the host works because the Docker
+daemon maps host UIDs 1:1 by default).
+
+## Healthcheck
+
+`/health` returns `{"ok": true}` with no KV write, no DB read, no rate-limit
+interaction. Dockerfile + compose healthcheck probes it every 30s.
 
 ## docker-compose
 
