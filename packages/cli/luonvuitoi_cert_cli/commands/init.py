@@ -16,8 +16,10 @@ Design intent:
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
+import tempfile
 from importlib import resources
 from pathlib import Path
 
@@ -92,29 +94,42 @@ def init_project(
         console.print(f"[red]ERR[/] locale must be 'en' or 'vi'; got {locale!r}.")
         raise typer.Exit(code=2)
 
-    target.mkdir(parents=True, exist_ok=True)
+    # Atomic write: scaffold into a sibling staging dir, validate there, and
+    # only then move it into place. A validation failure leaves the user's
+    # target path untouched so re-running init doesn't hit the 'not empty'
+    # bail from a half-written previous attempt.
     ctx = _render_context(name, slug, locale)
     env = Environment(undefined=StrictUndefined, keep_trailing_newline=True)
-
-    for relative, source in _iter_scaffold_files():
-        dest = target / relative
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if relative.endswith(".j2"):
-            rendered = env.from_string(source.read_text(encoding="utf-8")).render(ctx)
-            dest.with_suffix("").write_text(rendered, encoding="utf-8")
-        else:
-            with source.open("rb") as src, dest.open("wb") as out:
-                shutil.copyfileobj(src, out)
-
-    # Round-trip the rendered config through the validator so typos fail loud.
-    from luonvuitoi_cert.config import load_config
-
-    cfg_path = target / "cert.config.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".lvt-init-", dir=str(target.parent)))
     try:
-        load_config(cfg_path)
-    except Exception as e:  # noqa: BLE001
-        console.print(f"[red]ERR[/] rendered config failed validation: {e}")
-        raise typer.Exit(code=3) from e
+        for relative, source in _iter_scaffold_files():
+            dest = staging / relative
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if relative.endswith(".j2"):
+                rendered = env.from_string(source.read_text(encoding="utf-8")).render(ctx)
+                dest.with_suffix("").write_text(rendered, encoding="utf-8")
+            else:
+                with source.open("rb") as src, dest.open("wb") as out:
+                    shutil.copyfileobj(src, out)
+
+        from luonvuitoi_cert.config import load_config
+
+        cfg_path = staging / "cert.config.json"
+        try:
+            load_config(cfg_path)
+        except Exception as e:  # noqa: BLE001
+            console.print(f"[red]ERR[/] rendered config failed validation: {e}")
+            raise typer.Exit(code=3) from e
+
+        # Promote the staged tree to the user's target. If target exists (because
+        # they passed an empty dir), remove the placeholder so os.rename works.
+        if target.exists():
+            target.rmdir()
+        os.rename(staging, target)
+    except BaseException:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
 
     console.print(f"[green]OK[/] scaffolded {name!r} into {target}")
     console.print("  next: [cyan]cd[/] into the project, [cyan]pip install -r requirements.txt[/],")

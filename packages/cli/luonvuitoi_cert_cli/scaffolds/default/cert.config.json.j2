@@ -1,9 +1,9 @@
 {
   "$schema": "https://luonvuitoi.github.io/cert/cert.schema.json",
   "project": {
-    "name": "{{ project_name }}",
-    "slug": "{{ project_slug }}",
-    "locale": "{{ project_locale }}",
+    "name": {{ project_name | tojson }},
+    "slug": {{ project_slug | tojson }},
+    "locale": {{ project_locale | tojson }},
     "branding": {
       "primary_color": "#1E3A8A",
       "accent_color": "#60A5FA"

@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script{% if csp_nonce %} nonce="{{ csp_nonce }}"{% endif %}>
 (function () {
   "use strict";
   const endpoint = {{ verify_endpoint | tojson }};

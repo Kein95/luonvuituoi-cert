@@ -215,3 +215,96 @@ def test_dev_server_captcha_endpoint(scaffolded_project: Path) -> None:
     assert resp.status_code == 200
     body = resp.get_json()
     assert "id" in body and "question" in body
+
+
+def test_flask_enforces_max_content_length(scaffolded_project: Path) -> None:
+    """Regression: Phase 11 review H1 — Werkzeug must reject oversize bodies pre-parse."""
+    from luonvuitoi_cert_cli.server import build_app
+
+    flask_app = build_app(scaffolded_project / "cert.config.json", scaffolded_project)
+    client = flask_app.test_client()
+    resp = client.post("/api/search", data=b"x" * (40 * 1024), content_type="application/json")
+    assert resp.status_code == 413
+
+
+def test_csp_uses_nonce_not_unsafe_inline(scaffolded_project: Path) -> None:
+    """Regression: Phase 11 review H4 — CSP script-src must not contain unsafe-inline."""
+    import re
+
+    from luonvuitoi_cert_cli.server import build_app
+
+    flask_app = build_app(scaffolded_project / "cert.config.json", scaffolded_project)
+    client = flask_app.test_client()
+    resp = client.get("/admin")
+    csp = resp.headers.get("Content-Security-Policy", "")
+    script_section = csp.split("script-src", 1)[1].split(";")[0] if "script-src" in csp else ""
+    assert "'unsafe-inline'" not in script_section
+    assert "'nonce-" in csp
+    nonce_match = re.search(r"'nonce-([^']+)'", csp)
+    assert nonce_match
+    assert f'nonce="{nonce_match.group(1)}"' in resp.data.decode("utf-8")
+
+
+def test_login_errorhandler_narrows_to_login_error(scaffolded_project: Path) -> None:
+    """Regression: Phase 11 review H2 — internal exceptions must not leak as 401 body."""
+    from luonvuitoi_cert_cli.server import build_app
+
+    flask_app = build_app(scaffolded_project / "cert.config.json", scaffolded_project)
+    client = flask_app.test_client()
+    resp = client.post("/api/admin/login", json={})
+    assert resp.status_code == 401
+    assert resp.get_json()["error"] == "email and password are required"
+
+
+def test_public_base_url_env_overrides_host(
+    scaffolded_project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: Phase 11 review H5 — PUBLIC_BASE_URL must win over Host header."""
+    from luonvuitoi_cert_cli.server import build_app
+    from luonvuitoi_cert_cli.server.app import _public_base_url
+
+    flask_app = build_app(scaffolded_project / "cert.config.json", scaffolded_project)
+    monkeypatch.setenv("PUBLIC_BASE_URL", "https://trusted.example")
+    with flask_app.test_request_context("/", headers={"Host": "evil.example"}):
+        assert _public_base_url() == "https://trusted.example"
+
+
+def test_init_template_escapes_quotes_in_project_name(tmp_path: Path) -> None:
+    """Regression: Phase 11 review M1 — project name with quotes must not break JSON."""
+    target = tmp_path / "escape-dir"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            str(target),
+            "--name",
+            'Evil"; "injected":"yes',
+            "--slug",
+            "evil-demo",
+            "--non-interactive",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    data = json.loads((target / "cert.config.json").read_text(encoding="utf-8"))
+    assert data["project"]["name"] == 'Evil"; "injected":"yes'
+
+
+def test_init_leaves_target_clean_on_validation_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: Phase 11 review M2 — failed validation must not leave a half-populated target."""
+    import luonvuitoi_cert.config as cfg_module
+    from luonvuitoi_cert.config.loader import ConfigError
+
+    target = tmp_path / "atomic"
+
+    def _always_fail(path):  # type: ignore[no-untyped-def]
+        raise ConfigError("forced failure")
+
+    monkeypatch.setattr(cfg_module, "load_config", _always_fail)
+    result = runner.invoke(
+        app,
+        ["init", str(target), "--slug", "atomic-demo", "--non-interactive"],
+    )
+    assert result.exit_code != 0
+    assert not target.exists()
