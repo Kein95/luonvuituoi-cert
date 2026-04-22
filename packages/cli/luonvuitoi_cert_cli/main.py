@@ -1,7 +1,8 @@
 """Entry point for the ``lvt-cert`` / ``luonvuitoi-cert`` console script.
 
-Subcommands are declared here and implemented in ``commands/*.py``. Keeping
-the dispatch layer thin means ``--help`` stays fast even as commands grow.
+Each command module exposes a single ``run`` function; we register them as
+top-level Typer commands here instead of the sub-typer pattern so positional
+args (e.g. ``lvt-cert init <target>``) resolve as expected.
 """
 
 from __future__ import annotations
@@ -21,14 +22,20 @@ app = typer.Typer(
     add_completion=False,
 )
 
-app.add_typer(init.app, name="init")
-app.add_typer(gen_keys.app, name="gen-keys")
-app.add_typer(seed.app, name="seed")
-app.add_typer(dev.app, name="dev")
+app.command(name="init", help="Scaffold a new certificate portal project.")(init.init_project)
+app.command(name="gen-keys", help="Generate RSA keypair for QR signing.")(gen_keys.gen_keys)
+app.command(name="seed", help="Generate fake students for local testing.")(seed.seed)
+app.command(name="dev", help="Run the portal locally.")(dev.dev)
 
 
 @app.callback(invoke_without_command=True)
-def _root(version: bool = typer.Option(False, "--version", "-V", help="Show version and exit.")) -> None:
+def _root(
+    ctx: typer.Context,
+    version: bool = typer.Option(False, "--version", "-V", help="Show version and exit."),
+) -> None:
     if version:
         console.print(f"lvt-cert [bold cyan]{__version__}[/]")
+        raise typer.Exit()
+    if ctx.invoked_subcommand is None:
+        console.print(ctx.get_help())
         raise typer.Exit()

@@ -35,7 +35,7 @@ def gen_keys(
     pub_path = out_dir / "public_key.pem"
 
     if (priv_path.exists() or pub_path.exists()) and not force:
-        console.print(f"[red]✗ keys already exist in {out_dir}. Use --force to overwrite.[/]")
+        console.print(f"[red]ERR keys already exist in {out_dir}. Use --force to overwrite.[/]")
         raise typer.Exit(code=1)
 
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
@@ -52,6 +52,6 @@ def gen_keys(
     priv_path.write_bytes(priv_pem)
     pub_path.write_bytes(pub_pem)
 
-    console.print(f"[green]✓[/] private key → {priv_path}")
-    console.print(f"[green]✓[/] public  key → {pub_path}")
+    console.print(f"[green]OK[/] private key -> {priv_path}")
+    console.print(f"[green]OK[/] public  key -> {pub_path}")
     console.print("[yellow]![/] add [cyan]private_key.pem[/] to .gitignore — never commit it.")

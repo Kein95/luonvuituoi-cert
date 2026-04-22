@@ -1,0 +1,55 @@
+{
+  "$schema": "https://luonvuitoi.github.io/cert/cert.schema.json",
+  "project": {
+    "name": "{{ project_name }}",
+    "slug": "{{ project_slug }}",
+    "locale": "{{ project_locale }}",
+    "branding": {
+      "primary_color": "#1E3A8A",
+      "accent_color": "#60A5FA"
+    }
+  },
+  "rounds": [
+    {
+      "id": "main",
+      "label": "Main Round",
+      "table": "students",
+      "pdf": "templates/main.pdf"
+    }
+  ],
+  "subjects": [
+    { "code": "G", "en": "General", "db_col": "result" }
+  ],
+  "results": {
+    "G": { "GOLD": 1, "SILVER": 2, "BRONZE": 3, "PARTICIPANT": 4 }
+  },
+  "data_mapping": {
+    "sbd_col": "sbd",
+    "name_col": "full_name",
+    "dob_col": "dob",
+    "school_col": "school"
+  },
+  "layout": {
+    "page_size": [842, 595],
+    "fields": {
+      "name": {
+        "x": 421, "y": 330, "font": "serif", "size": 36, "color": "#1E3A8A", "align": "center"
+      },
+      "school": {
+        "x": 421, "y": 280, "font": "serif", "size": 18, "align": "center", "wrap": 60
+      }
+    }
+  },
+  "fonts": {
+    "serif": "assets/fonts/serif.ttf"
+  },
+  "admin": {
+    "auth_mode": "password",
+    "multi_user": true
+  },
+  "features": {
+    "qr_verify": { "enabled": false },
+    "shipment": { "enabled": false },
+    "kv_backend": "local"
+  }
+}

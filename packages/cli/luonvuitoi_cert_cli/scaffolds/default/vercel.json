@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/api/index" },
+    { "source": "/admin", "destination": "/api/admin" },
+    { "source": "/certificate-checker", "destination": "/api/certificate-checker" }
+  ],
+  "functions": {
+    "api/*.py": {
+      "maxDuration": 30
+    }
+  }
+}
