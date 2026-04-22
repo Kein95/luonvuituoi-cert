@@ -155,13 +155,22 @@ def delete_admin_user(db_path: str | Path, *, user_id: str) -> None:
 
 
 def verify_admin_password(db_path: str | Path, *, email: str, password: str) -> AdminUser | None:
-    """Return the user if the password matches; ``None`` otherwise. Constant-ish time."""
-    user = get_admin_user(db_path, email=email)
+    """Return the user if the password matches; ``None`` otherwise. Constant-ish time.
+
+    M8: single SELECT that fetches the row + password hash together, instead of
+    the prior two-query dance (``get_admin_user`` + extra ``SELECT password_hash``).
+    """
+    ensure_admin_schema(db_path)
     with closing(sqlite3.connect(str(db_path))) as conn:
+        conn.row_factory = sqlite3.Row
         row = conn.execute(
-            "SELECT password_hash FROM admin_users WHERE email = ?", (email.strip().lower(),)
+            "SELECT * FROM admin_users WHERE email = ? LIMIT 1",
+            (email.strip().lower(),),
         ).fetchone()
-    stored_hash = row[0] if row else ""
+    stored_hash = row["password_hash"] if row else ""
     # Always run verify_password, even for unknown emails, to avoid timing leaks.
     ok = verify_password(password, stored_hash or "")
-    return user if ok and user is not None and user.is_active else None
+    if not ok or row is None:
+        return None
+    user = _row_to_user(row)
+    return user if user.is_active else None

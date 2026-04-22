@@ -42,10 +42,20 @@ Before exposing a deployment publicly:
 2. Set `PUBLIC_BASE_URL` to the exact HTTPS origin the portal is reachable at.
 3. Set `ADMIN_DEFAULT_PASSWORD` to something secret and change the initial admin's password immediately after first login.
 4. If you enable QR verification, protect `private_key.pem` with filesystem ACLs and exclude it from backups that are not themselves encrypted.
-5. Put the Flask dev server behind a reverse proxy (Nginx / Caddy) that terminates TLS and forwards `X-Forwarded-For`.
+5. Put the Flask dev server behind a reverse proxy (Nginx / Caddy) that terminates TLS and forwards `X-Forwarded-For`. Set `TRUST_PROXY_HEADERS=1` so the app honors the forwarded IP for rate limiting; without this, the bucket is keyed on the unspoofable `remote_addr` but a proxy chain will hide the real client.
 6. If you enable `otp_email` or `magic_link`, use a real transactional provider (`RESEND_API_KEY` wired up) rather than shipping `NullEmailProvider`.
 7. Review the admin-mode CSP on `/admin` and extend `script-src`/`style-src` only with specific nonces — never re-introduce `'unsafe-inline'`.
-8. Enable the `gsheet_log` feature only with a webhook that can afford PII exposure; otherwise the local SQLite audit table is authoritative.
+8. Enable the `gsheet_log` feature only with a webhook that can afford PII exposure; otherwise the local SQLite audit table is authoritative. The webhook URL is rejected if it is not `https://`.
+9. Set `ALLOWED_ORIGINS` to a comma-separated list of trusted origins if the portal is embedded cross-domain; otherwise the app will emit `Access-Control-Allow-Origin: *` and browsers will happily call `/api/*` from anywhere.
+10. Set `FORCE_HSTS=1` once the site is reachable exclusively over HTTPS. Do not enable on HTTP/dev — HSTS is cached by browsers.
+
+### H1 — SQL identifier model (clarification)
+
+`admin_update.py` accepts a `column` name from the client body and interpolates it into a SQL statement. We validate against an allowlist derived from `_allowed_columns(config)` — a name not in the allowlist is rejected before any SQL is built. A malicious **operator** who authored the config can smuggle a column that eventually maps to something hostile (e.g., a reserved word, a name that collides with a trigger). Per the trust model at the top, *config authors are trusted*; review your config before deploying.
+
+### H6 — CSRF posture (do-not-touch)
+
+Admin auth ships JWTs in the request **body** (via `sessionStorage` on the client), not in a cookie. Browsers do not auto-send body params on cross-site requests, so CSRF is not exploitable. **Do not refactor admin auth to cookie storage** without adding a CSRF token + `SameSite=Strict` middleware first — that refactor would quietly re-introduce the entire CSRF attack surface. See the `cookie storage is a deliberate non-feature` note in `CONTRIBUTING.md`.
 
 ## Cryptographic choices
 

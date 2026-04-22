@@ -4,7 +4,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
-[![Tests: 383](https://img.shields.io/badge/tests-383%20passing-brightgreen.svg)](#)
+[![Tests](https://img.shields.io/github/actions/workflow/status/Kein95/luonvuituoi-cert/test.yml?branch=main&label=tests)](https://github.com/Kein95/luonvuituoi-cert/actions/workflows/test.yml)
+[![Lint](https://img.shields.io/github/actions/workflow/status/Kein95/luonvuituoi-cert/lint.yml?branch=main&label=lint)](https://github.com/Kein95/luonvuituoi-cert/actions/workflows/lint.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/Kein95/luonvuituoi-cert/publish-docs.yml?branch=main&label=docs)](https://kein95.github.io/luonvuituoi-cert/)
 
 ## Why
 

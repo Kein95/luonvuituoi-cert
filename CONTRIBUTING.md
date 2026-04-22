@@ -69,6 +69,8 @@ Keep PRs focused. One behavioral change per PR, one commit if possible. Use conv
 - **Atomic KV primitives.** Anything that "needs to be single-use" (CAPTCHA, OTP, magic link) must go through `kv.consume()`, not `get + delete`.
 - **SQL identifiers are validated.** Any string that ends up interpolated into SQL (column name, table name) must pass through `_SQL_IDENT` at config time.
 - **Secrets never leak into errors.** When wrapping exceptions, strip raw input; log the detail to the stdlib `logging` module for operators.
+- **Admin auth lives in the body, not a cookie.** JWTs are kept in client-side `sessionStorage` and sent via a request-body `token` field. Browsers do not auto-send body params on cross-origin navigation, so CSRF is not exploitable. Moving admin auth to a cookie (even `SameSite=Strict`) re-introduces the entire CSRF attack surface; such a refactor MUST ship with a CSRF-token middleware in the same PR or will be reverted.
+- **Audit metadata has no PII.** `admin_update` records `{column, changed, value_length_delta}` — not raw `old`/`new` values. Phones, DOBs, and addresses never reach the audit table (or the GSheet webhook forward). Keep the same shape for any new admin write endpoint.
 
 ## What a "no" looks like
 
