@@ -306,6 +306,125 @@ body, .md-typeset {
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--lvt-teal-700); }
 
+/* ============================================================
+   Theme picker (auto/light/dark direct-select) — replaces the
+   cycling Material toggle so users pick once instead of clicking
+   through schemes.
+   ============================================================ */
+.lvt-theme-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0.25rem;
+}
+
+.lvt-theme-picker > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #ffffff;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.lvt-theme-picker > summary::-webkit-details-marker { display: none; }
+.lvt-theme-picker > summary:hover,
+.lvt-theme-picker[open] > summary {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lvt-theme-picker-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  min-width: 220px;
+  padding: 0.35rem;
+  background: var(--md-default-bg-color, #ffffff);
+  border: 1px solid var(--md-default-fg-color--lightest, rgba(0,0,0,0.08));
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+}
+
+[data-md-color-scheme="slate"] .lvt-theme-picker-menu {
+  background: #14213a;
+  border-color: rgba(255,255,255,0.08);
+}
+
+.lvt-theme-picker-menu button {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--md-default-fg-color);
+  font: inherit;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.lvt-theme-picker-menu button:hover {
+  background: var(--md-default-fg-color--lightest);
+}
+
+[data-md-color-scheme="slate"] .lvt-theme-picker-menu button:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.lvt-theme-picker-menu button.is-active {
+  background: var(--lvt-teal-100);
+  color: var(--lvt-teal-900);
+  font-weight: 600;
+}
+
+[data-md-color-scheme="slate"] .lvt-theme-picker-menu button.is-active {
+  background: rgba(20, 184, 166, 0.2);
+  color: var(--lvt-teal-100);
+}
+
+.lvt-theme-picker-icon { font-size: 1.15rem; line-height: 1; }
+.lvt-theme-picker-label { font-size: 0.92rem; }
+.lvt-theme-picker-hint {
+  font-size: 0.75rem;
+  color: var(--md-default-fg-color--light);
+}
+.lvt-theme-picker-menu button.is-active .lvt-theme-picker-hint {
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* Hide the default Material palette toggle — we control the picker now. */
+.md-header [data-md-component="palette"] { display: none !important; }
+
+/* Credits strip — compact attribution shown above the hero. */
+.lvt-credits {
+  max-width: 980px;
+  margin: 0.5rem auto 0;
+  padding: 0.35rem 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--md-default-fg-color--light);
+}
+.lvt-credits a {
+  color: var(--lvt-teal-700);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(13, 110, 110, 0.35);
+}
+.lvt-credits a:hover { border-bottom-style: solid; }
+
+[data-md-color-scheme="slate"] .lvt-credits a {
+  color: var(--lvt-teal-100);
+  border-bottom-color: rgba(204, 251, 241, 0.35);
+}
+
 /* Responsive tweaks */
 @media (max-width: 600px) {
   .lvt-hero { padding: 2.5rem 1rem 2rem; }

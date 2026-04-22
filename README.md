@@ -1,5 +1,7 @@
 # LUONVUITUOI-CERT
 
+> 🙏 Thank you teammate [@Liamlenguyen](https://github.com/Liamlenguyen)
+
 > Config-driven certificate portal toolkit. Bring your own PDF template + student list → ship a search / download / QR-verify / admin portal to Vercel or Docker in an afternoon.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

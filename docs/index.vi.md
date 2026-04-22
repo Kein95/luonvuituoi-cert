@@ -4,6 +4,8 @@ hide:
   - toc
 ---
 
+<p class="lvt-credits">🙏 Cảm ơn đồng đội <a href="https://github.com/Liamlenguyen" target="_blank" rel="noopener">@Liamlenguyen</a></p>
+
 <div class="lvt-hero" markdown>
 
 <img src="../assets/logo.svg" alt="Logo LUONVUITUOI-CERT" class="lvt-hero-logo">
