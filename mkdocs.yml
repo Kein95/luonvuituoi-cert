@@ -64,6 +64,9 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
+extra_javascript:
+  - javascripts/theme-picker.js
+
 extra:
   generator: false
   alternate:
