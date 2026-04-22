@@ -3,7 +3,8 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PROJECT_ROOT=/app/project
+    PROJECT_ROOT=/app/project \
+    WEB_CONCURRENCY=2
 
 WORKDIR /app
 
@@ -35,4 +36,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -fsS -X POST http://127.0.0.1:8000/api/captcha -H 'Content-Type: application/json' -d '{}' || exit 1
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60", "--access-logfile", "-", "wsgi:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --timeout 60 --access-logfile - wsgi:app"]

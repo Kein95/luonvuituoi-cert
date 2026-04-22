@@ -44,9 +44,23 @@ CAPTCHA_RATE_LIMIT = 30
 CAPTCHA_RATE_WINDOW_SECONDS = 60
 
 
+def _trust_proxy_headers() -> bool:
+    """Whether the deploy sits behind a trusted reverse proxy.
+
+    H5 fix: blindly reading ``X-Forwarded-For`` lets a direct client spoof
+    their IP for rate-limit buckets. Only trust the header when the operator
+    has set ``TRUST_PROXY_HEADERS=1`` (meaning they deployed behind Nginx /
+    Caddy / Vercel / a known LB that overwrites the header).
+    """
+    return os.getenv("TRUST_PROXY_HEADERS", "").strip().lower() in {"1", "true", "yes"}
+
+
 def _client_id() -> str:
-    fwd = request.headers.get("X-Forwarded-For", "")
-    return (fwd.split(",")[0].strip() if fwd else request.remote_addr) or "anon"
+    if _trust_proxy_headers():
+        fwd = request.headers.get("X-Forwarded-For", "")
+        if fwd:
+            return fwd.split(",")[0].strip() or (request.remote_addr or "anon")
+    return request.remote_addr or "anon"
 
 
 def _resolve_email_provider():  # type: ignore[no-untyped-def]

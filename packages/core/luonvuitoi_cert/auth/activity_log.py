@@ -8,13 +8,14 @@ the admin flow.
 
 from __future__ import annotations
 
+import atexit
 import json
 import logging
 import os
 import sqlite3
-import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,6 +23,12 @@ from pathlib import Path
 import httpx
 
 _LOGGER = logging.getLogger(__name__)
+
+# H4: a single bounded executor per process, not one thread per admin action.
+# Uploading a 10k-row CSV triggers 10k audit writes — without this cap we'd
+# spawn 10k daemon threads and the interpreter would thrash the scheduler.
+_WEBHOOK_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="activity-log-webhook")
+atexit.register(_WEBHOOK_EXECUTOR.shutdown, wait=False)
 
 _CREATE_SQL = """
 CREATE TABLE IF NOT EXISTS admin_activity (
@@ -118,9 +125,12 @@ class ActivityLog:
             "metadata": entry.metadata,
             "ip": entry.ip,
         }
-        threading.Thread(
-            target=self._post_webhook, args=(payload,), daemon=True, name="activity-log-webhook"
-        ).start()
+        try:
+            _WEBHOOK_EXECUTOR.submit(self._post_webhook, payload)
+        except RuntimeError:
+            # Interpreter already shutting down; local SQLite record is
+            # authoritative — forwarding loss is acceptable.
+            _LOGGER.debug("activity log executor shut down; skipping webhook")
 
     def _post_webhook(self, payload: dict[str, object]) -> None:
         try:
