@@ -44,6 +44,11 @@ _LOGGER = logging.getLogger(__name__)
 MAX_BODY_BYTES = 32 * 1024
 CAPTCHA_RATE_LIMIT = 30
 CAPTCHA_RATE_WINDOW_SECONDS = 60
+# /api/verify is public (third parties scan QR), and each call burns CPU on
+# RSA-PSS signature verification. 60/min/IP stops brute-force signature probes
+# and enumeration attacks without hurting legitimate verifiers.
+VERIFY_RATE_LIMIT = 60
+VERIFY_RATE_WINDOW_SECONDS = 60
 
 
 def _trust_proxy_headers() -> bool:
@@ -263,6 +268,16 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
     @app.post("/api/verify")
     def _verify_qr():  # type: ignore[no-untyped-def]
+        # Rate-limit before decode + signature verify so an attacker can't
+        # brute-force probe blobs or burn RSA-PSS CPU. No CAPTCHA here —
+        # third-party verifiers (schools, employers) need one-shot scan UX.
+        handlers.check_rate_limit(
+            kv,
+            "verify",
+            _client_id(),
+            limit=VERIFY_RATE_LIMIT,
+            window_seconds=VERIFY_RATE_WINDOW_SECONDS,
+        )
         params = _json_body()
         resp = handlers.verify_qr(config=config, project_root=project_root, blob=str(params.get("blob", "")))
         return jsonify(resp.to_json_safe())
