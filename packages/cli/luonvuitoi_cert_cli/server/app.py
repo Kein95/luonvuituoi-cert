@@ -32,9 +32,11 @@ from luonvuitoi_cert.auth import (
     revoke_admin_token,
 )
 from luonvuitoi_cert.auth.activity_log import log_admin_action
+from luonvuitoi_cert.auth.admin_db import Role
 from luonvuitoi_cert.auth.tokens import verify_admin_token
 from luonvuitoi_cert.config import load_config
 from luonvuitoi_cert.locale import load_locale
+from luonvuitoi_cert.shipment import BulkImportError, bulk_import_shipments
 from luonvuitoi_cert.storage.kv import open_kv
 from luonvuitoi_cert.ui import (
     render_admin_page,
@@ -52,6 +54,13 @@ CAPTCHA_RATE_WINDOW_SECONDS = 60
 # and enumeration attacks without hurting legitimate verifiers.
 VERIFY_RATE_LIMIT = 60
 VERIFY_RATE_WINDOW_SECONDS = 60
+# Carrier exports are multi-MB xlsx. 10MB cap prevents memory spikes without
+# hurting legitimate monthly dumps. Tunable via SHIPMENT_IMPORT_MAX_BYTES env.
+SHIPMENT_IMPORT_MAX_BYTES_DEFAULT = 10 * 1024 * 1024
+# Tight rate limit — file parse is expensive, admin drives manually anyway.
+SHIPMENT_IMPORT_RATE_LIMIT = 5
+SHIPMENT_IMPORT_RATE_WINDOW_SECONDS = 60
+_ALLOWED_IMPORT_SUFFIXES = {".xlsx", ".xlsm", ".csv"}
 
 
 def _trust_proxy_headers() -> bool:
@@ -201,6 +210,10 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
     @app.errorhandler(AdminListError)
     def _admin_list_err(e):  # type: ignore[no-untyped-def]
+        return jsonify({"error": str(e)}), 400
+
+    @app.errorhandler(BulkImportError)
+    def _bulk_import_err(e):  # type: ignore[no-untyped-def]
         return jsonify({"error": str(e)}), 400
 
     # ── Pages ─────────────────────────────────────────────────────────
@@ -413,6 +426,72 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
             config=config, db_path=db_path, kv=kv, params=_json_body(), client_id=_client_id()
         )
         return jsonify(asdict(resp))
+
+    @app.post("/api/admin/shipments/import")
+    def _admin_shipments_import():  # type: ignore[no-untyped-def]
+        """Bulk-import carrier export. Multipart: file + token + form fields.
+
+        Admin-only (viewer rejected). Rate-limited 5/min/IP. Temp-file cleanup
+        in finally. Defaults to dry-run unless ``commit=true`` in form body —
+        matches the CLI's safety default.
+        """
+        import tempfile
+
+        # Rate-limit early, before reading the file body.
+        handlers.check_rate_limit(
+            kv,
+            "shipment.import",
+            _client_id(),
+            limit=SHIPMENT_IMPORT_RATE_LIMIT,
+            window_seconds=SHIPMENT_IMPORT_RATE_WINDOW_SECONDS,
+        )
+        # Override size cap for this route only.
+        max_bytes = int(os.getenv("SHIPMENT_IMPORT_MAX_BYTES", str(SHIPMENT_IMPORT_MAX_BYTES_DEFAULT)))
+        if request.content_length is not None and request.content_length > max_bytes:
+            return jsonify({"error": f"file too large (>{max_bytes} bytes)"}), 413
+
+        token_raw = str(request.form.get("token", "")).strip()
+        round_id = str(request.form.get("round_id", "")).strip()
+        carrier = request.form.get("carrier") or None
+        commit_flag = str(request.form.get("commit", "false")).strip().lower() in {"1", "true", "yes"}
+
+        try:
+            token = verify_admin_token(token_raw, kv=kv)
+        except TokenError as e:
+            return jsonify({"error": str(e)}), 401
+        if token.role not in (Role.ADMIN, Role.SUPER_ADMIN):
+            return jsonify({"error": f"role {token.role.value!r} cannot import shipments"}), 403
+
+        uploaded = request.files.get("file")
+        if uploaded is None or not uploaded.filename:
+            return jsonify({"error": "missing 'file' multipart field"}), 400
+        suffix = Path(uploaded.filename).suffix.lower()
+        if suffix not in _ALLOWED_IMPORT_SUFFIXES:
+            return jsonify({"error": f"unsupported file type {suffix!r}; use .xlsx, .xlsm, or .csv"}), 400
+
+        import contextlib
+
+        tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)  # noqa: SIM115 — handler needs path, not fd
+        try:
+            uploaded.save(tmp.name)
+            tmp.close()
+            stats = bulk_import_shipments(
+                config=config,
+                db_path=db_path,
+                activity=activity,
+                file_path=tmp.name,
+                round_id=round_id,
+                carrier=carrier,
+                commit=commit_flag,
+                admin_user_id=token.user_id,
+                admin_email=token.email,
+                client_ip=_client_id(),
+            )
+        finally:
+            with contextlib.suppress(OSError):  # pragma: no cover
+                Path(tmp.name).unlink(missing_ok=True)
+
+        return jsonify(asdict(stats))
 
     @app.before_request
     def _cors_preflight():  # type: ignore[no-untyped-def]

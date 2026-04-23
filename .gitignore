@@ -68,6 +68,13 @@ private_key.pem
 *.log
 logs/
 
+# Carrier shipment exports — contain recipient PII, never commit
+*shipment*.xlsx
+*carrier*.xlsx
+viettel*.xlsx
+ghn*.xlsx
+*.xlsx.downloaded
+
 # Playwright
 playwright-report/
 test-results/

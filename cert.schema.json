@@ -429,9 +429,146 @@
           },
           "title": "Public Fields",
           "type": "array"
+        },
+        "import": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShipmentImport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "title": "Shipment",
+      "type": "object"
+    },
+    "ShipmentImport": {
+      "additionalProperties": false,
+      "description": "Container for multi-carrier import profiles.\n\nKey of ``profiles`` is the carrier name used at the CLI (``--carrier``)\nor API (form field ``carrier``). ``default`` optionally points to one\nprofile to use when no carrier is supplied.",
+      "properties": {
+        "profiles": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ShipmentImportProfile"
+          },
+          "minProperties": 1,
+          "title": "Profiles",
+          "type": "object"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        }
+      },
+      "required": [
+        "profiles"
+      ],
+      "title": "ShipmentImport",
+      "type": "object"
+    },
+    "ShipmentImportMapping": {
+      "additionalProperties": false,
+      "description": "Column name fallbacks for one carrier profile.\n\nEach logical field lists the possible header names the carrier might use;\nthe parser resolves the first match in the uploaded file's header row.\nAccepting fallbacks means a carrier renaming ``SĐT`` → ``Phone`` doesn't\nrequire a code change.",
+      "properties": {
+        "tracking_code": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Tracking Code",
+          "type": "array"
+        },
+        "phone": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Phone",
+          "type": "array"
+        },
+        "status": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Status",
+          "type": "array"
+        },
+        "sent_at": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sent At",
+          "type": "array"
+        },
+        "address": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Address",
+          "type": "array"
+        },
+        "recipient": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recipient",
+          "type": "array"
+        }
+      },
+      "required": [
+        "tracking_code",
+        "phone",
+        "status"
+      ],
+      "title": "ShipmentImportMapping",
+      "type": "object"
+    },
+    "ShipmentImportProfile": {
+      "additionalProperties": false,
+      "description": "One carrier's import ruleset.",
+      "properties": {
+        "column_mapping": {
+          "$ref": "#/$defs/ShipmentImportMapping"
+        },
+        "success_keywords": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Success Keywords",
+          "type": "array"
+        },
+        "skip_status_prefixes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Skip Status Prefixes",
+          "type": "array"
+        },
+        "header_row": {
+          "default": 0,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Header Row",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "column_mapping",
+        "success_keywords"
+      ],
+      "title": "ShipmentImportProfile",
       "type": "object"
     },
     "StudentSearch": {

@@ -91,3 +91,93 @@ Cả ba entry point (`upsert_shipment_record`, `lookup_shipment`, `build_shipmen
 ## Lưu ý migration
 
 Thêm entry mới vào `features.shipment.fields` work với database hiện có — dynamic typing của SQLite đủ dễ dãi để cách `CREATE TABLE IF NOT EXISTS` không alter schema hiện có. Nếu cần thêm cột cho DB đã có data, dùng `ALTER TABLE` thủ công; không có framework migration.
+
+## Import hàng loạt từ Excel/CSV của carrier
+
+Các đơn vị vận chuyển (Viettel Post, GHN, GHTK, …) giao cho ban tổ chức bản Excel báo cáo giao hàng theo tháng. Lệnh CLI `lvt-cert import-shipments` và endpoint `POST /api/admin/shipments/import` parse các file này qua profile riêng mỗi carrier và ghi vào bảng `shipment_history` (PK `(round_id, sbd, tracking_code)` — giữ mọi lần gửi cho audit).
+
+### Cấu hình
+
+Thêm vào `cert.config.json#features.shipment`:
+
+```jsonc
+"import": {
+  "default": "viettel",
+  "profiles": {
+    "viettel": {
+      "column_mapping": {
+        "tracking_code": ["Mã vận đơn", "Tracking"],
+        "phone":         ["SĐT", "Phone"],
+        "status":        ["Trạng thái", "Status"],
+        "sent_at":       ["Ngày gửi"],
+        "address":       ["Địa chỉ"],
+        "recipient":     ["Người nhận"]
+      },
+      "success_keywords":    ["GIAO THÀNH CÔNG", "PHÁT THÀNH CÔNG"],
+      "skip_status_prefixes": ["CH"],
+      "header_row": 0
+    },
+    "ghn": {
+      "column_mapping": {
+        "tracking_code": "Order Code",
+        "phone":         "Phone",
+        "status":        "Status"
+      },
+      "success_keywords": ["DELIVERED"]
+    }
+  }
+}
+```
+
+Mỗi field nhận single string hoặc list fallback — carrier đổi header tháng sau, chỉ cần update list, không phải sửa code.
+
+### Cách dùng CLI
+
+```bash
+# dry run — xem stats trước, không ghi DB
+lvt-cert import-shipments path/to/carrier.xlsx --round main --carrier viettel
+
+# commit sau khi review
+lvt-cert import-shipments path/to/carrier.xlsx --round main --carrier viettel --commit
+
+# JSON output cho automation
+lvt-cert import-shipments path/to/carrier.xlsx --carrier viettel --json
+```
+
+Dry-run là default có chủ đích — admin nhìn status breakdown + match rate trước khi write. Chạy lại với `--commit` để persist.
+
+### Cách dùng API
+
+```bash
+curl -F file=@carrier.xlsx \
+     -F token="$ADMIN_JWT" \
+     -F round_id=main \
+     -F carrier=viettel \
+     -F commit=true \
+     https://mycerts.example/api/admin/shipments/import
+```
+
+- Chỉ admin (viewer role → 403)
+- Rate-limit: 5 request/phút/IP
+- Max file: 10 MB (tune qua env `SHIPMENT_IMPORT_MAX_BYTES`)
+- Chỉ chấp nhận `.xlsx`, `.xlsm`, `.csv`
+
+### Cách matching hoạt động
+
+1. Parse mỗi row qua `column_mapping` — header name đầu tiên match thắng
+2. Normalize phone (strip non-digit + zero đầu, VN convention)
+3. Dedup theo `tracking_code` — row trước thắng khi trùng
+4. Query `students.phone` resolve SBDs (một phone có thể map nhiều SBDs; mỗi match một row shipment)
+5. Row có status bắt đầu bằng `skip_status_prefixes` bị loại
+6. Status substring không phân biệt hoa/thường với `success_keywords` → flag `is_success`
+
+### Audit trail
+
+Mỗi import emit 1 entry `shipment.bulk_import` trong `admin_activity` với metadata `{parsed, matched_sbds, inserted, success_count, unmatched_phones, committed}`. Không có row data thô vào log — PII chỉ nằm trong bảng SQLite `shipment_history`.
+
+### Khắc phục sự cố
+
+- **Match rate thấp** — phần lớn SBD gửi qua trường bulk, không qua carrier cá nhân. Bình thường.
+- **Status không được coi là success** — thêm keyword vào `success_keywords`. Section `Status breakdown` của dry-run CLI hiển thị mọi giá trị raw.
+- **Lỗi `data_mapping.phone_col`** — import cần cột phone trên students; set nó và re-ingest.
+- **Header không resolve** — `first_matching_header` không tìm ra. Chạy file qua CLI; error liệt kê field logic nào chưa resolve + header file hiện có.
