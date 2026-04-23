@@ -245,6 +245,71 @@ class QRVerify(_Strict):
         return _validate_relative_path(v, "features.qr_verify.*_key_path")
 
 
+class ShipmentImportMapping(_Strict):
+    """Column name fallbacks for one carrier profile.
+
+    Each logical field lists the possible header names the carrier might use;
+    the parser resolves the first match in the uploaded file's header row.
+    Accepting fallbacks means a carrier renaming ``SĐT`` → ``Phone`` doesn't
+    require a code change.
+    """
+
+    tracking_code: list[str] = Field(min_length=1)
+    phone: list[str] = Field(min_length=1)
+    status: list[str] = Field(min_length=1)
+    sent_at: list[str] = Field(default_factory=list)
+    address: list[str] = Field(default_factory=list)
+    recipient: list[str] = Field(default_factory=list)
+
+    @field_validator("tracking_code", "phone", "status", "sent_at", "address", "recipient", mode="before")
+    @classmethod
+    def _coerce_to_list(cls, v: object) -> object:
+        return [v] if isinstance(v, str) else v
+
+
+class ShipmentImportProfile(_Strict):
+    """One carrier's import ruleset."""
+
+    column_mapping: ShipmentImportMapping
+    success_keywords: list[str] = Field(min_length=1)
+    """Case-insensitive substrings in the status text that mark a successful delivery.
+
+    Carriers word delivery completion differently (``GIAO THÀNH CÔNG`` vs
+    ``DELIVERED`` vs ``PHÁT THÀNH CÔNG``). Operator tunes per carrier.
+    """
+    skip_status_prefixes: list[str] = Field(default_factory=list)
+    """Rows whose status starts with any of these are excluded from import.
+
+    Common for transit markers like ``CH-*`` (chờ chuyển) that don't belong in
+    a shipments table focused on delivery outcomes.
+    """
+    header_row: int = Field(default=0, ge=0, le=50)
+    """Zero-indexed row number of the header line. Most carrier exports have
+    metadata/title rows above; set to ``8`` if the real header is row 9.
+    """
+
+
+class ShipmentImport(_Strict):
+    """Container for multi-carrier import profiles.
+
+    Key of ``profiles`` is the carrier name used at the CLI (``--carrier``)
+    or API (form field ``carrier``). ``default`` optionally points to one
+    profile to use when no carrier is supplied.
+    """
+
+    profiles: dict[str, ShipmentImportProfile] = Field(min_length=1)
+    default: str | None = None
+
+    @model_validator(mode="after")
+    def _default_exists(self) -> ShipmentImport:
+        if self.default is not None and self.default not in self.profiles:
+            raise ValueError(
+                f"shipment.import.default={self.default!r} is not a declared profile; "
+                f"available: {sorted(self.profiles)}"
+            )
+        return self
+
+
 class Shipment(_Strict):
     enabled: bool = False
     statuses: list[str] = Field(default_factory=lambda: ["pending", "shipped", "delivered"])
@@ -257,6 +322,16 @@ class Shipment(_Strict):
     students to see them. Tracking codes + recipient addresses should stay
     out unless your threat model tolerates SBD-only enumeration leaks.
     """
+    import_: ShipmentImport | None = Field(default=None, alias="import")
+    """Optional bulk-import config for carrier Excel/CSV uploads.
+
+    When present, the ``lvt-cert import-shipments`` CLI and the
+    ``POST /api/admin/shipments/import`` endpoint become usable. Absent →
+    those entry points raise ``BulkImportError`` asking the operator to add
+    this block before attempting an import.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     @field_validator("statuses")
     @classmethod

@@ -91,3 +91,93 @@ All three entry points (`upsert_shipment_record`, `lookup_shipment`, `build_ship
 ## Migration note
 
 Adding a new entry to `features.shipment.fields` works on an existing database — SQLite's dynamic typing is forgiving enough that the `CREATE TABLE IF NOT EXISTS` approach doesn't alter the existing schema. If you need to add columns to a populated DB, use `ALTER TABLE` manually; there's no migration framework.
+
+## Bulk import from carrier Excel/CSV
+
+Carriers (Viettel Post, GHN, GHTK, …) hand operators monthly delivery exports. The `lvt-cert import-shipments` CLI and the `POST /api/admin/shipments/import` endpoint parse those files via per-carrier profiles and write rows into a dedicated `shipment_history` table (PK `(round_id, sbd, tracking_code)` — every attempt kept for audit).
+
+### Config
+
+Add to `cert.config.json#features.shipment`:
+
+```jsonc
+"import": {
+  "default": "viettel",
+  "profiles": {
+    "viettel": {
+      "column_mapping": {
+        "tracking_code": ["Mã vận đơn", "Tracking"],
+        "phone":         ["SĐT", "Phone"],
+        "status":        ["Trạng thái", "Status"],
+        "sent_at":       ["Ngày gửi"],
+        "address":       ["Địa chỉ"],
+        "recipient":     ["Người nhận"]
+      },
+      "success_keywords":    ["GIAO THÀNH CÔNG", "PHÁT THÀNH CÔNG"],
+      "skip_status_prefixes": ["CH"],
+      "header_row": 0
+    },
+    "ghn": {
+      "column_mapping": {
+        "tracking_code": "Order Code",
+        "phone":         "Phone",
+        "status":        "Status"
+      },
+      "success_keywords": ["DELIVERED"]
+    }
+  }
+}
+```
+
+Each field accepts a single string or a fallback list — if the carrier renames a header next month, update the list, no code change.
+
+### CLI usage
+
+```bash
+# dry run — preview stats, no DB change
+lvt-cert import-shipments path/to/carrier.xlsx --round main --carrier viettel
+
+# commit after review
+lvt-cert import-shipments path/to/carrier.xlsx --round main --carrier viettel --commit
+
+# JSON output for scripting
+lvt-cert import-shipments path/to/carrier.xlsx --carrier viettel --json
+```
+
+Dry-run is the default on purpose — operator eyeballs the status breakdown + match rate before writing. Re-run with `--commit` to persist.
+
+### API usage
+
+```bash
+curl -F file=@carrier.xlsx \
+     -F token="$ADMIN_JWT" \
+     -F round_id=main \
+     -F carrier=viettel \
+     -F commit=true \
+     https://mycerts.example/api/admin/shipments/import
+```
+
+- Admin-only (viewer role → 403)
+- Rate-limit: 5 requests/min/IP
+- Max file: 10 MB (tunable via `SHIPMENT_IMPORT_MAX_BYTES` env)
+- Only `.xlsx`, `.xlsm`, `.csv` accepted
+
+### How matching works
+
+1. Parse each row via `column_mapping` — first header name present wins
+2. Normalize phone (strip non-digits + leading zero, VN convention)
+3. Dedup by `tracking_code` — earlier row wins on conflict
+4. Query `students.phone` to resolve SBDs (one phone may map to multiple SBDs; one shipment row per match)
+5. Rows with status starting from `skip_status_prefixes` are excluded
+6. Status case-insensitive substring match against `success_keywords` → `is_success` flag
+
+### Audit trail
+
+Each import emits one `shipment.bulk_import` entry in `admin_activity` with metadata `{parsed, matched_sbds, inserted, success_count, unmatched_phones, committed}`. No raw row data leaks into the log — PII stays in the SQLite `shipment_history` table only.
+
+### Troubleshooting
+
+- **Low match rate** — most SBDs often ship via school bulk, not individual carrier. Expected.
+- **Status not detected as success** — add keyword to `success_keywords`. CLI's dry-run `Status breakdown` section shows all raw values.
+- **`data_mapping.phone_col` error** — import requires a phone column on students; set it and re-ingest.
+- **Unknown headers** — `first_matching_header` couldn't resolve. Run the file through the CLI; error lists which logical fields are unresolved + file's headers.

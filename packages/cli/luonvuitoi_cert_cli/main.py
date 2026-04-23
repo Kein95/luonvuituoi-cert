@@ -11,7 +11,7 @@ import typer
 from rich.console import Console
 
 from . import __version__
-from .commands import dev, gen_keys, init, seed
+from .commands import dev, gen_keys, import_shipments, init, seed
 
 console = Console()
 
@@ -26,6 +26,10 @@ app.command(name="init", help="Scaffold a new certificate portal project.")(init
 app.command(name="gen-keys", help="Generate RSA keypair for QR signing.")(gen_keys.gen_keys)
 app.command(name="seed", help="Generate fake students for local testing.")(seed.seed)
 app.command(name="dev", help="Run the portal locally.")(dev.dev)
+app.command(
+    name="import-shipments",
+    help="Bulk-import shipment tracking from a carrier Excel/CSV export.",
+)(import_shipments.import_shipments)
 
 
 @app.callback(invoke_without_command=True)
