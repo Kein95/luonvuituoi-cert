@@ -17,6 +17,7 @@ from pathlib import Path
 
 from flask import Flask, Response, g, jsonify, make_response, request
 from luonvuitoi_cert import api as handlers
+from luonvuitoi_cert.api.admin_list import AdminListError
 from luonvuitoi_cert.api.admin_update import AdminUpdateError
 from luonvuitoi_cert.api.security import get_allowed_origins
 from luonvuitoi_cert.auth import (
@@ -30,6 +31,8 @@ from luonvuitoi_cert.auth import (
     perform_login,
     revoke_admin_token,
 )
+from luonvuitoi_cert.auth.activity_log import log_admin_action
+from luonvuitoi_cert.auth.tokens import verify_admin_token
 from luonvuitoi_cert.config import load_config
 from luonvuitoi_cert.locale import load_locale
 from luonvuitoi_cert.storage.kv import open_kv
@@ -196,6 +199,10 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     def _admin_user(e):  # type: ignore[no-untyped-def]
         return jsonify({"error": str(e)}), 400
 
+    @app.errorhandler(AdminListError)
+    def _admin_list_err(e):  # type: ignore[no-untyped-def]
+        return jsonify({"error": str(e)}), 400
+
     # ── Pages ─────────────────────────────────────────────────────────
     @app.get("/health")
     def _health():  # type: ignore[no-untyped-def]
@@ -237,12 +244,54 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
         result = handlers.search_student(
             config=config, db_path=db_path, kv=kv, params=params, client_id=_client_id(), mode=mode
         )
+        if mode == "admin":
+            # Read-action audit: tokens reveal who looked up what SBD.
+            try:
+                decoded = verify_admin_token(str(params.get("token", "")).strip(), kv=kv)
+                log_admin_action(
+                    activity,
+                    user_id=decoded.user_id,
+                    user_email=decoded.email,
+                    action="admin.search",
+                    target_id=result.sbd,
+                    ip=_client_id(),
+                )
+            except Exception:  # pragma: no cover — audit is best-effort
+                pass
         return jsonify(
             {
                 "sbd": result.sbd,
                 "name": result.name,
                 "fields": result.fields,
                 "certificates": [_to_jsonable(c) for c in result.certificates],
+            }
+        )
+
+    @app.post("/api/admin/list")
+    def _admin_list():  # type: ignore[no-untyped-def]
+        params = _json_body()
+        resp = handlers.admin_list_students(
+            config=config,
+            db_path=db_path,
+            activity=activity,
+            params=params,
+            client_ip=_client_id(),
+            kv=kv,
+        )
+        return jsonify(
+            {
+                "total": resp.total,
+                "truncated": resp.truncated,
+                "rows": [
+                    {
+                        "sbd": r.sbd,
+                        "name": r.name,
+                        "round_id": r.round_id,
+                        "round_label": r.round_label,
+                        "fields": r.fields,
+                    }
+                    for r in resp.rows
+                ],
             }
         )
 
@@ -261,6 +310,24 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
             mode=mode,
             verify_url_builder=lambda blob: f"{base}/certificate-checker?blob={blob}",
         )
+        if mode == "admin":
+            # Audit admin-driven downloads so re-issues are traceable.
+            try:
+                decoded = verify_admin_token(str(params.get("token", "")).strip(), kv=kv)
+                log_admin_action(
+                    activity,
+                    user_id=decoded.user_id,
+                    user_email=decoded.email,
+                    action="admin.download",
+                    target_id=str(params.get("sbd", "")),
+                    metadata={
+                        "round_id": str(params.get("round_id", "")),
+                        "subject_code": str(params.get("subject_code", "")),
+                    },
+                    ip=_client_id(),
+                )
+            except Exception:  # pragma: no cover — audit is best-effort
+                pass
         flask_resp: Response = make_response(resp_obj.pdf_bytes)
         flask_resp.headers["Content-Type"] = resp_obj.content_type
         flask_resp.headers["Content-Disposition"] = f'attachment; filename="{resp_obj.filename}"'
@@ -309,8 +376,18 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
         # TTL = remaining-life. verify_admin_token treats any hit as an
         # expired session, so follow-up requests with the same token bounce.
         params = _json_body()
+        token_raw = str(params.get("token", "")).strip()
         try:
-            jti = revoke_admin_token(kv, token=str(params.get("token", "")).strip())
+            decoded = verify_admin_token(token_raw)
+            jti = revoke_admin_token(kv, token=token_raw)
+            log_admin_action(
+                activity,
+                user_id=decoded.user_id,
+                user_email=decoded.email,
+                action="admin.logout",
+                target_id=jti,
+                ip=_client_id(),
+            )
         except TokenError as e:
             # Already-invalid token: nothing to revoke, treat as 200 for
             # idempotency — the client side is signing out anyway.
