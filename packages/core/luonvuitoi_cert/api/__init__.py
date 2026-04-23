@@ -7,6 +7,12 @@ production and under Flask in the local dev server — both wrap these pure
 functions with transport-specific glue.
 """
 
+from luonvuitoi_cert.api.admin_list import (
+    AdminListError,
+    AdminListResponse,
+    AdminListRow,
+    admin_list_students,
+)
 from luonvuitoi_cert.api.captcha import (
     CaptchaChallenge,
     CaptchaError,
@@ -37,6 +43,9 @@ from luonvuitoi_cert.api.shipment import (
 from luonvuitoi_cert.api.verify import VerifyError, VerifyResponse, verify_qr
 
 __all__ = [
+    "AdminListError",
+    "AdminListResponse",
+    "AdminListRow",
     "CaptchaChallenge",
     "CaptchaError",
     "DEFAULT_ALLOWED_ORIGINS",
@@ -49,6 +58,7 @@ __all__ = [
     "ShipmentLookupResponse",
     "VerifyError",
     "VerifyResponse",
+    "admin_list_students",
     "check_rate_limit",
     "clean_sbd",
     "download_certificate",
