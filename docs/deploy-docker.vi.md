@@ -1,6 +1,6 @@
 # Deploy với Docker
 
-Tự host khi bạn muốn SQLite persistent thay vì trò chơi `/tmp` của Vercel, hoặc khi target deploy không có serverless Python runtime.
+Tự host khi bạn muốn SQLite persistent thay vì phải xử lý `/tmp` ephemeral của Vercel, hoặc khi môi trường deploy không có serverless Python runtime.
 
 ## Image có sẵn
 
