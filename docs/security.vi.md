@@ -1,6 +1,6 @@
 # Bảo mật (hướng dẫn người dùng)
 
-Trang này là hướng dẫn bảo mật cho **người deploy** — knob nào cần chỉnh, phải theo dõi gì, đã được handle sẵn những gì. Cho policy maintainer (báo cáo lỗ hổng, threat model, lựa chọn crypto), xem [`SECURITY.md`](https://github.com/Kein95/luonvuituoi-cert/blob/main/SECURITY.md) ở gốc repo.
+Trang này là hướng dẫn bảo mật cho **người deploy** — cài đặt nào cần chỉnh, phải theo dõi gì, cái gì đã được xử lý sẵn. Cho policy maintainer (báo cáo lỗ hổng, threat model, lựa chọn crypto), xem [`SECURITY.md`](https://github.com/Kein95/luonvuituoi-cert/blob/main/SECURITY.md) ở gốc repo.
 
 ## Những gì đã được bảo vệ sẵn
 
