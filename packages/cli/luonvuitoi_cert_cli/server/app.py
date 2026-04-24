@@ -200,6 +200,12 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     def _captcha(e):  # type: ignore[no-untyped-def]
         return jsonify({"error": str(e)}), 400
 
+    @app.errorhandler(handlers.FeatureDisabledError)
+    def _feature_disabled(e):  # type: ignore[no-untyped-def]
+        # 503 Service Unavailable conveys "temporarily off" better than 403;
+        # clients and CDNs treat it as retry-after-ish, which matches intent.
+        return jsonify({"error": str(e)}), 503
+
     @app.errorhandler(handlers.VerifyError)
     def _verify(e):  # type: ignore[no-untyped-def]
         return jsonify({"error": str(e)}), 501
@@ -393,7 +399,15 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
             # H2: narrow exception — internal exceptions bubble to Flask's
             # default 500 (and get logged) rather than leaking to the client.
             return jsonify({"error": str(e)}), 401
-        return jsonify({"token": result.token, "challenge_issued": result.challenge_issued})
+        return jsonify(
+            {
+                "token": result.token,
+                "challenge_issued": result.challenge_issued,
+                # Role is surfaced so the admin UI can gate super-admin-only
+                # controls without a separate /me round-trip.
+                "role": result.user.role.value if result.user else None,
+            }
+        )
 
     @app.post("/api/admin/logout")
     def _logout():  # type: ignore[no-untyped-def]
@@ -585,6 +599,61 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
         flask_resp.headers["X-Shipment-Batch-Id"] = result.batch_id
         flask_resp.headers["X-Shipment-Row-Count"] = str(result.row_count)
         return flask_resp
+
+    @app.post("/api/admin/features")
+    def _admin_features_read():  # type: ignore[no-untyped-def]
+        """Read current public-surface gate state. Super-admin only — symmetric
+        with write so the UI card only appears for users who can also save.
+        Other admin roles can infer state from the public surface's 503 response.
+        """
+        params = _json_body()
+        try:
+            token = verify_admin_token(str(params.get("token", "")).strip(), kv=kv)
+        except TokenError as e:
+            return jsonify({"error": str(e)}), 401
+        if token.role != Role.SUPER_ADMIN:
+            return jsonify({"error": "super-admin role required"}), 403
+        state = handlers.get_feature_state(kv)
+        return jsonify(
+            {
+                "lookup_enabled": state.lookup_enabled,
+                "download_enabled": state.download_enabled,
+            }
+        )
+
+    @app.post("/api/admin/features/update")
+    def _admin_features_update():  # type: ignore[no-untyped-def]
+        """Flip gate state. Super-admin only — guard the blast radius of a
+        public freeze to the role that also owns user/role management.
+        """
+        params = _json_body()
+        try:
+            token = verify_admin_token(str(params.get("token", "")).strip(), kv=kv)
+        except TokenError as e:
+            return jsonify({"error": str(e)}), 401
+        if token.role != Role.SUPER_ADMIN:
+            return jsonify({"error": "super-admin role required"}), 403
+        lookup = bool(params.get("lookup_enabled"))
+        download = bool(params.get("download_enabled"))
+        state = handlers.set_feature_state(kv, lookup_enabled=lookup, download_enabled=download)
+        log_admin_action(
+            activity,
+            user_id=token.user_id,
+            user_email=token.email,
+            action="admin.features.update",
+            target_id="public",
+            metadata={
+                "lookup_enabled": state.lookup_enabled,
+                "download_enabled": state.download_enabled,
+            },
+            ip=_client_id(),
+        )
+        return jsonify(
+            {
+                "lookup_enabled": state.lookup_enabled,
+                "download_enabled": state.download_enabled,
+            }
+        )
 
     @app.before_request
     def _cors_preflight():  # type: ignore[no-untyped-def]

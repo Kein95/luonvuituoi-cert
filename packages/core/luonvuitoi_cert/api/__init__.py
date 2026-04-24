@@ -20,6 +20,18 @@ from luonvuitoi_cert.api.captcha import (
     verify_challenge,
 )
 from luonvuitoi_cert.api.download import DownloadResponse, download_certificate
+from luonvuitoi_cert.api.feature_gates import (
+    FeatureDisabledError,
+    FeatureState,
+    require_public_download,
+    require_public_lookup,
+)
+from luonvuitoi_cert.api.feature_gates import (
+    get_state as get_feature_state,
+)
+from luonvuitoi_cert.api.feature_gates import (
+    set_state as set_feature_state,
+)
 from luonvuitoi_cert.api.rate_limiter import RateLimitError, check_rate_limit
 from luonvuitoi_cert.api.search import (
     SearchError,
@@ -50,6 +62,8 @@ __all__ = [
     "CaptchaError",
     "DEFAULT_ALLOWED_ORIGINS",
     "DownloadResponse",
+    "FeatureDisabledError",
+    "FeatureState",
     "RateLimitError",
     "SearchError",
     "SearchResult",
@@ -62,10 +76,14 @@ __all__ = [
     "check_rate_limit",
     "clean_sbd",
     "download_certificate",
+    "get_feature_state",
     "issue_challenge",
     "lookup_shipment",
+    "require_public_download",
+    "require_public_lookup",
     "sanitize_filename",
     "search_student",
+    "set_feature_state",
     "upsert_shipment_record",
     "validate_request_size",
     "validate_sbd",
