@@ -445,6 +445,117 @@
       "title": "Shipment",
       "type": "object"
     },
+    "ShipmentExportTemplate": {
+      "additionalProperties": false,
+      "description": "Reverse column mapping — logical field → exact header name written to Excel.\n\nUsed by ``lvt-cert shipment export`` to produce a carrier-ready order\nfile. Unlike the import mapping (which accepts fallbacks), export uses a\nsingle canonical name per column so the resulting Excel always matches\nthe carrier's upload template.",
+      "properties": {
+        "sbd": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sbd"
+        },
+        "full_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Full Name"
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "SĐT",
+          "title": "Phone"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "Địa chỉ nhận",
+          "title": "Address"
+        },
+        "recipient": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "Người nhận",
+          "title": "Recipient"
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight"
+        },
+        "cod": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cod"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "extra_columns": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Extra Columns",
+          "type": "object"
+        }
+      },
+      "title": "ShipmentExportTemplate",
+      "type": "object"
+    },
     "ShipmentImport": {
       "additionalProperties": false,
       "description": "Container for multi-carrier import profiles.\n\nKey of ``profiles`` is the carrier name used at the CLI (``--carrier``)\nor API (form field ``carrier``). ``default`` optionally points to one\nprofile to use when no carrier is supplied.",
@@ -536,7 +647,7 @@
     },
     "ShipmentImportProfile": {
       "additionalProperties": false,
-      "description": "One carrier's import ruleset.",
+      "description": "One carrier's import + export ruleset.",
       "properties": {
         "column_mapping": {
           "$ref": "#/$defs/ShipmentImportMapping"
@@ -562,6 +673,17 @@
           "minimum": 0,
           "title": "Header Row",
           "type": "integer"
+        },
+        "export_template": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShipmentExportTemplate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

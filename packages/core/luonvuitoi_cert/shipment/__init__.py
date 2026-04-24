@@ -11,6 +11,15 @@ from luonvuitoi_cert.shipment.bulk_import import (
     BulkImportStats,
     bulk_import_shipments,
 )
+from luonvuitoi_cert.shipment.draft import (
+    DraftError,
+    DraftRow,
+    ExportResult,
+    draft_add,
+    draft_cancel,
+    draft_export,
+    draft_list,
+)
 from luonvuitoi_cert.shipment.repository import (
     ShipmentError,
     ShipmentRecord,
@@ -23,10 +32,17 @@ from luonvuitoi_cert.shipment.schema import build_shipment_schema, ensure_shipme
 __all__ = [
     "BulkImportError",
     "BulkImportStats",
+    "DraftError",
+    "DraftRow",
+    "ExportResult",
     "ShipmentError",
     "ShipmentRecord",
     "build_shipment_schema",
     "bulk_import_shipments",
+    "draft_add",
+    "draft_cancel",
+    "draft_export",
+    "draft_list",
     "ensure_shipment_schema",
     "get_shipment",
     "list_shipments",
