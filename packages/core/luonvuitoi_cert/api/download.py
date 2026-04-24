@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from luonvuitoi_cert.api.feature_gates import require_public_download
 from luonvuitoi_cert.api.search import AvailableCertificate, SearchError, search_student
 from luonvuitoi_cert.api.security import sanitize_filename
 from luonvuitoi_cert.config import CertConfig
@@ -143,6 +144,12 @@ def download_certificate(
     subject_code = str(params.get("subject_code", "")).strip()
     if not round_id or not subject_code:
         raise SearchError("round_id and subject_code are both required")
+
+    # Student downloads are doubly gated: the search() call below enforces the
+    # lookup flag, but we also need to block the download flag independently
+    # so operators can keep lookup on (e.g. show results) while PDFs are off.
+    if mode == "student":
+        require_public_download(kv)
 
     result = search_student(
         config=config,

@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from luonvuitoi_cert.api.captcha import verify_challenge
+from luonvuitoi_cert.api.feature_gates import require_public_lookup
 from luonvuitoi_cert.api.rate_limiter import check_rate_limit
 from luonvuitoi_cert.api.security import SecurityError, validate_sbd
 from luonvuitoi_cert.auth.tokens import TokenError, verify_admin_token
@@ -191,6 +192,9 @@ def search_student(
     """
     sbd = validate_sbd(params.get("sbd"))
     if mode == "student":
+        # Feature gate runs before CAPTCHA/rate-limit so disabled surfaces
+        # don't tick quotas or burn a captcha token.
+        require_public_lookup(kv)
         _verify_student_gate(kv, params, client_id)
     elif mode == "admin":
         try:

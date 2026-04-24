@@ -32,6 +32,23 @@
   </div>
   <p id="dashboard-user" class="subtitle"></p>
 
+  <section id="features-card" style="margin-top:20px;" hidden>
+    <h3 style="font-size:1.05rem; margin-bottom:6px;">{{ t("admin.features_title", default="Public surface") }}</h3>
+    <p class="subtitle" style="margin-top:0;">{{ t("admin.features_subtitle", default="Super-admin only. Download depends on lookup.") }}</p>
+    <label style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+      <input id="feature-lookup" type="checkbox">
+      <span>{{ t("admin.features_lookup", default="Enable public lookup") }}</span>
+    </label>
+    <label style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+      <input id="feature-download" type="checkbox">
+      <span>{{ t("admin.features_download", default="Enable public certificate download") }}</span>
+    </label>
+    <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+      <button type="button" id="feature-save">{{ t("admin.features_save", default="Save") }}</button>
+      <span id="feature-status" class="badge" role="status" aria-live="polite" hidden></span>
+    </div>
+  </section>
+
   <h3 style="margin-top:20px; font-size:1.05rem;">{{ t("admin.students", default="Students") }}</h3>
   <form id="lookup-form">
     <label for="lookup-sbd">{{ t("search.label_registration", default="Registration number") }}</label>
@@ -54,6 +71,8 @@
   const endpoints = {
     login: {{ login_endpoint | tojson }},
     search: {{ search_endpoint | tojson }},
+    featuresRead: "/api/admin/features",
+    featuresUpdate: "/api/admin/features/update",
   };
   const authMode = {{ auth_mode | tojson }};
   const labels = {
@@ -80,6 +99,11 @@
   const lookupResult = document.getElementById("lookup-result");
   const lookupFields = document.getElementById("lookup-fields");
   const lookupReason = document.getElementById("lookup-reason");
+  const featuresCard = document.getElementById("features-card");
+  const featureLookup = document.getElementById("feature-lookup");
+  const featureDownload = document.getElementById("feature-download");
+  const featureSave = document.getElementById("feature-save");
+  const featureStatus = document.getElementById("feature-status");
 
   function readToken() {
     try { return sessionStorage.getItem(TOKEN_KEY) || ""; } catch (_) { return ""; }
@@ -95,11 +119,19 @@
     loginBadge.textContent = text;
   }
 
-  function enterDashboard(token, email) {
+  function enterDashboard(token, email, role) {
     writeToken(token);
     loginCard.hidden = true;
     dashboard.hidden = false;
     dashboardUser.textContent = email || "";
+    // Super-admin sees the public-surface toggles; other roles never see the
+    // card (the server rejects non-super POSTs anyway, this is UX-only).
+    if (role === "super-admin") {
+      featuresCard.hidden = false;
+      loadFeatureState(token);
+    } else {
+      featuresCard.hidden = true;
+    }
   }
 
   function exitDashboard() {
@@ -118,6 +150,72 @@
     lookupReason.textContent = "";
     lookupSbd.value = "";
     dashboardUser.textContent = "";
+    featuresCard.hidden = true;
+    featureStatus.hidden = true;
+    featureStatus.textContent = "";
+  }
+
+  function applyFeatureInvariant() {
+    // Mirrors server-side: download can't be on when lookup is off.
+    if (!featureLookup.checked) {
+      featureDownload.checked = false;
+      featureDownload.disabled = true;
+    } else {
+      featureDownload.disabled = false;
+    }
+  }
+
+  async function loadFeatureState(token) {
+    try {
+      const resp = await fetch(endpoints.featuresRead, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) return;
+      featureLookup.checked = !!data.lookup_enabled;
+      featureDownload.checked = !!data.download_enabled;
+      applyFeatureInvariant();
+    } catch (_) { /* offline — leave defaults */ }
+  }
+
+  async function saveFeatureState() {
+    const token = readToken();
+    if (!token) { exitDashboard(); return; }
+    featureSave.disabled = true;
+    featureStatus.hidden = false;
+    featureStatus.classList.remove("ok", "bad");
+    featureStatus.classList.add("ok");
+    featureStatus.textContent = "…";
+    try {
+      const resp = await fetch(endpoints.featuresUpdate, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          lookup_enabled: featureLookup.checked,
+          download_enabled: featureDownload.checked,
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        featureStatus.classList.remove("ok");
+        featureStatus.classList.add("bad");
+        featureStatus.textContent = data.error || "error";
+        return;
+      }
+      featureLookup.checked = !!data.lookup_enabled;
+      featureDownload.checked = !!data.download_enabled;
+      applyFeatureInvariant();
+      featureStatus.textContent = "✓";
+    } catch (_) {
+      featureStatus.classList.remove("ok");
+      featureStatus.classList.add("bad");
+      featureStatus.textContent = "network error";
+    } finally {
+      featureSave.disabled = false;
+    }
   }
 
   async function submitLogin(event) {
@@ -146,7 +244,7 @@
         return;
       }
       if (data.token) {
-        enterDashboard(data.token, payload.email);
+        enterDashboard(data.token, payload.email, data.role || "");
       }
     } catch (err) {
       showBadge(false, "✗");
@@ -192,9 +290,27 @@
   signOutBtn.addEventListener("click", exitDashboard);
   loginForm.addEventListener("submit", submitLogin);
   lookupForm.addEventListener("submit", submitLookup);
+  featureLookup.addEventListener("change", applyFeatureInvariant);
+  featureSave.addEventListener("click", saveFeatureState);
 
   if (readToken()) {
-    enterDashboard(readToken(), "");
+    // Reload can't recover role from sessionStorage (JWT claims aren't parsed
+    // client-side). Fetch feature state speculatively; 403 → not super-admin,
+    // UI stays hidden. 200 → reveal the card with the fresh values.
+    const token = readToken();
+    enterDashboard(token, "", "");
+    fetch(endpoints.featuresRead, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    }).then(async (resp) => {
+      if (!resp.ok) return;
+      const data = await resp.json().catch(() => ({}));
+      featuresCard.hidden = false;
+      featureLookup.checked = !!data.lookup_enabled;
+      featureDownload.checked = !!data.download_enabled;
+      applyFeatureInvariant();
+    }).catch(() => { /* offline */ });
   }
 })();
 </script>

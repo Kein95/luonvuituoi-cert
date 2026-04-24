@@ -85,6 +85,33 @@ See [admin-auth.md](admin-auth.md#signing-out-revoking-sessions) for the full fl
 
 Use this instead of rotating `JWT_SECRET` (which invalidates _every_ session at once and requires all admins to log back in).
 
+## Public-surface feature gates
+
+Two super-admin-only toggles control whether the public surfaces are live. State is stored in KV so flips take effect immediately, no redeploy.
+
+- **Lookup toggle** — gates `POST /api/search` (student mode). When off, the endpoint returns `503` with `{"error": "public lookup is currently disabled by the operator"}`. Admin mode (`mode=admin`, JWT required) is unaffected so operators keep working during a freeze.
+- **Download toggle** — gates `POST /api/download` (student mode). When off, the endpoint returns `503` with a download-specific message. Admin mode unaffected.
+
+Invariant: **download requires lookup**. Lookup off ⇒ download forced off. This is enforced both on write (the toggle API clamps the request) and on read (the gate checks both flags).
+
+### How to flip
+
+Sign in as super-admin → the **Public surface** card appears above the student lookup form → tick the boxes → **Save**. The download checkbox auto-disables when lookup is off.
+
+REST equivalent:
+
+```bash
+curl -X POST https://your.host/api/admin/features/update \
+  -H 'Content-Type: application/json' \
+  -d '{"token": "<super-admin JWT>", "lookup_enabled": false, "download_enabled": false}'
+```
+
+Only the `super-admin` role is accepted; `admin` / `viewer` get `403`. Every flip is recorded in the audit log as `admin.features.update` with the new state in `metadata`.
+
+### Defaults
+
+Fresh deploys: both on (pre-gate behavior). The KV is only written when a super-admin first saves — a never-touched deploy reads the baked-in default.
+
 ## Updating dependencies
 
 Dependabot scans weekly (pip) and monthly (github-actions, docker) and opens PRs. Review and merge them promptly — `reportlab`, `pypdf`, and `cryptography` are supply-chain targets.
