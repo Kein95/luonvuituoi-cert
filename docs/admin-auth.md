@@ -39,11 +39,11 @@ OTP / magic-link users don't need a password — pass `password=None`.
 
 | Role | Capabilities |
 |------|--------------|
-| `super-admin` | Everything + can create/delete other admins. |
+| `super-admin` | Everything + can create/delete other admins + flip public-surface [feature gates](operations.md#public-surface-feature-gates). |
 | `admin` | CRUD students, manage shipments, view activity log. |
 | `viewer` | Read-only. Cannot update students or shipments. |
 
-Handlers check role with an **allowlist** — `token.role in (ADMIN, SUPER_ADMIN)` — so future roles default to read-only until they're explicitly added to the allowlist.
+Handlers check role with an **allowlist** — `token.role in (ADMIN, SUPER_ADMIN)` — so future roles default to read-only until they're explicitly added to the allowlist. Super-admin-only surfaces (user management, feature gates) use a strict equality check instead of the allowlist.
 
 ## Timing-safe lookup
 
