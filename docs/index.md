@@ -4,7 +4,8 @@ hide:
   - toc
 ---
 
-<p class="lvt-credits">🙏 Thank you teammate <a href="https://github.com/Liamlenguyen" target="_blank" rel="noopener">@Liamlenguyen</a> — stay tuned for more collabs from <strong>LUONVUITUOI TEAM</strong> ✨</p>
+<p class="lvt-credits">🙏 Thank you teammate <a href="https://github.com/Liamlenguyen" target="_blank" rel="noopener">@Liamlenguyen</a> — stay tuned for more collabs from <strong>LUONVUITUOI TEAM</strong> ✨<br>
+📧 <a href="mailto:htkien95@gmail.com">htkien95@gmail.com</a> &nbsp;·&nbsp; 📱 <a href="tel:+84348635408">+84 348 635 408</a></p>
 
 <div class="lvt-hero" markdown>
 
