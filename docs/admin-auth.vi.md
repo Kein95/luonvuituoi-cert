@@ -39,11 +39,11 @@ User OTP / magic-link không cần mật khẩu — truyền `password=None`.
 
 | Role | Quyền |
 |------|-------|
-| `super-admin` | Mọi thứ + tạo/xóa admin khác. |
+| `super-admin` | Mọi thứ + tạo/xóa admin khác + bật/tắt [feature gate cho public surface](operations.md#feature-gate-cho-public-surface). |
 | `admin` | CRUD học viên, quản lý shipment, xem activity log. |
 | `viewer` | Read-only. Không cập nhật student hay shipment. |
 
-Handler check role bằng **allowlist** — `token.role in (ADMIN, SUPER_ADMIN)` — nên role tương lai mặc định read-only cho đến khi được thêm explicit.
+Handler check role bằng **allowlist** — `token.role in (ADMIN, SUPER_ADMIN)` — nên role tương lai mặc định read-only cho đến khi được thêm explicit. Surface chỉ-super-admin (quản lý user, feature gate) dùng equality check thay vì allowlist.
 
 ## Tra cứu timing-safe
 
