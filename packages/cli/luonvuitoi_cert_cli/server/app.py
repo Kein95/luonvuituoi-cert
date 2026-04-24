@@ -36,7 +36,15 @@ from luonvuitoi_cert.auth.admin_db import Role
 from luonvuitoi_cert.auth.tokens import verify_admin_token
 from luonvuitoi_cert.config import load_config
 from luonvuitoi_cert.locale import load_locale
-from luonvuitoi_cert.shipment import BulkImportError, bulk_import_shipments
+from luonvuitoi_cert.shipment import (
+    BulkImportError,
+    DraftError,
+    bulk_import_shipments,
+    draft_add,
+    draft_cancel,
+    draft_export,
+    draft_list,
+)
 from luonvuitoi_cert.storage.kv import open_kv
 from luonvuitoi_cert.ui import (
     render_admin_page,
@@ -214,6 +222,10 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
     @app.errorhandler(BulkImportError)
     def _bulk_import_err(e):  # type: ignore[no-untyped-def]
+        return jsonify({"error": str(e)}), 400
+
+    @app.errorhandler(DraftError)
+    def _draft_err(e):  # type: ignore[no-untyped-def]
         return jsonify({"error": str(e)}), 400
 
     # ── Pages ─────────────────────────────────────────────────────────
@@ -492,6 +504,87 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
                 Path(tmp.name).unlink(missing_ok=True)
 
         return jsonify(asdict(stats))
+
+    @app.post("/api/admin/shipments/draft")
+    def _admin_shipment_draft_add():  # type: ignore[no-untyped-def]
+        """Create shipment drafts from a student filter."""
+        params = _json_body()
+        created = draft_add(
+            config=config,
+            db_path=db_path,
+            activity=activity,
+            params=params,
+            kv=kv,
+            client_ip=_client_id(),
+        )
+        return jsonify(
+            {
+                "created": len(created),
+                "drafts": [
+                    {"id": d.id, "sbd": d.sbd, "round_id": d.round_id, "status": d.status} for d in created
+                ],
+            }
+        )
+
+    @app.post("/api/admin/shipments/draft/list")
+    def _admin_shipment_draft_list():  # type: ignore[no-untyped-def]
+        """List drafts. POST (not GET) so body carries JWT + filters — matches CSRF posture."""
+        params = _json_body()
+        rows = draft_list(config=config, db_path=db_path, params=params, kv=kv)
+        return jsonify(
+            {
+                "count": len(rows),
+                "drafts": [
+                    {
+                        "id": r.id,
+                        "round_id": r.round_id,
+                        "sbd": r.sbd,
+                        "status": r.status,
+                        "carrier": r.carrier,
+                        "batch_id": r.batch_id,
+                        "tracking_code": r.tracking_code,
+                        "exported_at": r.exported_at,
+                        "promoted_at": r.promoted_at,
+                        "updated_at": r.updated_at,
+                    }
+                    for r in rows
+                ],
+            }
+        )
+
+    @app.post("/api/admin/shipments/draft/cancel")
+    def _admin_shipment_draft_cancel():  # type: ignore[no-untyped-def]
+        params = _json_body()
+        n = draft_cancel(
+            config=config,
+            db_path=db_path,
+            activity=activity,
+            params=params,
+            kv=kv,
+            client_ip=_client_id(),
+        )
+        return jsonify({"cancelled": n})
+
+    @app.post("/api/admin/shipments/export")
+    def _admin_shipment_export():  # type: ignore[no-untyped-def]
+        """Export draft batch as carrier-ready Excel + HARD LOCK drafts."""
+        params = _json_body()
+        result = draft_export(
+            config=config,
+            db_path=db_path,
+            activity=activity,
+            params=params,
+            kv=kv,
+            client_ip=_client_id(),
+        )
+        flask_resp = make_response(result.file_bytes)
+        flask_resp.headers["Content-Type"] = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        flask_resp.headers["Content-Disposition"] = f'attachment; filename="{result.filename}"'
+        flask_resp.headers["X-Shipment-Batch-Id"] = result.batch_id
+        flask_resp.headers["X-Shipment-Row-Count"] = str(result.row_count)
+        return flask_resp
 
     @app.before_request
     def _cors_preflight():  # type: ignore[no-untyped-def]

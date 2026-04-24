@@ -92,6 +92,102 @@ All three entry points (`upsert_shipment_record`, `lookup_shipment`, `build_ship
 
 Adding a new entry to `features.shipment.fields` works on an existing database — SQLite's dynamic typing is forgiving enough that the `CREATE TABLE IF NOT EXISTS` approach doesn't alter the existing schema. If you need to add columns to a populated DB, use `ALTER TABLE` manually; there's no migration framework.
 
+## Draft → export → ship → import lifecycle
+
+Full shipping workflow has four states: `draft` → `exported` → `in_transit` (via import) → `delivered/failed`. Admins curate drafts, hit **export** to produce a carrier-ready Excel + hard-lock the batch, upload to the carrier portal, and let the bulk-import pipeline close the loop when tracking data comes back.
+
+### Draft table
+
+A dedicated `shipment_draft` table is created on first use. PK: `(round_id, sbd, status)` — one active draft per student per round. Status values:
+
+- `draft` — admin added, editable, not yet exported
+- `exported` — included in an export batch; HARD-LOCKED (cannot edit; cancel only)
+- `cancelled` — voided before or after export
+- `promoted` — a carrier tracking code matched this draft; see `shipment_history` for live status
+
+### Add drafts
+
+```bash
+# By column value
+lvt-cert shipment draft add --round main --filter ship_method=CA_NHAN --token $TOK
+
+# By result tier (matches any subject column carrying the result)
+lvt-cert shipment draft add --round main --result GOLD --token $TOK
+
+# From an Excel/CSV with SBDs in column 1
+lvt-cert shipment draft add --round main --from-file ships.xlsx --token $TOK
+
+# Combined
+lvt-cert shipment draft add --round main \
+    --filter ship_method=CA_NHAN --result GOLD --token $TOK
+```
+
+At least one of `--filter`, `--result`, `--from-file` is required — no accidental full-round targeting.
+
+### List / cancel
+
+```bash
+lvt-cert shipment draft list --round main --status draft
+lvt-cert shipment draft cancel <draft-id-1> <draft-id-2>
+```
+
+### Export
+
+Carrier profiles need an `export_template` block:
+
+```jsonc
+"viettel": {
+  "column_mapping": { ... },   // as before (import)
+  "success_keywords": [ ... ],
+  "export_template": {
+    "sbd": "Mã học viên",
+    "full_name": "Họ tên",
+    "phone": "SĐT",
+    "address": "Địa chỉ nhận",
+    "recipient": "Người nhận"
+  }
+}
+```
+
+Run:
+
+```bash
+lvt-cert shipment export --round main --carrier viettel \
+    -o orders-thang-4.xlsx --token $TOK
+```
+
+Produces an Excel file with headers from the template; `address` and `recipient` columns start empty so admins can fill in before uploading to the carrier portal.
+
+**Hard lock**: after export, the participating drafts flip to `exported` and cannot be edited. If admin catches a mistake, `draft cancel` is the only way out — carrier-side void is manual.
+
+### API endpoints (same behaviors)
+
+```bash
+# Add
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"token":"...","round_id":"main","filters":{"ship_method":"CA_NHAN"}}' \
+     https://mycerts.example/api/admin/shipments/draft
+
+# List
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"token":"...","round_id":"main","status":"draft"}' \
+     https://mycerts.example/api/admin/shipments/draft/list
+
+# Cancel
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"token":"...","ids":["<id1>","<id2>"]}' \
+     https://mycerts.example/api/admin/shipments/draft/cancel
+
+# Export (downloads xlsx)
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"token":"...","round_id":"main","carrier":"viettel"}' \
+     https://mycerts.example/api/admin/shipments/export -o orders.xlsx
+```
+
+### Promotion hook
+
+When the carrier returns tracking data and admin runs `lvt-cert import-shipments ... --commit`, the import pipeline looks up each inserted row's `(round_id, sbd)` against `shipment_draft` — any `exported` draft matching gets flipped to `promoted` with the new `tracking_code` stamped. This closes the state-machine loop.
+
 ## Bulk import from carrier Excel/CSV
 
 Carriers (Viettel Post, GHN, GHTK, …) hand operators monthly delivery exports. The `lvt-cert import-shipments` CLI and the `POST /api/admin/shipments/import` endpoint parse those files via per-carrier profiles and write rows into a dedicated `shipment_history` table (PK `(round_id, sbd, tracking_code)` — every attempt kept for audit).

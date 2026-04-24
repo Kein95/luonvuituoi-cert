@@ -11,7 +11,7 @@ import typer
 from rich.console import Console
 
 from . import __version__
-from .commands import dev, gen_keys, import_shipments, init, seed
+from .commands import dev, gen_keys, import_shipments, init, seed, shipment
 
 console = Console()
 
@@ -30,6 +30,7 @@ app.command(
     name="import-shipments",
     help="Bulk-import shipment tracking from a carrier Excel/CSV export.",
 )(import_shipments.import_shipments)
+app.add_typer(shipment.app, name="shipment")
 
 
 @app.callback(invoke_without_command=True)

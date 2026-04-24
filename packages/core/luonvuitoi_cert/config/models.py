@@ -267,8 +267,34 @@ class ShipmentImportMapping(_Strict):
         return [v] if isinstance(v, str) else v
 
 
+class ShipmentExportTemplate(_Strict):
+    """Reverse column mapping — logical field → exact header name written to Excel.
+
+    Used by ``lvt-cert shipment export`` to produce a carrier-ready order
+    file. Unlike the import mapping (which accepts fallbacks), export uses a
+    single canonical name per column so the resulting Excel always matches
+    the carrier's upload template.
+    """
+
+    sbd: str | None = None
+    """Header for the student's SBD column. ``None`` → column omitted."""
+    full_name: str | None = None
+    phone: str | None = "SĐT"
+    address: str | None = "Địa chỉ nhận"
+    recipient: str | None = "Người nhận"
+    weight: str | None = None
+    cod: str | None = None
+    note: str | None = None
+    extra_columns: dict[str, str] = Field(default_factory=dict)
+    """Map of ``logical_name → carrier_header`` for columns not covered above.
+
+    Values come from the students table (matched by logical name) or are left
+    blank if the column doesn't exist in the source schema.
+    """
+
+
 class ShipmentImportProfile(_Strict):
-    """One carrier's import ruleset."""
+    """One carrier's import + export ruleset."""
 
     column_mapping: ShipmentImportMapping
     success_keywords: list[str] = Field(min_length=1)
@@ -287,6 +313,9 @@ class ShipmentImportProfile(_Strict):
     """Zero-indexed row number of the header line. Most carrier exports have
     metadata/title rows above; set to ``8`` if the real header is row 9.
     """
+    export_template: ShipmentExportTemplate | None = None
+    """Template for writing draft orders to carrier-ready Excel. Required for
+    the ``shipment export`` CLI / API to run against this carrier."""
 
 
 class ShipmentImport(_Strict):

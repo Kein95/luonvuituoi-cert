@@ -364,6 +364,7 @@ def bulk_import_shipments(
             )
 
     inserted = 0
+    promoted_drafts = 0
     if commit:
         with closing(sqlite3.connect(str(db_path))) as conn, conn:
             _ensure_schema(conn)
@@ -375,6 +376,22 @@ def bulk_import_shipments(
                 to_insert,
             )
             inserted = len(to_insert)
+            # Lifecycle hook: promote any 'exported' draft whose SBD/round
+            # matches an inserted shipment. Stamps tracking_code + promoted_at
+            # so the draft state machine closes its loop. Silent when there's
+            # no shipment_draft table yet (older deploys).
+            try:
+                for insert_tuple in to_insert:
+                    r_id, sbd, tracking = insert_tuple[0], insert_tuple[1], insert_tuple[2]
+                    cur = conn.execute(
+                        "UPDATE shipment_draft SET status='promoted', "
+                        "tracking_code=?, promoted_at=?, updated_at=? "
+                        "WHERE round_id=? AND sbd=? AND status='exported'",
+                        (tracking, synced_at, synced_at, r_id, sbd),
+                    )
+                    promoted_drafts += cur.rowcount or 0
+            except sqlite3.OperationalError:
+                pass
 
     stats = BulkImportStats(
         carrier=carrier_name,
