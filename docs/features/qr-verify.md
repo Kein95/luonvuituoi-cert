@@ -92,6 +92,17 @@ The QR payload is not encrypted. Earlier in-house portals layered Fernet on top 
 - `render_qr_png` caps QR text at 2000 chars. A signed payload + URL wrapper typically lands ~500 chars.
 - The renderer stays crypto-agnostic — the download handler does the signing + PNG generation and passes bytes to the engine via `OverlayRequest.qr_png_bytes`.
 
+## Verifier UX: paste vs. image upload
+
+The Certificate-Checker page accepts a QR payload two ways:
+
+1. **Paste** — copy the URL the QR encodes into the textarea. Works on every browser, no JS dependencies beyond what the page already loads.
+2. **🖼️ Upload QR image** — pick a screenshot or photo (PNG / JPG / WebP, ≤ 10 MB). The bundled `jsQR` decoder runs entirely in the browser; no image bytes ever reach the server. The decoded blob auto-fills the textarea and submits.
+
+The upload button only appears when the operator has vendored `jsqr.min.js` into `packages/core/luonvuitoi_cert/static/jsqr.min.js` (~45 KB, Apache-2.0, see the README in that directory). When the file is absent the button stays hidden and the manual paste flow keeps working.
+
+CSP: vendored scripts are served from `/static/<name>` with `Content-Type: application/javascript` and a far-future immutable cache. The dispatcher rejects path traversal (filename regex + MIME allowlist + `importlib.resources` constraint). Both `<script>` tags carry the per-request CSP nonce when one is supplied.
+
 ## Testing
 
 ```bash

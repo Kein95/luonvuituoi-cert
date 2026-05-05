@@ -155,3 +155,50 @@ def test_missing_template_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pages, "build_environment", broken_env)
     with pytest.raises(pages.PageRenderError):
         render_certificate_checker_page(config=_cfg(), locale=load_locale("en"))
+
+
+# ── QR image upload UI ──────────────────────────────────────────────
+
+
+def test_render_includes_jsqr_script_tag() -> None:
+    html = render_certificate_checker_page(config=_cfg(), locale=load_locale("en"))
+    assert "/static/jsqr.min.js" in html
+    assert "/static/qr-decode-helper.js" in html
+
+
+def test_render_uses_custom_static_url_prefix() -> None:
+    html = render_certificate_checker_page(
+        config=_cfg(), locale=load_locale("en"), static_url_prefix="/assets"
+    )
+    assert "/assets/jsqr.min.js" in html
+    assert "/static/jsqr.min.js" not in html
+
+
+def test_render_includes_upload_input() -> None:
+    html = render_certificate_checker_page(config=_cfg(), locale=load_locale("en"))
+    assert 'id="qr-file"' in html
+    assert 'accept="image/*"' in html
+
+
+def test_render_includes_upload_locale_strings_en() -> None:
+    html = render_certificate_checker_page(config=_cfg(), locale=load_locale("en"))
+    assert "Upload QR image" in html
+    # The hint strings live inside the JS object literal (so |tojson-escaped)
+    # but the substring is still searchable.
+    assert "No QR detected" in html
+    assert "max 10 MB" in html
+
+
+def test_render_includes_upload_locale_strings_vi() -> None:
+    html = render_certificate_checker_page(config=_cfg(), locale=load_locale("vi"))
+    # `upload_image` is rendered as plain text inside the HTML body — appears literal.
+    assert "Tải ảnh QR lên" in html
+    # The hint strings are emitted via |tojson which ASCII-escapes Unicode.
+    # Either the literal or the escaped form is acceptable for translation coverage.
+    assert ("Không phát hiện mã QR" in html) or ("Kh\\u00f4ng ph\\u00e1t hi" in html)
+
+
+def test_render_static_script_tags_carry_csp_nonce() -> None:
+    html = render_certificate_checker_page(config=_cfg(), locale=load_locale("en"), csp_nonce="ABC123")
+    # Both vendored scripts must carry the nonce so a strict CSP can require it.
+    assert html.count('nonce="ABC123"') >= 3  # 2 external + 1 inline IIFE
