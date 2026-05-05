@@ -24,7 +24,12 @@
     "title": "Certificate Verification",
     "subtitle": "Scan the QR from a printed certificate to confirm authenticity.",
     "valid": "Signature valid",
-    "tampered": "Signature does not match — certificate may be altered."
+    "tampered": "Signature does not match — certificate may be altered.",
+    "upload_image": "Upload QR image",
+    "upload_no_qr": "No QR detected in image.",
+    "upload_too_large": "Image too large (max 10 MB).",
+    "upload_unavailable": "QR decoder unavailable.",
+    "upload_read_failed": "Could not read image file."
   },
   "admin": {
     "title": "Admin Panel",

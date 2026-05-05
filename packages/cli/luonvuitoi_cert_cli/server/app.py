@@ -47,6 +47,8 @@ from luonvuitoi_cert.shipment import (
 )
 from luonvuitoi_cert.storage.kv import open_kv
 from luonvuitoi_cert.ui import (
+    StaticAssetError,
+    read_static_asset,
     render_admin_page,
     render_certificate_checker_page,
     render_student_portal_page,
@@ -252,6 +254,21 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     @app.get("/certificate-checker")
     def _checker():  # type: ignore[no-untyped-def]
         return render_certificate_checker_page(config=config, locale=locale, csp_nonce=g.csp_nonce)
+
+    @app.get("/static/<path:name>")
+    def _static(name: str):  # type: ignore[no-untyped-def]
+        # Serve files from the package's static/ directory. Path traversal is
+        # blocked inside read_static_asset (regex on name + importlib.resources
+        # constrains lookup to the package tree).
+        try:
+            data, content_type = read_static_asset(name)
+        except StaticAssetError:
+            return jsonify({"error": "not found"}), 404
+        resp = make_response(data)
+        resp.headers["Content-Type"] = content_type
+        # Vendored assets are content-addressed by version; cache aggressively.
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
 
     # ── API ───────────────────────────────────────────────────────────
     @app.post("/api/captcha")

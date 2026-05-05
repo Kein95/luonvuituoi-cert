@@ -24,7 +24,12 @@
     "title": "Xác minh Chứng chỉ",
     "subtitle": "Quét mã QR trên chứng chỉ in để xác minh tính xác thực.",
     "valid": "Chữ ký hợp lệ",
-    "tampered": "Chữ ký không khớp — chứng chỉ có thể đã bị chỉnh sửa."
+    "tampered": "Chữ ký không khớp — chứng chỉ có thể đã bị chỉnh sửa.",
+    "upload_image": "Tải ảnh QR lên",
+    "upload_no_qr": "Không phát hiện mã QR trong ảnh.",
+    "upload_too_large": "Ảnh quá lớn (tối đa 10 MB).",
+    "upload_unavailable": "Bộ giải mã QR không sẵn sàng.",
+    "upload_read_failed": "Không đọc được ảnh."
   },
   "admin": {
     "title": "Trang Quản trị",

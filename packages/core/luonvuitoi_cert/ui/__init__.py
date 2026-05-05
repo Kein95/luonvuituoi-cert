@@ -16,12 +16,15 @@ from luonvuitoi_cert.ui.pages import (
     render_certificate_checker_page,
     render_student_portal_page,
 )
+from luonvuitoi_cert.ui.static_assets import StaticAssetError, read_static_asset
 from luonvuitoi_cert.ui.templates import build_environment, build_page_context
 
 __all__ = [
     "PageRenderError",
+    "StaticAssetError",
     "build_environment",
     "build_page_context",
+    "read_static_asset",
     "render_admin_page",
     "render_certificate_checker_page",
     "render_student_portal_page",

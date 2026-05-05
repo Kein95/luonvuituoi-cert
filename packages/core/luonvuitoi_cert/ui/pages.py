@@ -25,6 +25,7 @@ def render_certificate_checker_page(
     config: CertConfig,
     locale: Locale,
     verify_endpoint: str = "/api/verify",
+    static_url_prefix: str = "/static",
     csp_nonce: str | None = None,
 ) -> str:
     """Render the public Certificate-Checker HTML.
@@ -32,9 +33,13 @@ def render_certificate_checker_page(
     The page JavaScript POSTs the QR blob to ``verify_endpoint`` and renders
     the :class:`VerifyResponse` JSON. Blob may arrive via query string
     (``?blob=...``) from a scanned QR that encoded a URL into this page.
+
+    ``static_url_prefix`` is the URL prefix the dispatcher serves vendored
+    assets under (jsQR + decode helper). Templates compose ``"{prefix}/<file>"``.
     """
     context = build_page_context(config, locale)
     context["verify_endpoint"] = verify_endpoint
+    context["static_url_prefix"] = static_url_prefix.rstrip("/")
     context["csp_nonce"] = csp_nonce
     return _render("certificate-checker.html.j2", context)
 

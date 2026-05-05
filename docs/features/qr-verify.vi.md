@@ -92,6 +92,17 @@ QR payload không được mã hóa. Portal cũ nội bộ từng stack Fernet l
 - `render_qr_png` cap text QR ở 2000 ký tự. Signed payload + URL wrapper thường ~500 ký tự.
 - Renderer giữ crypto-agnostic — download handler làm signing + tạo PNG và truyền bytes vào engine qua `OverlayRequest.qr_png_bytes`.
 
+## UX trang verifier: dán vs. tải ảnh QR
+
+Trang Certificate-Checker nhận QR payload theo 2 cách:
+
+1. **Dán** — copy URL mà QR encode rồi dán vào textarea. Hoạt động trên mọi trình duyệt, không cần JS phụ trợ.
+2. **🖼️ Tải ảnh QR lên** — chọn ảnh chụp màn hình hoặc ảnh chụp (PNG / JPG / WebP, ≤ 10 MB). Bộ giải mã `jsQR` chạy hoàn toàn trong trình duyệt; không byte ảnh nào được gửi lên server. Blob giải được sẽ tự điền vào textarea và submit.
+
+Nút upload chỉ hiện khi operator đã vendor file `jsqr.min.js` vào `packages/core/luonvuitoi_cert/static/jsqr.min.js` (~45 KB, Apache-2.0, xem README trong thư mục đó). Khi file vắng, nút bị ẩn và luồng dán tay vẫn hoạt động.
+
+CSP: vendored scripts phục vụ tại `/static/<name>` với `Content-Type: application/javascript` và cache immutable lâu dài. Dispatcher reject path traversal (regex filename + MIME allowlist + ràng buộc `importlib.resources`). Cả 2 `<script>` tag mang CSP nonce theo từng request khi có.
+
 ## Testing
 
 ```bash
