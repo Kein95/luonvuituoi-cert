@@ -174,7 +174,7 @@ def _match_predicate(config: CertConfig, row: dict[str, str], params: dict[str, 
     raise SearchError(f"unknown student_search.mode: {mode!r}")
 
 
-def verify_student_identity(
+def verify_identity_any(
     *,
     config: CertConfig,
     db_path: str | Path,
@@ -182,14 +182,18 @@ def verify_student_identity(
     sbd: str,
     params: dict[str, Any],
 ) -> bool:
-    """Return True if ``params`` prove the student's identity for ``sbd`` in ``round_id``.
+    """Return True if ANY provided identity factor matches the ``sbd`` row in ``round_id``.
 
-    Applies the same name / DOB / phone predicate the public certificate search
-    enforces (``config.student_search.mode``), so sibling public surfaces (e.g.
-    shipment lookup) can require an identity factor instead of trusting a
-    guessable SBD alone. Returns False if the round, the row, or the predicate
-    doesn't match — the caller decides how to respond (use an opaque message so
-    SBD existence isn't leaked).
+    Accepts a name match, a phone last-4 match, or a DOB match — whichever the
+    caller supplied. At least one factor must be present AND correct, so a bare
+    (guessable) SBD never authorizes the lookup, but recipients can identify
+    themselves by either their name or their phone number.
+
+    Used by lower-sensitivity public surfaces (shipment status lookup) that want
+    flexible identity rather than the certificate search's fixed
+    ``student_search.mode``. Returns False if the round, the students table, or
+    every supplied factor fails to match; the caller responds with an opaque
+    message so SBD existence isn't leaked.
     """
     table = next((r.table for r in config.rounds if r.id == round_id), None)
     if table is None:
@@ -203,7 +207,18 @@ def verify_student_identity(
             return False
     if row is None:
         return False
-    return _match_predicate(config, row, params)
+
+    m = config.data_mapping
+    name_q = str(params.get("name", "")).strip()
+    if name_q and _matches_name(row.get(m.name_col, ""), name_q):
+        return True
+    phone_q = str(params.get("phone", "")).strip()
+    if phone_q and m.phone_col:
+        stored_phone = str(row.get(m.phone_col, "") or "")
+        if stored_phone[-4:] == phone_q[-4:]:
+            return True
+    dob_q = str(params.get("dob", "")).strip()
+    return bool(dob_q and m.dob_col and _normalize_dob(row.get(m.dob_col, "")) == _normalize_dob(dob_q))
 
 
 def search_student(

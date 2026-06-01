@@ -51,9 +51,15 @@ def render_student_portal_page(
     search_endpoint: str = "/api/search",
     download_endpoint: str = "/api/download",
     captcha_endpoint: str = "/api/captcha",
+    shipment_lookup_endpoint: str = "/api/shipment/lookup",
     csp_nonce: str | None = None,
 ) -> str:
-    """Render the public student-facing portal."""
+    """Render the public student-facing portal.
+
+    When ``features.shipment`` is enabled the page also shows a shipment-status
+    lookup card (recipient confirms identity by name or phone). That lookup
+    always requires a CAPTCHA, independent of the certificate-search mode.
+    """
     mode = config.student_search.mode
     captcha_required = mode != "sbd_phone"
     context = build_page_context(config, locale)
@@ -64,6 +70,10 @@ def render_student_portal_page(
             "search_endpoint": search_endpoint,
             "download_endpoint": download_endpoint,
             "captcha_endpoint": captcha_endpoint,
+            "shipment_enabled": config.features.shipment.enabled,
+            "shipment_phone_enabled": config.data_mapping.phone_col is not None,
+            "shipment_lookup_endpoint": shipment_lookup_endpoint,
+            "rounds": [{"id": r.id, "label": r.label} for r in config.rounds],
             "csp_nonce": csp_nonce,
         }
     )

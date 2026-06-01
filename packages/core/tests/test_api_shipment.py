@@ -19,10 +19,11 @@ from luonvuitoi_cert.auth import ActivityLog, Role, issue_admin_token
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.ingest import ingest_rows
 
-# Public lookup now requires a student-identity factor (name) matching the
-# students table, so tests seed a real student row keyed by this SBD/name.
+# Public lookup now requires an identity factor (name OR phone) matching the
+# students table, so tests seed a real student row keyed by this SBD/name/phone.
 _STUDENT_SBD = "12345"
 _STUDENT_NAME = "Alice Example"
+_STUDENT_PHONE = "0900001234"  # last 4 = 1234
 
 
 def _env() -> dict[str, str]:
@@ -43,7 +44,8 @@ def _cfg(enabled: bool = True, public_fields: list[str] | None = None) -> CertCo
             "rounds": [{"id": "main", "label": "Main", "table": "students", "pdf": "t.pdf"}],
             "subjects": [{"code": "S", "en": "S", "db_col": "s"}],
             "results": {"S": {"GOLD": 1}},
-            # name-only identity factor for the public lookup gate.
+            # phone_col present so phone-based identity is exercisable.
+            "data_mapping": {"sbd_col": "sbd", "name_col": "name", "phone_col": "phone"},
             "student_search": {"mode": "name_sbd_captcha"},
             "layout": {
                 "page_size": [100, 100],
@@ -55,9 +57,15 @@ def _cfg(enabled: bool = True, public_fields: list[str] | None = None) -> CertCo
     )
 
 
-def _seed_student(cfg: CertConfig, db_path, sbd: str = _STUDENT_SBD, name: str = _STUDENT_NAME) -> None:  # type: ignore[no-untyped-def]
+def _seed_student(  # type: ignore[no-untyped-def]
+    cfg: CertConfig,
+    db_path,
+    sbd: str = _STUDENT_SBD,
+    name: str = _STUDENT_NAME,
+    phone: str = _STUDENT_PHONE,
+) -> None:
     """Insert a student row so the public lookup's identity check can match it."""
-    ingest_rows(cfg, db_path, "main", [{"sbd": sbd, "name": name, "s": "GOLD"}])
+    ingest_rows(cfg, db_path, "main", [{"sbd": sbd, "name": name, "phone": phone, "s": "GOLD"}])
 
 
 def _solve(question: str) -> int:
@@ -351,6 +359,51 @@ def test_public_lookup_blocked_by_freeze(tmp_path: Path, kv_memory) -> None:  # 
     with pytest.raises(FeatureDisabledError):
         lookup_shipment(
             config=cfg, db_path=db, kv=kv_memory, params=_lookup_params(kv_memory), client_id="ip-1"
+        )
+
+
+def test_public_lookup_by_phone(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """Identity by phone (last 4) alone — no name — must authorize the lookup."""
+    cfg = _cfg(public_fields=["tracking_code"])
+    db = tmp_path / "s.db"
+    _seed_student(cfg, db)  # phone 0900001234
+    audit = ActivityLog(tmp_path / "a.db")
+    token = issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env=_env())
+    upsert_shipment_record(
+        config=cfg,
+        db_path=db,
+        activity=audit,
+        params={
+            "token": token,
+            "sbd": _STUDENT_SBD,
+            "round_id": "main",
+            "status": "shipped",
+            "updates": {"tracking_code": "VN1"},
+        },
+        env=_env(),
+    )
+    resp = lookup_shipment(
+        config=cfg,
+        db_path=db,
+        kv=kv_memory,
+        params=_lookup_params(kv_memory, name="", phone="1234"),
+        client_id="ip-1",
+    )
+    assert resp.status == "shipped"
+
+
+def test_public_lookup_wrong_phone_rejected(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
+    """A wrong phone with no name must not reveal the record."""
+    cfg = _cfg()
+    db = tmp_path / "s.db"
+    _seed_student(cfg, db)
+    with pytest.raises(ShipmentHandlerError, match="no shipment"):
+        lookup_shipment(
+            config=cfg,
+            db_path=db,
+            kv=kv_memory,
+            params=_lookup_params(kv_memory, name="", phone="9999"),
+            client_id="ip-1",
         )
 
 

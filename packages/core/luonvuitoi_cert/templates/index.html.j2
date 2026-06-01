@@ -51,6 +51,58 @@
   <h3 style="margin-top:20px; font-size:1.05rem;">{{ t("portal.available_certs", default="Available certificates") }}</h3>
   <ul id="cert-list" style="list-style:none; padding:0; margin:8px 0 0;"></ul>
 </section>
+
+{% if shipment_enabled %}
+<section class="card" id="shipment-card">
+  <h2>{{ t("shipment.title", default="Track your certificate shipment") }}</h2>
+  <p class="subtitle">{{ t("shipment.subtitle", default="Check the delivery status of your certificate.") }}</p>
+  <form id="shipment-form" autocomplete="off">
+    {% if rounds | length > 1 %}
+    <label for="ship-round">{{ t("shipment.label_round", default="Round") }}</label>
+    <select id="ship-round" name="round_id" required>
+      {% for r in rounds %}<option value="{{ r.id }}">{{ r.label }}</option>{% endfor %}
+    </select>
+    <label for="ship-sbd" style="margin-top:12px;">{{ t("search.label_registration", default="Registration number") }}</label>
+    {% else %}
+    <input type="hidden" name="round_id" value="{{ rounds[0].id if rounds else '' }}">
+    <label for="ship-sbd">{{ t("search.label_registration", default="Registration number") }}</label>
+    {% endif %}
+    <input id="ship-sbd" name="sbd" type="text" required maxlength="64">
+
+    {% if shipment_phone_enabled %}
+    <p class="subtitle" style="margin-top:12px;">{{ t("shipment.identity_hint", default="Enter your name or phone number to confirm it's you.") }}</p>
+    {% else %}
+    <p class="subtitle" style="margin-top:12px;">{{ t("shipment.identity_hint_name", default="Enter your name to confirm it's you.") }}</p>
+    {% endif %}
+    <label for="ship-name">{{ t("search.label_name", default="Full name") }}</label>
+    <input id="ship-name" name="name" type="text" maxlength="120" autocomplete="off">
+    {% if shipment_phone_enabled %}
+    <label for="ship-phone" style="margin-top:12px;">{{ t("search.label_phone", default="Phone (last 4 digits)") }}</label>
+    <input id="ship-phone" name="phone" type="text" inputmode="numeric" maxlength="20" autocomplete="off">
+    {% endif %}
+
+    <div id="ship-captcha-block" style="margin-top:12px;">
+      <label for="ship-captcha-answer">{{ t("portal.captcha_label", default="Please solve the captcha") }}</label>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span id="ship-captcha-question" style="font-family:ui-monospace,monospace; font-weight:600;"></span>
+        <input id="ship-captcha-answer" name="ship-captcha-answer" type="text" inputmode="numeric" required style="max-width:120px;">
+        <button type="button" id="ship-refresh-captcha" aria-label="{{ t('portal.captcha_refresh', default='Refresh') }}">⟳</button>
+      </div>
+    </div>
+
+    <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+      <button type="submit" id="ship-submit-btn">{{ t("shipment.track_button", default="Track shipment") }}</button>
+      <span id="ship-status" class="badge" role="status" aria-live="polite" hidden></span>
+    </div>
+  </form>
+
+  <div id="ship-result" role="region" aria-live="polite" aria-atomic="true" hidden style="margin-top:14px;">
+    <p id="ship-result-status" style="font-weight:600;"></p>
+    <dl id="ship-result-fields"></dl>
+    <p id="ship-result-updated" class="subtitle"></p>
+  </div>
+</section>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -231,6 +283,116 @@
     document.getElementById("refresh-captcha").addEventListener("click", refreshCaptcha);
     refreshCaptcha();
   }
+})();
+
+// ── Shipment status lookup ──────────────────────────────────────────
+// Self-contained: own CAPTCHA (the endpoint always requires one), identity by
+// name OR phone. No-ops when the shipment card isn't rendered.
+(function () {
+  "use strict";
+  const form = document.getElementById("shipment-form");
+  if (!form) return;
+  const endpoint = {{ shipment_lookup_endpoint | tojson }};
+  const captchaEndpoint = {{ captcha_endpoint | tojson }};
+  const labels = {
+    notFound: {{ t("shipment.not_found", default="No shipment found. Check your details and try again.") | tojson }},
+    serverError: {{ t("errors.server", default="Something went wrong. Please try again.") | tojson }},
+    statusLabel: {{ t("shipment.status_label", default="Status") | tojson }},
+    updatedLabel: {{ t("shipment.updated_label", default="Last updated") | tojson }},
+  };
+
+  const btn = document.getElementById("ship-submit-btn");
+  const badge = document.getElementById("ship-status");
+  const resultEl = document.getElementById("ship-result");
+  const statusEl = document.getElementById("ship-result-status");
+  const fieldsEl = document.getElementById("ship-result-fields");
+  const updatedEl = document.getElementById("ship-result-updated");
+  const questionEl = document.getElementById("ship-captcha-question");
+  const answerEl = document.getElementById("ship-captcha-answer");
+  let captchaId = null;
+
+  function clearChildren(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function showBadge(ok, text) {
+    badge.hidden = false;
+    badge.classList.remove("ok", "bad");
+    badge.classList.add(ok ? "ok" : "bad");
+    badge.textContent = text;
+  }
+
+  async function refreshCaptcha() {
+    questionEl.textContent = "…";
+    answerEl.value = "";
+    try {
+      const resp = await fetch(captchaEndpoint, { method: "POST" });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      captchaId = data.id;
+      questionEl.textContent = data.question;
+    } catch (err) {
+      questionEl.textContent = "?";
+      captchaId = null;
+    }
+  }
+
+  function render(data) {
+    resultEl.hidden = false;
+    clearChildren(fieldsEl);
+    if (!data || data.error) {
+      statusEl.style.color = "var(--bad)";
+      statusEl.textContent = (data && data.error) ? data.error : labels.notFound;
+      updatedEl.textContent = "";
+      return;
+    }
+    statusEl.style.color = "var(--ink)";
+    statusEl.textContent = labels.statusLabel + ": " + (data.status || "—");
+    for (const [key, value] of Object.entries(data.fields || {})) {
+      if (!value) continue;
+      const dt = document.createElement("dt");
+      dt.textContent = key;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      fieldsEl.appendChild(dt);
+      fieldsEl.appendChild(dd);
+    }
+    updatedEl.textContent = data.updated_at ? (labels.updatedLabel + ": " + data.updated_at) : "";
+  }
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    btn.disabled = true;
+    showBadge(true, "…");
+    const payload = Object.fromEntries(new FormData(form).entries());
+    payload.captcha_id = captchaId;
+    payload.captcha_answer = payload["ship-captcha-answer"];
+    delete payload["ship-captcha-answer"];
+    try {
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        showBadge(false, "✗");
+        render({ error: body.error || labels.notFound });
+        return;
+      }
+      showBadge(true, "✓");
+      render(await resp.json());
+    } catch (err) {
+      showBadge(false, "✗");
+      render({ error: labels.serverError });
+    } finally {
+      btn.disabled = false;
+      await refreshCaptcha();  // consume-then-rotate; attacker can't replay
+    }
+  });
+
+  document.getElementById("ship-refresh-captcha").addEventListener("click", refreshCaptcha);
+  refreshCaptcha();
 })();
 </script>
 {% endblock %}
