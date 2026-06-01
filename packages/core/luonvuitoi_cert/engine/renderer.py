@@ -18,6 +18,7 @@ Design notes:
 
 from __future__ import annotations
 
+import logging
 import textwrap
 from dataclasses import dataclass, field
 from io import BytesIO
@@ -30,6 +31,8 @@ from reportlab.pdfgen import canvas
 
 from luonvuitoi_cert.config import CertConfig, LayoutField
 from luonvuitoi_cert.engine.fonts import FontRegistry
+
+_LOGGER = logging.getLogger(__name__)
 
 MAX_FIELD_LENGTH = 1000
 """Upper bound on a single field's rendered text length.
@@ -130,6 +133,18 @@ def render_certificate_bytes(
                 f"({len(text)} > {MAX_FIELD_LENGTH}); truncate upstream"
             )
         psname = fonts.ensure_loaded(spec.font)
+        missing = fonts.missing_glyphs(spec.font, text)
+        if missing:
+            # The font has no glyph for these characters — ReportLab draws a
+            # blank/.notdef box with no error, so a Latin-only font would
+            # silently mangle Vietnamese names. Surface it loudly in the logs.
+            _LOGGER.warning(
+                "font %r lacks glyphs for field %r (chars: %r) — output will show "
+                "blank boxes; configure a font with full coverage for the locale.",
+                spec.font,
+                field_name,
+                missing,
+            )
         c.setFont(psname, spec.size)
         c.setFillColor(HexColor(spec.color))
         _draw_text(c, text, spec)

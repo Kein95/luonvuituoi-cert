@@ -103,5 +103,17 @@ class RestKV:
         result = self._command("GETDEL", key)
         return None if result is None else str(result)
 
+    def incr(self, key: str, *, ttl_seconds: int | None = None) -> int:
+        """Atomic increment via Redis ``INCR`` (creates the key at 0 first).
+
+        Sets ``EXPIRE`` only on the first increment (when INCR returns 1) so a
+        fixed-window counter key expires with its window without a separate
+        round-trip on every hit.
+        """
+        count = int(self._command("INCR", key))
+        if ttl_seconds and ttl_seconds > 0 and count == 1:
+            self._command("EXPIRE", key, ttl_seconds)
+        return count
+
     def close(self) -> None:
         self._client.close()

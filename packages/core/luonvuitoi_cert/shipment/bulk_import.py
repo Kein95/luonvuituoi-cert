@@ -383,13 +383,32 @@ def bulk_import_shipments(
             try:
                 for insert_tuple in to_insert:
                     r_id, sbd, tracking = insert_tuple[0], insert_tuple[1], insert_tuple[2]
-                    cur = conn.execute(
-                        "UPDATE shipment_draft SET status='promoted', "
-                        "tracking_code=?, promoted_at=?, updated_at=? "
-                        "WHERE round_id=? AND sbd=? AND status='exported'",
-                        (tracking, synced_at, synced_at, r_id, sbd),
+                    exported = conn.execute(
+                        "SELECT id FROM shipment_draft "
+                        "WHERE round_id=? AND sbd=? AND status='exported' LIMIT 1",
+                        (r_id, sbd),
+                    ).fetchone()
+                    # Only act when there's an exported draft to close — keeps a
+                    # re-run of the same import idempotent (no draft churn).
+                    if exported is None:
+                        continue
+                    # On a re-send the student may already carry a terminal
+                    # 'promoted' draft from the previous send; flipping the new
+                    # one would collide on UNIQUE(round_id,sbd,status) and roll
+                    # back the whole import (incl. the shipment_history insert
+                    # above). The previous attempt is fully preserved in
+                    # shipment_history (keyed by tracking_code), so retire the
+                    # stale draft row to free the slot for the latest send.
+                    conn.execute(
+                        "DELETE FROM shipment_draft WHERE round_id=? AND sbd=? AND status='promoted'",
+                        (r_id, sbd),
                     )
-                    promoted_drafts += cur.rowcount or 0
+                    conn.execute(
+                        "UPDATE shipment_draft SET status='promoted', "
+                        "tracking_code=?, promoted_at=?, updated_at=? WHERE id=?",
+                        (tracking, synced_at, synced_at, exported[0]),
+                    )
+                    promoted_drafts += 1
             except sqlite3.OperationalError:
                 pass
 

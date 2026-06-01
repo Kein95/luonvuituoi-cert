@@ -112,3 +112,21 @@ class LocalFileKV:
             # Even on expiry we still write back the pop — frees the slot.
             self._save(data)
             return value if self._is_alive(expires_at) else None
+
+    def incr(self, key: str, *, ttl_seconds: int | None = None) -> int:
+        with self._lock:
+            data = self._load()
+            entry = data.get(key)
+            if entry is not None and self._is_alive(entry[1]):
+                try:
+                    base = int(entry[0])
+                except (TypeError, ValueError):
+                    base = 0
+                expires_at = entry[1]  # preserve the window's expiry
+            else:
+                base = 0
+                expires_at = time.time() + ttl_seconds if ttl_seconds and ttl_seconds > 0 else None
+            new_value = base + 1
+            data[key] = (str(new_value), expires_at)
+            self._save(data)
+            return new_value

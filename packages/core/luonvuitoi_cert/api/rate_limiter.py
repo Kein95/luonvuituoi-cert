@@ -55,20 +55,18 @@ def check_rate_limit(
     now = int((clock or time.time)())
     window_start = now - (now % window_seconds)
     key = f"{KV_PREFIX}{scope}:{identifier}:{window_start}"
-    current_raw = kv.get(key)
-    try:
-        current = int(current_raw) if current_raw else 0
-    except ValueError:
-        current = 0
+
+    # Atomic increment-and-count: a single op closes the read-modify-write race
+    # where concurrent requests all read the same count before any write and
+    # slip past the cap. The window key carries a TTL so it self-expires.
+    count = kv.incr(key, ttl_seconds=window_seconds * 2)
 
     elapsed = now - window_start
     retry_after = max(window_seconds - elapsed, 1)
 
-    if current >= limit:
+    if count > limit:
         raise RateLimitError(
             f"rate limit exceeded for {scope!r} (identifier={identifier!r}); retry in {retry_after}s",
             retry_after_seconds=retry_after,
         )
-
-    kv.set(key, str(current + 1), ttl_seconds=window_seconds * 2)
-    return RateLimitStatus(allowed=True, remaining=limit - current - 1, retry_after_seconds=retry_after)
+    return RateLimitStatus(allowed=True, remaining=max(limit - count, 0), retry_after_seconds=retry_after)
