@@ -468,6 +468,78 @@ def test_bulk_import_promotes_exported_drafts(draft_config, draft_populated_db, 
     assert row["promoted_at"] is not None
 
 
+def _carrier_return_file(tmp_path: Path, name: str, tracking: str, phone: str = "0901000001") -> Path:
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["Mã vận đơn", "SĐT", "Trạng thái"])
+    ws.append([tracking, phone, "GIAO THÀNH CÔNG"])
+    path = tmp_path / name
+    wb.save(path)
+    return path
+
+
+def test_bulk_import_resend_does_not_roll_back(draft_config, draft_populated_db, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """A re-send (new tracking for an already-promoted SBD) must NOT hit a
+    UNIQUE collision that rolls back the whole shipment_history insert."""
+    log = ActivityLog(tmp_path / "audit.db")
+
+    def _draft_and_export() -> None:
+        draft_add(
+            config=draft_config,
+            db_path=draft_populated_db,
+            activity=log,
+            params={"token": _admin_token(), "round_id": "main", "sbd_list": ["10001"]},
+            env=_env(),
+        )
+        draft_export(
+            config=draft_config,
+            db_path=draft_populated_db,
+            activity=log,
+            params={"token": _admin_token(), "round_id": "main", "carrier": "viettel"},
+            env=_env(),
+        )
+
+    # First send → promoted.
+    _draft_and_export()
+    bulk_import_shipments(
+        config=draft_config,
+        db_path=draft_populated_db,
+        activity=log,
+        file_path=_carrier_return_file(tmp_path, "r1.xlsx", "VN-AAA-001"),
+        round_id="main",
+        carrier="viettel",
+        commit=True,
+    )
+
+    # Re-send: same student, new tracking code. Previously crashed + rolled back.
+    _draft_and_export()
+    stats = bulk_import_shipments(
+        config=draft_config,
+        db_path=draft_populated_db,
+        activity=log,
+        file_path=_carrier_return_file(tmp_path, "r2.xlsx", "VN-BBB-002"),
+        round_id="main",
+        carrier="viettel",
+        commit=True,
+    )
+    assert stats.inserted == 1  # the new history row persisted (no rollback)
+
+    with sqlite3.connect(draft_populated_db) as conn:
+        conn.row_factory = sqlite3.Row
+        hist = conn.execute(
+            "SELECT tracking_code FROM shipment_history WHERE sbd='10001' ORDER BY tracking_code"
+        ).fetchall()
+        # Both carrier attempts preserved (PK includes tracking_code).
+        assert [r["tracking_code"] for r in hist] == ["VN-AAA-001", "VN-BBB-002"]
+        drafts = conn.execute("SELECT status, tracking_code FROM shipment_draft WHERE sbd='10001'").fetchall()
+        # Draft converged on the latest send; the stale promoted row was retired.
+        assert len(drafts) == 1
+        assert drafts[0]["status"] == "promoted"
+        assert drafts[0]["tracking_code"] == "VN-BBB-002"
+
+
 def test_add_logs_audit(draft_config, draft_populated_db, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     log = ActivityLog(tmp_path / "audit.db")
     draft_add(

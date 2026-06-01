@@ -76,3 +76,20 @@ def test_ensure_loaded_reports_invalid_ttf(tmp_path: Path, cert_config) -> None:
     reg = FontRegistry(cert_config, tmp_path)
     with pytest.raises(FontRegistryError, match="ReportLab rejected"):
         reg.ensure_loaded("serif")
+
+
+def test_missing_glyphs_flags_uncovered_chars(tmp_path: Path, config_dict: dict) -> None:  # type: ignore[no-untyped-def]
+    """Bitstream Vera is Latin-only: ASCII is covered, Vietnamese tone marks aren't."""
+    import shutil as _sh
+
+    import reportlab as rl
+    from luonvuitoi_cert.config import CertConfig
+
+    (tmp_path / "assets" / "fonts").mkdir(parents=True)
+    _sh.copy2(Path(rl.__file__).parent / "fonts" / "Vera.ttf", tmp_path / "assets" / "fonts" / "serif.ttf")
+    cfg = CertConfig.model_validate({**config_dict, "fonts": {"serif": "assets/fonts/serif.ttf"}})
+    reg = FontRegistry(cfg, tmp_path)
+
+    assert reg.missing_glyphs("serif", "Nguyen") == ""  # plain ASCII is covered
+    flagged = reg.missing_glyphs("serif", "Nguyễn")  # tone-marked ễ (U+1EC5)
+    assert "ễ" in flagged

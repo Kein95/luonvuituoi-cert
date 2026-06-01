@@ -36,6 +36,16 @@ class KVBackend(Protocol):
         time. Implementations must not return the same value twice.
         """
 
+    def incr(self, key: str, *, ttl_seconds: int | None = None) -> int:
+        """Atomically increment the integer at ``key`` and return the new value.
+
+        Missing/expired/non-integer values reset to 0 before incrementing, so
+        the first call returns 1. ``ttl_seconds`` sets the expiry only when the
+        key is first created (so a fixed-window counter expires with its
+        window). Used by the rate limiter so concurrent requests can't slip
+        past the cap via a read-modify-write race.
+        """
+
 
 class MemoryKV:
     """In-process ``dict`` backend. Used by tests + embedded scenarios.
@@ -95,3 +105,19 @@ class MemoryKV:
                 return None
             value, expires_at = entry
             return value if self._is_alive(expires_at) else None
+
+    def incr(self, key: str, *, ttl_seconds: int | None = None) -> int:
+        with self._lock:
+            entry = self._data.get(key)
+            if entry is not None and self._is_alive(entry[1]):
+                try:
+                    base = int(entry[0])
+                except (TypeError, ValueError):
+                    base = 0
+                expires_at = entry[1]  # preserve the window's expiry
+            else:
+                base = 0
+                expires_at = time.time() + ttl_seconds if ttl_seconds and ttl_seconds > 0 else None
+            new_value = base + 1
+            self._data[key] = (str(new_value), expires_at)
+            return new_value

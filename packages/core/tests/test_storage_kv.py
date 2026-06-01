@@ -39,6 +39,23 @@ def test_delete_removes_key(kv) -> None:  # type: ignore[no-untyped-def]
     assert kv.get("foo") is None
 
 
+def test_incr_counts_from_zero(kv) -> None:  # type: ignore[no-untyped-def]
+    assert kv.incr("c") == 1
+    assert kv.incr("c") == 2
+    assert kv.incr("c") == 3
+
+
+def test_incr_resets_non_integer_value(kv) -> None:  # type: ignore[no-untyped-def]
+    kv.set("c", "not a number")
+    assert kv.incr("c") == 1
+
+
+def test_incr_isolates_keys(kv) -> None:  # type: ignore[no-untyped-def]
+    assert kv.incr("a") == 1
+    assert kv.incr("b") == 1
+    assert kv.incr("a") == 2
+
+
 def test_delete_missing_key_is_noop(kv) -> None:  # type: ignore[no-untyped-def]
     kv.delete("nope")  # must not raise
 

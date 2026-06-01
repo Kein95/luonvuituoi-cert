@@ -12,6 +12,7 @@ PSName back from :meth:`ensure_loaded` and pass it to ``canvas.setFont``.
 from __future__ import annotations
 
 import hashlib
+import logging
 import threading
 from pathlib import Path
 
@@ -19,6 +20,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFError, TTFont
 
 from luonvuitoi_cert.config import CertConfig
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class FontRegistryError(Exception):
@@ -100,3 +103,29 @@ class FontRegistry:
         """Eagerly load every font declared in the config. Useful at startup / tests."""
         for key in self._config.fonts:
             self.ensure_loaded(key)
+
+    def missing_glyphs(self, font_key: str, text: str) -> str:
+        """Return the distinct non-whitespace characters in ``text`` the font can't render.
+
+        Uses ReportLab's parsed cmap (``face.charToGlyph``). An empty result
+        means full coverage. Best-effort: if the face doesn't expose a cmap we
+        return "" (can't tell → don't cry wolf). The point is to surface the
+        silent failure where a Latin-only font drops Vietnamese tone marks — the
+        glyph renders as a blank/.notdef box with no error otherwise.
+        """
+        psname = self.ensure_loaded(font_key)
+        try:
+            cmap = getattr(pdfmetrics.getFont(psname).face, "charToGlyph", None)
+        except Exception:  # noqa: BLE001 — diagnostics only, never block a render
+            return ""
+        if not cmap:
+            return ""
+        missing: list[str] = []
+        seen: set[str] = set()
+        for ch in text:
+            if ch.isspace() or ch in seen:
+                continue
+            seen.add(ch)
+            if ord(ch) not in cmap:
+                missing.append(ch)
+        return "".join(missing)
