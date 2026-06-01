@@ -182,11 +182,25 @@ def test_result_filter_matches_only_subject_columns(draft_config, tmp_path: Path
         "main",
         [
             # ship_method == "GOLD" but the subject result is SILVER → must NOT match.
-            {"sbd": "20001", "full_name": "X", "dob": "2010-01-01", "school": "S",
-             "phone": "0900000001", "ship_method": "GOLD", "s": "SILVER"},
+            {
+                "sbd": "20001",
+                "full_name": "X",
+                "dob": "2010-01-01",
+                "school": "S",
+                "phone": "0900000001",
+                "ship_method": "GOLD",
+                "s": "SILVER",
+            },
             # Genuine subject GOLD → must match.
-            {"sbd": "20002", "full_name": "Y", "dob": "2010-01-02", "school": "S",
-             "phone": "0900000002", "ship_method": "CA_NHAN", "s": "GOLD"},
+            {
+                "sbd": "20002",
+                "full_name": "Y",
+                "dob": "2010-01-02",
+                "school": "S",
+                "phone": "0900000002",
+                "ship_method": "CA_NHAN",
+                "s": "GOLD",
+            },
         ],
     )
     log = ActivityLog(tmp_path / "audit.db")
