@@ -42,6 +42,8 @@ Post-1.0 security + ops hardening pass (PRs #3-#12).
 - **README tests badge**: dynamic GitHub Actions shield instead of static "tests: 383". (L1)
 - **KV multi-worker guard**: `open_kv` now **raises** (was: warning) when the effective backend is `local` and `WEB_CONCURRENCY > 1`, since the per-process lock can't prevent cross-process replay of single-use CAPTCHA/OTP/magic-link tokens or rate-limit undercount. (H2)
 - **Bulk shipment import 413** — the app-wide 32 KB body cap pre-empted the carrier-import route's own 10 MB limit, so any real multi-MB xlsx was rejected with a 413 before the handler ran. The import route now raises its per-request cap (`request.max_content_length`) so genuine uploads parse; JSON routes stay bounded at 32 KB.
+- **Draft result-filter targeted the wrong columns** — `draft_add(result=…)` matched the result token against every non-excluded column via a hardcoded literal exclusion list, so under non-default `data_mapping` / `extra_cols` naming it could select students by an incidental column value. It now matches only configured subject columns (`subject.db_col`).
+- **Docs/runtime layering** — corrected the `luonvuitoi_cert_cli.server` docstring that claimed it was a dev-only shim; production (Docker `wsgi.py` and the Vercel scaffold entrypoint) reuses the same `build_app`, so it's a production dependency.
 
 ### Security
 
@@ -50,6 +52,9 @@ Post-1.0 security + ops hardening pass (PRs #3-#12).
 - **Shipment lookup identity factor** — `POST /api/shipment/lookup` now requires the recipient to confirm identity by **name OR phone** (last-4) on top of CAPTCHA + rate limit, and honours the public-lookup freeze, so a guessable, sequential SBD can no longer enumerate shipment status / allowlisted PII, and an embargo covers this surface too.
 - **`KV_BACKEND` env honoured** — `open_kv` now lets the `KV_BACKEND` env var (advertised in `.env` / compose) override `config.features.kv_backend` instead of being inert; combined with the multi-worker hard error, the documented knob actually selects the backend.
 - **Scaffold deploy hardening** — `lvt-cert init` `.env.example` now ships `PUBLIC_BASE_URL`, `ALLOWED_ORIGINS`, `TRUST_PROXY_HEADERS`, and `FORCE_HSTS` (previously omitted), so a scaffolded deploy no longer silently falls back to a spoofable Host header for magic-link / QR URLs and wildcard CORS.
+- **CSP on all public pages** — the nonce-based Content-Security-Policy now covers the student portal (`/`) and certificate-checker, not just `/admin`. Both reflect user input, so they now have the same XSS backstop (the per-request nonce was previously inert on those pages). `img-src` allows an external branding logo.
+- **`gen-keys` writes the QR private key 0600** — `private_key.pem` is created owner-only from the start (`os.open(..., 0o600)`) instead of inheriting the umask (often world-readable 0644). It's the sole secret behind every QR signature, so its at-rest permissions are enforced in code rather than left to a remembered `chmod`. (POSIX; best-effort on Windows.)
+- **`JWT_SECRET` minimum length** — a secret under 32 bytes is now rejected (HS256 is a symmetric MAC; a short secret is brute-forceable offline from one captured token).
 
 ### Docs
 

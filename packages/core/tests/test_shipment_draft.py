@@ -170,6 +170,36 @@ def test_add_by_result_filter(draft_config, draft_populated_db, tmp_path: Path) 
     assert {d.sbd for d in created} == {"10001", "10003"}
 
 
+def test_result_filter_matches_only_subject_columns(draft_config, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """A result token must match only subject columns, never an incidental
+    non-subject column (e.g. extra_cols) that happens to hold the same value."""
+    from luonvuitoi_cert.ingest import ingest_rows
+
+    db = tmp_path / "rf.db"
+    ingest_rows(
+        draft_config,
+        db,
+        "main",
+        [
+            # ship_method == "GOLD" but the subject result is SILVER → must NOT match.
+            {"sbd": "20001", "full_name": "X", "dob": "2010-01-01", "school": "S",
+             "phone": "0900000001", "ship_method": "GOLD", "s": "SILVER"},
+            # Genuine subject GOLD → must match.
+            {"sbd": "20002", "full_name": "Y", "dob": "2010-01-02", "school": "S",
+             "phone": "0900000002", "ship_method": "CA_NHAN", "s": "GOLD"},
+        ],
+    )
+    log = ActivityLog(tmp_path / "audit.db")
+    created = draft_add(
+        config=draft_config,
+        db_path=db,
+        activity=log,
+        params={"token": _admin_token(), "round_id": "main", "result": "GOLD"},
+        env=_env(),
+    )
+    assert {d.sbd for d in created} == {"20002"}
+
+
 def test_add_by_sbd_list(draft_config, draft_populated_db, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     log = ActivityLog(tmp_path / "audit.db")
     created = draft_add(

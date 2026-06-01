@@ -759,14 +759,19 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
     @app.after_request
     def _security_headers(response: Response) -> Response:  # type: ignore[no-untyped-def]
-        if request.path == "/admin":
-            # H4: nonce-based CSP — inline scripts in admin.html.j2 carry the
-            # same nonce, but a reflected-XSS injection point can't match it
-            # without knowing the per-request value.
+        if response.mimetype == "text/html":
+            # Nonce-based CSP on EVERY rendered page — the student portal,
+            # certificate-checker, and admin all carry the per-request nonce on
+            # their inline scripts, so a reflected/DOM-XSS injection point can't
+            # execute without it. Applied to all three (was admin-only) since
+            # the public PII surfaces reflect user input too. style-src keeps
+            # 'unsafe-inline' for the inline style attributes; img-src allows an
+            # external branding logo.
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 f"script-src 'self' 'nonce-{g.csp_nonce}'; "
                 "style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data: https:; "
                 "frame-ancestors 'none'"
             )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
