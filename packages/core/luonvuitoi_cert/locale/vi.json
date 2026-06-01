@@ -18,7 +18,19 @@
     "captcha_invalid": "Captcha không chính xác — vui lòng thử lại.",
     "rate_limited": "Bạn thao tác quá nhanh. Vui lòng chờ một lát rồi thử lại.",
     "admin_required": "Cần đăng nhập quản trị.",
-    "expired": "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại."
+    "expired": "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.",
+    "server": "Đã có lỗi xảy ra. Vui lòng thử lại."
+  },
+  "shipment": {
+    "title": "Tra cứu vận chuyển chứng chỉ",
+    "subtitle": "Kiểm tra tình trạng giao chứng chỉ của bạn.",
+    "label_round": "Đợt",
+    "identity_hint": "Nhập họ tên hoặc số điện thoại để xác nhận chính chủ.",
+    "identity_hint_name": "Nhập họ tên để xác nhận chính chủ.",
+    "track_button": "Tra cứu vận chuyển",
+    "status_label": "Trạng thái",
+    "updated_label": "Cập nhật lần cuối",
+    "not_found": "Không tìm thấy thông tin vận chuyển. Vui lòng kiểm tra lại thông tin."
   },
   "verify": {
     "title": "Xác minh Chứng chỉ",

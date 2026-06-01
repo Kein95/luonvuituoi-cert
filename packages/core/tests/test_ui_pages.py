@@ -66,6 +66,32 @@ def test_portal_mode_name_sbd_captcha_has_expected_fields() -> None:
     assert 'id="dob"' not in html  # wrong mode
 
 
+def test_portal_shows_shipment_form_when_enabled() -> None:
+    cfg = _cfg(
+        features={"shipment": {"enabled": True}},
+        data_mapping={"sbd_col": "sbd", "name_col": "name", "phone_col": "phone"},
+    )
+    html = render_student_portal_page(config=cfg, locale=load_locale("en"))
+    assert 'id="shipment-form"' in html
+    assert 'id="ship-sbd"' in html
+    assert 'id="ship-name"' in html
+    assert 'id="ship-phone"' in html  # phone offered when phone_col configured
+    assert "Track your certificate shipment" in html
+
+
+def test_portal_hides_shipment_form_when_disabled() -> None:
+    html = render_student_portal_page(config=_cfg(), locale=load_locale("en"))
+    assert 'id="shipment-form"' not in html
+
+
+def test_portal_shipment_form_hides_phone_without_phone_col() -> None:
+    cfg = _cfg(features={"shipment": {"enabled": True}})  # no phone_col mapped
+    html = render_student_portal_page(config=cfg, locale=load_locale("en"))
+    assert 'id="shipment-form"' in html
+    assert 'id="ship-phone"' not in html
+    assert 'id="ship-name"' in html
+
+
 def test_portal_escapes_project_name_for_xss() -> None:
     html = render_student_portal_page(
         config=_cfg(project={"name": "<script>hack()</script>", "slug": "x", "locale": "en"}),

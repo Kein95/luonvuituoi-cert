@@ -8,11 +8,10 @@ Admin path (``upsert_shipment_record``):
 
 Public path (``lookup_shipment``):
 - Anonymous student flow gated by the public-lookup feature flag (freeze),
-  CAPTCHA, a rate limit, AND a student-identity factor (name / DOB / phone per
-  ``config.student_search.mode``) — the same proof the certificate search
-  requires, so a guessable SBD alone can't enumerate shipment status/PII.
-  Returns only the sanitized status/fields dict — never the internal id or
-  created_at.
+  CAPTCHA, a rate limit, AND an identity factor — the recipient confirms it's
+  them with EITHER their name OR their phone number (last-4), so a guessable
+  SBD alone can't enumerate shipment status/PII. Returns only the sanitized
+  status/fields dict — never the internal id or created_at.
 """
 
 from __future__ import annotations
@@ -24,7 +23,7 @@ from typing import Any
 from luonvuitoi_cert.api.captcha import verify_challenge
 from luonvuitoi_cert.api.feature_gates import require_public_lookup
 from luonvuitoi_cert.api.rate_limiter import check_rate_limit
-from luonvuitoi_cert.api.search import verify_student_identity
+from luonvuitoi_cert.api.search import verify_identity_any
 from luonvuitoi_cert.api.security import SecurityError, validate_sbd
 from luonvuitoi_cert.auth.activity_log import ActivityLog, log_admin_action
 from luonvuitoi_cert.auth.admin_db import Role
@@ -130,12 +129,12 @@ def lookup_shipment(
 ) -> ShipmentLookupResponse:
     """Public student lookup — feature-gate + CAPTCHA + rate-limit + identity gated.
 
-    Requires the same identity factor as the certificate search (name / DOB /
-    phone per ``config.student_search.mode``) so a guessable SBD can't enumerate
-    shipment status/PII, and honours the public-lookup freeze so an embargo
-    covers this surface too. Intentionally returns only (status, updated_at,
-    fields) — no internal ids, no timestamps beyond ``updated_at`` — so scrapers
-    can't harvest the admin record shape.
+    The recipient proves identity with EITHER their name OR phone number (any
+    one provided factor must match the student row), so a guessable SBD can't
+    enumerate shipment status/PII; the public-lookup freeze covers this surface
+    too. Intentionally returns only (status, updated_at, fields) — no internal
+    ids, no timestamps beyond ``updated_at`` — so scrapers can't harvest the
+    admin record shape.
     """
     _require_enabled(config)
     sbd = validate_sbd(params.get("sbd"))
@@ -155,9 +154,10 @@ def lookup_shipment(
         limit=PUBLIC_LOOKUP_RATE_LIMIT,
         window_seconds=PUBLIC_LOOKUP_WINDOW_SECONDS,
     )
-    if not verify_student_identity(config=config, db_path=db_path, round_id=round_id, sbd=sbd, params=params):
+    if not verify_identity_any(config=config, db_path=db_path, round_id=round_id, sbd=sbd, params=params):
         # Opaque message — identical to the genuine not-found case below so the
-        # response never reveals whether the SBD exists or only the name missed.
+        # response never reveals whether the SBD exists or only the identity
+        # factor (name / phone) missed.
         raise ShipmentHandlerError("no shipment recorded for this certificate yet")
 
     record = get_shipment(db_path, config, round_id=round_id, sbd=sbd)

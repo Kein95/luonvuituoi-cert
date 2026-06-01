@@ -18,7 +18,19 @@
     "captcha_invalid": "Captcha is incorrect — please try again.",
     "rate_limited": "Too many attempts. Please wait a moment before retrying.",
     "admin_required": "Admin sign-in required.",
-    "expired": "Your session has expired. Please sign in again."
+    "expired": "Your session has expired. Please sign in again.",
+    "server": "Something went wrong. Please try again."
+  },
+  "shipment": {
+    "title": "Track your certificate shipment",
+    "subtitle": "Check the delivery status of your certificate.",
+    "label_round": "Round",
+    "identity_hint": "Enter your name or phone number to confirm it's you.",
+    "identity_hint_name": "Enter your name to confirm it's you.",
+    "track_button": "Track shipment",
+    "status_label": "Status",
+    "updated_label": "Last updated",
+    "not_found": "No shipment found. Check your details and try again."
   },
   "verify": {
     "title": "Certificate Verification",

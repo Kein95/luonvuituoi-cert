@@ -116,8 +116,30 @@ def test_shipment_lookup_requires_captcha(live_server: str) -> None:
     assert resp.status_code == 400
 
 
-def test_shipment_lookup_rejects_wrong_name(live_server: str, captcha_solver) -> None:  # type: ignore[no-untyped-def]
-    """Correct SBD + wrong name must not reveal the record (no SBD enumeration)."""
+def test_shipment_lookup_rejects_wrong_identity(live_server: str, captcha_solver) -> None:  # type: ignore[no-untyped-def]
+    """Correct SBD but no valid identity factor must not reveal the record."""
+    token = _login(live_server)
+    httpx.post(
+        live_server + "/api/shipment/upsert",
+        json={"token": token, "sbd": "12345", "round_id": "main", "status": "shipped"},
+    )
+    # Wrong name, wrong phone, no DOB → every factor fails.
+    resp = httpx.post(
+        live_server + "/api/shipment/lookup",
+        json={
+            "sbd": "12345",
+            "round_id": "main",
+            "name": "Not Alice",
+            "phone": "0000",
+            **captcha_solver(live_server),
+        },
+    )
+    assert resp.status_code == 400
+    assert "no shipment" in resp.json()["error"]
+
+
+def test_shipment_lookup_by_phone(live_server: str, captcha_solver) -> None:  # type: ignore[no-untyped-def]
+    """Recipient can confirm identity by phone (last 4) instead of name."""
     token = _login(live_server)
     httpx.post(
         live_server + "/api/shipment/upsert",
@@ -125,16 +147,10 @@ def test_shipment_lookup_rejects_wrong_name(live_server: str, captcha_solver) ->
     )
     resp = httpx.post(
         live_server + "/api/shipment/lookup",
-        json={
-            "sbd": "12345",
-            "round_id": "main",
-            "name": "Not Alice",
-            "dob": "01-06-2010",
-            **captcha_solver(live_server),
-        },
+        json={"sbd": "12345", "round_id": "main", "phone": "4567", **captcha_solver(live_server)},
     )
-    assert resp.status_code == 400
-    assert "no shipment" in resp.json()["error"]
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["status"] == "shipped"
 
 
 def test_admin_login_rate_limited(live_server: str) -> None:
