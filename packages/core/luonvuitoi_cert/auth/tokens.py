@@ -2,8 +2,8 @@
 
 Keeping the token logic in one place means admin handlers only ever see
 :class:`AdminToken` objects — they never import PyJWT themselves. The secret
-comes from ``JWT_SECRET`` env var; in tests and local dev a fallback is
-allowed but loudly logged once per process.
+comes from the ``JWT_SECRET`` env var; it is mandatory (no silent fallback)
+and must not be the unedited shipped placeholder.
 """
 
 from __future__ import annotations
@@ -29,6 +29,16 @@ class TokenError(Exception):
     """Raised when a presented token is missing, malformed, tampered with, or expired."""
 
 
+# Secrets shipped in .env.example start with this; a copy-unedited deploy must
+# never sign tokens with a public-repo value.
+_PLACEHOLDER_SECRET_PREFIX = "change-me"
+
+
+def is_placeholder_secret(value: str) -> bool:
+    """True when ``value`` is still an unedited shipped placeholder (``change-me…``)."""
+    return value.strip().lower().startswith(_PLACEHOLDER_SECRET_PREFIX)
+
+
 @dataclass(frozen=True, slots=True)
 class AdminToken:
     user_id: str
@@ -51,6 +61,11 @@ def _resolve_secret(env: dict[str, str] | None) -> str:
     secret = source.get("JWT_SECRET", "")
     if not secret:
         raise TokenError("JWT_SECRET is not set; cannot issue/verify admin tokens")
+    if is_placeholder_secret(secret):
+        raise TokenError(
+            "JWT_SECRET is still the shipped placeholder; set a real random secret "
+            '(e.g. `python -c "import secrets; print(secrets.token_urlsafe(48))"`)'
+        )
     return secret
 
 

@@ -174,6 +174,38 @@ def _match_predicate(config: CertConfig, row: dict[str, str], params: dict[str, 
     raise SearchError(f"unknown student_search.mode: {mode!r}")
 
 
+def verify_student_identity(
+    *,
+    config: CertConfig,
+    db_path: str | Path,
+    round_id: str,
+    sbd: str,
+    params: dict[str, Any],
+) -> bool:
+    """Return True if ``params`` prove the student's identity for ``sbd`` in ``round_id``.
+
+    Applies the same name / DOB / phone predicate the public certificate search
+    enforces (``config.student_search.mode``), so sibling public surfaces (e.g.
+    shipment lookup) can require an identity factor instead of trusting a
+    guessable SBD alone. Returns False if the round, the row, or the predicate
+    doesn't match — the caller decides how to respond (use an opaque message so
+    SBD existence isn't leaked).
+    """
+    table = next((r.table for r in config.rounds if r.id == round_id), None)
+    if table is None:
+        return False
+    with closing(sqlite3.connect(str(Path(db_path).expanduser().resolve()))) as conn:
+        conn.row_factory = sqlite3.Row
+        try:
+            row = _fetch_row(conn, table, config.data_mapping.sbd_col, sbd)
+        except sqlite3.OperationalError:
+            # No students table yet (nothing ingested) — treat as no identity.
+            return False
+    if row is None:
+        return False
+    return _match_predicate(config, row, params)
+
+
 def search_student(
     *,
     config: CertConfig,

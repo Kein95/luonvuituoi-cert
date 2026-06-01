@@ -68,3 +68,15 @@ def test_missing_jwt_secret_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     """Regression: Phase 06 review H1 — silent ephemeral fallback removed."""
     with pytest.raises(TokenError, match="JWT_SECRET is not set"):
         issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env={})
+
+
+@pytest.mark.parametrize(
+    "secret",
+    ["change-me", "change-me-to-a-long-random-string-32-chars-min", "  Change-Me-Long-Enough-Padding  "],
+)
+def test_placeholder_jwt_secret_rejected(secret: str) -> None:
+    """A copy-.env-unedited 'change-me…' secret must never sign/verify tokens."""
+    with pytest.raises(TokenError, match="placeholder"):
+        issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env={"JWT_SECRET": secret})
+    with pytest.raises(TokenError, match="placeholder"):
+        verify_admin_token("any.token.here", env={"JWT_SECRET": secret})

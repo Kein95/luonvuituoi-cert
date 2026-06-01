@@ -33,7 +33,7 @@ from luonvuitoi_cert.auth import (
 )
 from luonvuitoi_cert.auth.activity_log import log_admin_action
 from luonvuitoi_cert.auth.admin_db import Role
-from luonvuitoi_cert.auth.tokens import verify_admin_token
+from luonvuitoi_cert.auth.tokens import is_placeholder_secret, verify_admin_token
 from luonvuitoi_cert.config import load_config
 from luonvuitoi_cert.locale import load_locale
 from luonvuitoi_cert.shipment import (
@@ -64,6 +64,12 @@ CAPTCHA_RATE_WINDOW_SECONDS = 60
 # and enumeration attacks without hurting legitimate verifiers.
 VERIFY_RATE_LIMIT = 60
 VERIFY_RATE_WINDOW_SECONDS = 60
+# Login is the only public credential-guessing surface, so throttle it like the
+# other public POSTs. Keyed on BOTH client IP and submitted email so neither IP
+# rotation nor a fixed target bypasses the cap; bounds password brute-force and
+# OTP-guess volume (<= limit attempts/min against the 6-digit space).
+ADMIN_LOGIN_RATE_LIMIT = 10
+ADMIN_LOGIN_RATE_WINDOW_SECONDS = 60
 # Carrier exports are multi-MB xlsx. 10MB cap prevents memory spikes without
 # hurting legitimate monthly dumps. Tunable via SHIPMENT_IMPORT_MAX_BYTES env.
 SHIPMENT_IMPORT_MAX_BYTES_DEFAULT = 10 * 1024 * 1024
@@ -160,7 +166,25 @@ def _to_jsonable(value):  # type: ignore[no-untyped-def]
     return value
 
 
+def _assert_no_placeholder_secrets() -> None:
+    """Refuse to boot if security-critical secrets are still .env placeholders.
+
+    A copy-.env-unedited deploy would otherwise sign admin JWTs with a
+    public-repo secret and stand up a ``change-me`` super-admin. Fail loud at
+    startup rather than serve an insecure portal. (``JWT_SECRET`` is also
+    re-checked at token time; this is the fail-fast boot guard for both knobs.)
+    """
+    for name in ("JWT_SECRET", "ADMIN_DEFAULT_PASSWORD"):
+        value = os.getenv(name, "")
+        if value and is_placeholder_secret(value):
+            raise RuntimeError(
+                f"{name} is still the shipped placeholder value — set a real "
+                "secret before starting (see .env.example / SECURITY.md)."
+            )
+
+
 def build_app(config_path: Path, project_root: Path) -> Flask:
+    _assert_no_placeholder_secrets()
     config = load_config(config_path)
     locale = load_locale(config.project.locale)
     kv = open_kv(config, project_root)
@@ -170,8 +194,10 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     mailer = _resolve_email_provider()
 
     app = Flask(__name__, static_folder=None)
-    # H1: Werkzeug enforces this cap *before* parsing — a 1 GB POST is rejected
-    # at the socket without the handler ever seeing it.
+    # Werkzeug enforces this cap *before* parsing — a huge POST is rejected at
+    # the socket without the handler ever seeing it. JSON routes keep this tight
+    # 32 KB bound; the carrier-import route raises its own per-request limit
+    # (request.max_content_length) so multi-MB uploads aren't 413'd here first.
     app.config["MAX_CONTENT_LENGTH"] = MAX_BODY_BYTES
 
     @app.before_request
@@ -400,6 +426,27 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     @app.post("/api/admin/login")
     def _login():  # type: ignore[no-untyped-def]
         params = _json_body()
+        # Throttle the only public credential-guessing surface. Per-IP stops a
+        # single host spraying many accounts; per-email stops IP rotation
+        # against one target. Both run before perform_login so password and
+        # OTP-guess volume are bounded regardless of auth_mode.
+        client = _client_id()
+        handlers.check_rate_limit(
+            kv,
+            "admin_login",
+            client,
+            limit=ADMIN_LOGIN_RATE_LIMIT,
+            window_seconds=ADMIN_LOGIN_RATE_WINDOW_SECONDS,
+        )
+        email_id = str(params.get("email", "")).strip().lower()
+        if email_id:
+            handlers.check_rate_limit(
+                kv,
+                "admin_login_email",
+                email_id,
+                limit=ADMIN_LOGIN_RATE_LIMIT,
+                window_seconds=ADMIN_LOGIN_RATE_WINDOW_SECONDS,
+            )
         base = _public_base_url()
         try:
             result = perform_login(
@@ -409,7 +456,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
                 email_provider=mailer,
                 params=params,
                 activity=activity,
-                ip=_client_id(),
+                ip=client,
                 magic_link_builder=lambda token: f"{base}/admin?token={token}",
             )
         except LoginError as e:
@@ -488,8 +535,12 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
             limit=SHIPMENT_IMPORT_RATE_LIMIT,
             window_seconds=SHIPMENT_IMPORT_RATE_WINDOW_SECONDS,
         )
-        # Override size cap for this route only.
+        # Raise the body cap for THIS route only. The app-wide MAX_CONTENT_LENGTH
+        # (32 KB) is right for JSON routes but would 413 a multi-MB carrier xlsx
+        # before this handler runs; Werkzeug honours the per-request override set
+        # before the body is parsed (request.form / request.files below).
         max_bytes = int(os.getenv("SHIPMENT_IMPORT_MAX_BYTES", str(SHIPMENT_IMPORT_MAX_BYTES_DEFAULT)))
+        request.max_content_length = max_bytes
         if request.content_length is not None and request.content_length > max_bytes:
             return jsonify({"error": f"file too large (>{max_bytes} bytes)"}), 413
 
