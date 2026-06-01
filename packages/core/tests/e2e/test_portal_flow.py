@@ -32,6 +32,18 @@ def test_admin_page_has_csp_header(live_server: str) -> None:
     assert "'unsafe-inline'" not in csp.split("script-src", 1)[1].split(";", 1)[0]
 
 
+@pytest.mark.parametrize("path", ["/", "/certificate-checker"])
+def test_public_pages_have_nonce_csp(live_server: str, path: str) -> None:
+    """Both public PII surfaces must carry a nonce-based CSP, not just /admin."""
+    resp = httpx.get(live_server + path)
+    assert resp.status_code == 200
+    csp = resp.headers.get("Content-Security-Policy", "")
+    assert "default-src 'self'" in csp
+    script_src = csp.split("script-src", 1)[1].split(";", 1)[0]
+    assert "nonce-" in script_src
+    assert "'unsafe-inline'" not in script_src
+
+
 def test_search_flow_finds_seeded_student(live_server: str, captcha_solver) -> None:  # type: ignore[no-untyped-def]
     challenge = captcha_solver(live_server)
     resp = httpx.post(

@@ -160,6 +160,7 @@ def _query_students(
     result_filter: str | None,
     sbd_list: list[str] | None,
     data_mapping_cols: set[str],
+    subject_cols: set[str],
 ) -> list[dict[str, str]]:
     """Pull rows from students table matching the combined filter set."""
     where: list[str] = []
@@ -176,14 +177,12 @@ def _query_students(
         where.append(f'"sbd" IN ({placeholders})')
         args.extend(sbd_list)
     if result_filter:
-        # Match ANY subject column carrying the result token (accent-insensitive
-        # by pre-uppercasing both sides; students table already stores them
-        # pre-normalized on ingest).
-        subject_clauses = [
-            f'UPPER(TRIM("{col}")) = UPPER(?)'
-            for col in data_mapping_cols
-            if col not in {"sbd", "full_name", "dob", "school", "phone", "grade"}
-        ]
+        # Match ANY *subject* column carrying the result token. The subject set
+        # comes straight from config (subject.db_col), not a guessed exclusion
+        # list, so it stays correct regardless of how data_mapping / extra_cols
+        # are named. Accent-insensitive by pre-uppercasing both sides; the
+        # students table already stores values pre-normalized on ingest.
+        subject_clauses = [f'UPPER(TRIM("{col}")) = UPPER(?)' for col in sorted(subject_cols)]
         if subject_clauses:
             where.append("(" + " OR ".join(subject_clauses) + ")")
             args.extend([result_filter] * len(subject_clauses))
@@ -259,6 +258,7 @@ def draft_add(
         )
 
     columns = _students_columns(config)
+    subject_cols = {s.db_col for s in config.subjects}
     rows = _query_students(
         Path(db_path).expanduser().resolve(),
         round_table,
@@ -266,6 +266,7 @@ def draft_add(
         result_filter,
         [str(s).strip() for s in (sbd_list or []) if str(s).strip()],
         columns,
+        subject_cols,
     )
 
     now = _iso_now()

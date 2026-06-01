@@ -9,6 +9,7 @@ production.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import typer
@@ -49,9 +50,17 @@ def gen_keys(
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
     )
 
-    priv_path.write_bytes(priv_pem)
+    # Write the private key owner-only (0600) from creation — it's the sole
+    # secret behind every QR signature, so don't leave even a brief
+    # world-readable window. POSIX honours the mode; on Windows the mode bits
+    # are a best-effort no-op (NTFS ACLs govern access there).
+    fd = os.open(priv_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.write(fd, priv_pem)
+    finally:
+        os.close(fd)
     pub_path.write_bytes(pub_pem)
 
-    console.print(f"[green]OK[/] private key -> {priv_path}")
+    console.print(f"[green]OK[/] private key -> {priv_path} (mode 0600)")
     console.print(f"[green]OK[/] public  key -> {pub_path}")
     console.print("[yellow]![/] add [cyan]private_key.pem[/] to .gitignore — never commit it.")

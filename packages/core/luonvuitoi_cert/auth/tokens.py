@@ -32,6 +32,8 @@ class TokenError(Exception):
 # Secrets shipped in .env.example start with this; a copy-unedited deploy must
 # never sign tokens with a public-repo value.
 _PLACEHOLDER_SECRET_PREFIX = "change-me"
+# HS256 keys below 256 bits are brute-forceable offline; PyJWT warns under this.
+MIN_SECRET_BYTES = 32
 
 
 def is_placeholder_secret(value: str) -> bool:
@@ -65,6 +67,12 @@ def _resolve_secret(env: dict[str, str] | None) -> str:
         raise TokenError(
             "JWT_SECRET is still the shipped placeholder; set a real random secret "
             '(e.g. `python -c "import secrets; print(secrets.token_urlsafe(48))"`)'
+        )
+    if len(secret.encode("utf-8")) < MIN_SECRET_BYTES:
+        raise TokenError(
+            f"JWT_SECRET is too short ({len(secret.encode('utf-8'))} bytes); use at least "
+            f"{MIN_SECRET_BYTES} bytes. HS256 is a symmetric MAC, so a short secret can be "
+            "brute-forced offline from a single captured token."
         )
     return secret
 
