@@ -31,7 +31,7 @@ Post-1.0 security + ops hardening pass (PRs #3-#12).
 - **Activity-log webhook URLs** must be `https://`; non-HTTPS rejected with a warning (SSRF guard). (M6)
 - **`admin.student.update` audit metadata** no longer persists raw `old`/`new` values; records `{column, changed, value_length_delta}` only — PII never reaches the GSheet forward. (M5)
 - **`verify_admin_password`** now issues a single `SELECT` instead of two. (M8)
-- **Docker image** sets `WEB_CONCURRENCY=2` env, healthcheck probes `/health`. (M4)
+- **Docker image** defaults to `WEB_CONCURRENCY=1` (the `local` KV backend is single-process only; running more workers needs a REST backend), healthcheck probes `/health`. (M4)
 - **Security headers**: `X-Frame-Options: DENY` on every response, `Strict-Transport-Security` behind `FORCE_HSTS=1`.
 - **GitHub Actions** bumped to Node 24-compatible versions (`checkout@v5`, `setup-python@v6`, `configure-pages@v5`, `upload-pages-artifact@v4`, `deploy-pages@v5`).
 
@@ -39,7 +39,16 @@ Post-1.0 security + ops hardening pass (PRs #3-#12).
 
 - **Flaky `test_search_rate_limit_kicks_in`**: now loops up to 2× the rate limit + 2 buffer, tolerates window-boundary rollover. (T1)
 - **README tests badge**: dynamic GitHub Actions shield instead of static "tests: 383". (L1)
-- **KV multi-worker warning**: `open_kv` logs a loud warning when `KV_BACKEND=local` and `WEB_CONCURRENCY > 1`. (H2)
+- **KV multi-worker guard**: `open_kv` now **raises** (was: warning) when the effective backend is `local` and `WEB_CONCURRENCY > 1`, since the per-process lock can't prevent cross-process replay of single-use CAPTCHA/OTP/magic-link tokens or rate-limit undercount. (H2)
+- **Bulk shipment import 413** — the app-wide 32 KB body cap pre-empted the carrier-import route's own 10 MB limit, so any real multi-MB xlsx was rejected with a 413 before the handler ran. The import route now raises its per-request cap (`request.max_content_length`) so genuine uploads parse; JSON routes stay bounded at 32 KB.
+
+### Security
+
+- **Login rate limiting** — `/api/admin/login` is now throttled (10/min per IP **and** per submitted email), closing the only public credential-guessing surface that lacked a limit. Bounds password brute-force and caps OTP-guess volume within the code's TTL window.
+- **Boot guard for placeholder secrets** — the app refuses to start (and tokens refuse to sign/verify) when `JWT_SECRET` or `ADMIN_DEFAULT_PASSWORD` is still the shipped `change-me…` placeholder, so a copy-`.env`-unedited deploy can't run with a public-repo signing secret or a guessable super-admin password.
+- **Shipment lookup identity factor** — `POST /api/shipment/lookup` now requires the same identity proof as certificate search (name / DOB / phone per `student_search.mode`) and honours the public-lookup freeze, so a guessable, sequential SBD can no longer enumerate shipment status / allowlisted PII, and an embargo covers this surface too.
+- **`KV_BACKEND` env honoured** — `open_kv` now lets the `KV_BACKEND` env var (advertised in `.env` / compose) override `config.features.kv_backend` instead of being inert; combined with the multi-worker hard error, the documented knob actually selects the backend.
+- **Scaffold deploy hardening** — `lvt-cert init` `.env.example` now ships `PUBLIC_BASE_URL`, `ALLOWED_ORIGINS`, `TRUST_PROXY_HEADERS`, and `FORCE_HSTS` (previously omitted), so a scaffolded deploy no longer silently falls back to a spoofable Host header for magic-link / QR URLs and wildcard CORS.
 
 ### Docs
 

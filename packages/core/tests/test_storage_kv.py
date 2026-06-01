@@ -169,6 +169,14 @@ def test_open_kv_local_env_override(tmp_path: Path) -> None:
     assert override.exists()
 
 
+def test_open_kv_env_overrides_config(tmp_path: Path) -> None:
+    """KV_BACKEND env wins over config so the documented knob isn't inert."""
+    cfg = _cfg_with_kv("upstash")  # config asks for upstash...
+    # ...but the env override selects local, so no upstash creds are needed.
+    kv = open_kv(cfg, tmp_path, env={"KV_BACKEND": "local"})
+    assert isinstance(kv, LocalFileKV)
+
+
 def test_open_kv_upstash_requires_env_vars(tmp_path: Path) -> None:
     cfg = _cfg_with_kv("upstash")
     with pytest.raises(KVError, match="UPSTASH_REDIS_REST_URL"):

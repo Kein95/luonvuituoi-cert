@@ -1,7 +1,8 @@
 """Regression tests for the P1 hardening fixes (H2, H3, H4, H5).
 
-- H2: ``open_kv`` logs a warning when ``KV_BACKEND=local`` and the host
-  advertises >1 worker (gunicorn/uvicorn/waitress).
+- H2: ``open_kv`` raises when ``kv_backend=local`` and the host advertises
+  >1 worker (gunicorn/uvicorn/waitress) — the cross-process race on single-use
+  tokens / rate limits is unsafe, so it fails loud rather than warning.
 - H3: ``CertConfig.rounds`` is capped at 20 entries.
 - H4: Activity-log webhook dispatch uses a bounded executor, not an
   unbounded daemon thread per call.
@@ -12,39 +13,34 @@
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 
 import pytest
 
-# ── H2: LocalFileKV multi-worker warning ─────────────────────────────────────
+# ── H2: LocalFileKV multi-worker hard error ──────────────────────────────────
 
 
-def test_local_kv_warns_on_multiple_workers(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_local_kv_raises_on_multiple_workers(tmp_path: Path) -> None:
     from luonvuitoi_cert.config import load_config
-    from luonvuitoi_cert.storage.kv import open_kv
+    from luonvuitoi_cert.storage.kv import KVError, open_kv
 
     _make_minimal_config(tmp_path)
     cfg = load_config(tmp_path / "cert.config.json")
 
-    caplog.set_level(logging.WARNING, logger="luonvuitoi_cert.storage.kv.factory")
-    open_kv(cfg, tmp_path, env={"WEB_CONCURRENCY": "4"})
-    assert any("KV_BACKEND=local with 4 workers is unsafe" in rec.message for rec in caplog.records), [
-        rec.message for rec in caplog.records
-    ]
+    with pytest.raises(KVError, match="unsafe with 4 workers"):
+        open_kv(cfg, tmp_path, env={"WEB_CONCURRENCY": "4"})
 
 
-def test_local_kv_silent_for_single_worker(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_local_kv_ok_for_single_worker(tmp_path: Path) -> None:
     from luonvuitoi_cert.config import load_config
-    from luonvuitoi_cert.storage.kv import open_kv
+    from luonvuitoi_cert.storage.kv import LocalFileKV, open_kv
 
     _make_minimal_config(tmp_path)
     cfg = load_config(tmp_path / "cert.config.json")
 
-    caplog.set_level(logging.WARNING, logger="luonvuitoi_cert.storage.kv.factory")
-    open_kv(cfg, tmp_path, env={"WEB_CONCURRENCY": "1"})
-    open_kv(cfg, tmp_path, env={})  # nothing set → silent
-    assert not any("unsafe" in rec.message for rec in caplog.records)
+    # Single worker / unset must not raise.
+    assert isinstance(open_kv(cfg, tmp_path, env={"WEB_CONCURRENCY": "1"}), LocalFileKV)
+    assert isinstance(open_kv(cfg, tmp_path, env={}), LocalFileKV)
 
 
 # ── H3: rounds upper bound ───────────────────────────────────────────────────

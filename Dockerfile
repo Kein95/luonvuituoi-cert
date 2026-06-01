@@ -1,10 +1,13 @@
 FROM python:3.11-slim
 
+# WEB_CONCURRENCY defaults to 1: the default KV backend is 'local', which is
+# only single-process safe. Running >1 worker requires a REST KV backend
+# (KV_BACKEND=upstash|vercel-kv) — open_kv() hard-errors on local + multi-worker.
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PROJECT_ROOT=/app/project \
-    WEB_CONCURRENCY=2
+    WEB_CONCURRENCY=1
 
 WORKDIR /app
 
@@ -35,4 +38,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8000/health || exit 1
 
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --timeout 60 --access-logfile - wsgi:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 60 --access-logfile - wsgi:app"]
