@@ -417,6 +417,51 @@ def test_exported_draft_excel_has_template_headers(draft_config, draft_populated
     assert data[3] in (None, "")  # address column blank (admin fills later)
 
 
+def test_export_neutralizes_formula_injection(draft_config, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """Cell values starting with =,+,-,@ are prefixed with ' so the carrier's
+    spreadsheet treats them as text rather than executing a formula."""
+    from luonvuitoi_cert.ingest import ingest_rows
+    from openpyxl import load_workbook
+
+    db = tmp_path / "fi.db"
+    ingest_rows(
+        draft_config,
+        db,
+        "main",
+        [
+            {
+                "sbd": "30001",
+                "full_name": '=HYPERLINK("http://evil","x")',
+                "dob": "2010-01-01",
+                "school": "S",
+                "phone": "0901000009",
+                "ship_method": "CA_NHAN",
+                "s": "GOLD",
+            }
+        ],
+    )
+    log = ActivityLog(tmp_path / "audit.db")
+    draft_add(
+        config=draft_config,
+        db_path=db,
+        activity=log,
+        params={"token": _admin_token(), "round_id": "main", "sbd_list": ["30001"]},
+        env=_env(),
+    )
+    result = draft_export(
+        config=draft_config,
+        db_path=db,
+        activity=log,
+        params={"token": _admin_token(), "round_id": "main", "carrier": "viettel"},
+        env=_env(),
+    )
+    ws = load_workbook(io.BytesIO(result.file_bytes)).active
+    data = [c.value for c in list(ws.iter_rows())[1]]
+    # export_template order: sbd, full_name, phone, address(blank), recipient(blank)
+    assert data[1] == '\'=HYPERLINK("http://evil","x")'  # leading apostrophe neutralizes it
+    assert result.filename.endswith(".xlsx")
+
+
 def test_bulk_import_promotes_exported_drafts(draft_config, draft_populated_db, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     from openpyxl import Workbook
 

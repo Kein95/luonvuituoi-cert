@@ -47,6 +47,14 @@ Post-1.0 security + ops hardening pass (PRs #3-#12).
 - **Bulk-import re-send data loss** — promoting a re-sent shipment (new tracking code for an already-`promoted` SBD) hit a `UNIQUE(round_id,sbd,status)` collision that raised `IntegrityError` and rolled back the *entire* import transaction, discarding every just-inserted `shipment_history` row. The promote step now retires the stale draft row first (its record is preserved in `shipment_history`, keyed by tracking code) and only acts when there's an exported draft to close, so re-sends and re-runs are safe.
 - **Rate limiter race** — `check_rate_limit` was a non-atomic `get`-then-`set`, so concurrent requests could read the same count before any write and slip past the cap. Added an atomic `incr` to the KV contract (Redis `INCR`+`EXPIRE` for RestKV; increment-under-lock for Memory/Local) and switched the limiter to it.
 - **Silent Vietnamese glyph loss** — the PDF renderer now logs a warning when a field's text contains characters the configured font has no glyph for (e.g. a Latin-only font dropping tone-marked names), surfacing what was previously a silent blank-box render. Detection uses ReportLab's parsed cmap; no new dependency.
+- **Carrier-export formula injection** — values starting with `= + - @` (or leading whitespace/control chars) in the exported draft Excel are now prefixed with an apostrophe so the carrier's spreadsheet treats them as text instead of executing a formula.
+- **Export filename** — the draft-export download filename is run through `sanitize_filename` before it reaches `Content-Disposition` (defense-in-depth against an unvalidated carrier profile key).
+- **Malformed admin tokens** — `verify_admin_token` now rejects a JWT missing any of `sub`/`email`/`iat`/`exp` instead of building an `AdminToken` with empty/zeroed fields (protects audit-log integrity and expiry logic).
+- **Duplicate ingest headers** — the Excel and CSV readers now raise on duplicate column headers instead of silently collapsing them last-wins (which dropped a column's data).
+- **RestKV robustness** — `scan_prefix` escapes Redis glob metacharacters in the prefix and caps `COUNT` at the caller's limit; `RestKV` is now a context manager (`with`-closeable).
+- **Template PDF size cap** — the renderer rejects template PDFs over 50 MB before parsing (guard against a pathological/accidental file blowing up per-request memory).
+- **Docker healthcheck** — `docker-compose` now probes the dependency-free `GET /health` instead of `POST /api/captcha` (which wrote a KV entry every 30 s and could trip the captcha rate limit).
+- **Internal cleanup** — deduplicated the shipment UTC-timestamp helper into `shipment/_time.py` (`iso_now`); removed a dead `FIXED_COLUMNS` lint-placeholder and an inaccurate pypdf-version comment.
 
 ### Security
 

@@ -57,6 +57,13 @@ def read_excel(path: str | Path, sheet: str | None = None) -> list[dict[str, str
         headers = [_cell_to_str(h) for h in header_raw]
         if not any(headers):
             raise IngestError(f"Excel header row is empty: {p}")
+        non_empty = [h for h in headers if h]
+        if len(non_empty) != len(set(non_empty)):
+            dupes = sorted({h for h in non_empty if non_empty.count(h) > 1})
+            raise IngestError(
+                f"duplicate header columns {dupes} in {p} — rename so each column is unique "
+                "(a silent last-wins collision would drop a column's data)"
+            )
 
         out: list[dict[str, str]] = []
         for row in rows:

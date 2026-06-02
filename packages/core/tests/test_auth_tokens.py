@@ -87,3 +87,14 @@ def test_short_jwt_secret_rejected(secret: str) -> None:
     """HS256 secrets under 32 bytes are offline-brute-forceable — reject them."""
     with pytest.raises(TokenError, match="too short"):
         issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env={"JWT_SECRET": secret})
+
+
+def test_token_missing_required_claims_rejected() -> None:
+    """A structurally incomplete token (no exp/iat) must not validate to an
+    AdminToken with zeroed timestamps + empty user_id."""
+    import jwt
+
+    payload = {"sub": "u1", "email": "a@b.co", "role": "admin", "jti": "x"}  # no iat / exp
+    token = jwt.encode(payload, _env()["JWT_SECRET"], algorithm="HS256")
+    with pytest.raises(TokenError, match="malformed"):
+        verify_admin_token(token, env=_env())

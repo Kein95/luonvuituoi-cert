@@ -1,9 +1,9 @@
 """Read students from a JSON file shaped as a list of objects.
 
-Accepts either a bare list-of-dicts (``[{"name": ...}, ...]``) or an
-envelope (``{"records": [...]}``, ``{"data": [...]}``, or ``{"students":
-[...]}``). Non-string cell values are stringified so downstream schemas stay
-uniform.
+Accepts either a bare list-of-dicts (``[{"name": ...}, ...]``) or an envelope
+under any of ``records`` / ``data`` / ``students`` / ``rows``
+(``{"records": [...]}`` etc.). Non-string cell values are stringified so
+downstream schemas stay uniform.
 """
 
 from __future__ import annotations

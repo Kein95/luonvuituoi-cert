@@ -128,6 +128,44 @@ def test_consume_missing_returns_none() -> None:
     assert kv.consume("absent") is None
 
 
+def test_scan_prefix_escapes_glob_and_caps_count() -> None:
+    """Redis glob metachars in the prefix are escaped; COUNT is capped at limit."""
+    seen: list = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"result": ["0", []]})
+
+    kv = _make_kv(handler)
+    kv.scan_prefix("a*b[", limit=5)
+    cmd = seen[-1]  # args are stringified by _command
+    assert cmd[0] == "SCAN"
+    assert cmd[2] == "MATCH"
+    assert cmd[3] == "a\\*b\\[*"  # *, [ escaped; trailing * is the prefix wildcard
+    assert cmd[4] == "COUNT"
+    assert cmd[5] == "5"  # capped to limit, not the default 100
+
+
+def test_incr_uses_redis_incr_and_expires_on_first() -> None:
+    """incr issues INCR, and EXPIRE only when the counter is first created."""
+    seen: list = []
+    counts = iter([1, 2])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        seen.append(body)
+        if body[0] == "INCR":
+            return httpx.Response(200, json={"result": next(counts)})
+        return httpx.Response(200, json={"result": 1})
+
+    kv = _make_kv(handler)
+    assert kv.incr("rl:x", ttl_seconds=120) == 1
+    assert seen[-2] == ["INCR", "rl:x"]
+    assert seen[-1] == ["EXPIRE", "rl:x", "120"]  # first hit sets TTL
+    assert kv.incr("rl:x", ttl_seconds=120) == 2
+    assert seen[-1] == ["INCR", "rl:x"]  # second hit: no EXPIRE
+
+
 def test_scan_prefix_paginates_until_cursor_zero() -> None:
     responses = iter(
         [

@@ -40,6 +40,7 @@ from openpyxl import load_workbook
 from luonvuitoi_cert.auth.activity_log import ActivityLog, log_admin_action
 from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.config.models import ShipmentImportProfile
+from luonvuitoi_cert.shipment._time import iso_now
 
 _CREATE_SQL = """
 CREATE TABLE IF NOT EXISTS shipment_history (
@@ -316,7 +317,7 @@ def bulk_import_shipments(
     status_counter: Counter[str] = Counter()
 
     # synced_at: single timestamp for whole run
-    synced_at = _iso_now()
+    synced_at = iso_now()
 
     for row in rows:
         tracking = row.get(col_tracking, "").strip() if col_tracking else ""
@@ -444,9 +445,3 @@ def bulk_import_shipments(
         ip=client_ip,
     )
     return stats
-
-
-def _iso_now() -> str:
-    import time
-
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

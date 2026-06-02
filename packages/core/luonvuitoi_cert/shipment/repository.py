@@ -8,14 +8,14 @@ belong to ``config.features.shipment.statuses`` at write time.
 from __future__ import annotations
 
 import sqlite3
-import time
 import uuid
 from contextlib import closing
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from luonvuitoi_cert.config import CertConfig
-from luonvuitoi_cert.shipment.schema import FIXED_COLUMNS, ensure_shipment_schema
+from luonvuitoi_cert.shipment._time import iso_now
+from luonvuitoi_cert.shipment.schema import ensure_shipment_schema
 
 
 class ShipmentError(Exception):
@@ -31,10 +31,6 @@ class ShipmentRecord:
     created_at: str
     updated_at: str
     fields: dict[str, str] = field(default_factory=dict)
-
-
-def _iso_now() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
 def _validate_status(config: CertConfig, status: str) -> str:
@@ -86,7 +82,7 @@ def upsert_shipment(
     """
     _validate_status(config, status)
     cleaned_fields = _validate_extra_fields(config, fields or {})
-    now = (clock or _iso_now)() if callable(clock) else _iso_now()
+    now = (clock or iso_now)() if callable(clock) else iso_now()
     ensure_shipment_schema(db_path, config)
 
     extra_cols = list(config.features.shipment.fields)
@@ -163,6 +159,4 @@ def list_shipments(
     with closing(sqlite3.connect(str(Path(db_path).expanduser().resolve()))) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(sql, params).fetchall()
-    # Explicit loop so the unused _FIXED import reference stays obvious.
-    _ = FIXED_COLUMNS
     return [_row_to_record(r, extra_cols) for r in rows]
