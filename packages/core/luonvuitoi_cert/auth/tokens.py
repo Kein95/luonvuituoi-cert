@@ -124,6 +124,12 @@ def verify_admin_token(
         role = Role(claims["role"])
     except (KeyError, ValueError) as e:
         raise TokenError(f"admin token has unknown role: {claims.get('role')!r}") from e
+    # Reject structurally incomplete tokens rather than papering over missing
+    # claims with defaults: a token with no sub/exp would otherwise be written
+    # verbatim into the audit log (user_id="") and defeat any expiry logic.
+    missing = [c for c in ("sub", "email", "iat", "exp") if c not in claims]
+    if missing:
+        raise TokenError(f"admin token is malformed (missing claims: {missing})")
     jti = claims.get("jti", "")
     if kv is not None and jti and kv.get(f"{JTI_DENYLIST_PREFIX}{jti}"):
         raise TokenError("admin session revoked")

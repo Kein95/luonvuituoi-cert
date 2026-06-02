@@ -43,6 +43,14 @@ def test_excel_missing_file_raises(tmp_path: Path) -> None:
         read_excel(tmp_path / "absent.xlsx")
 
 
+def test_excel_rejects_duplicate_headers(tmp_path: Path) -> None:
+    """A duplicate header would silently collapse last-wins, dropping data."""
+    p = tmp_path / "dup.xlsx"
+    _write_excel(p, [["sbd", "name", "sbd"], ["001", "Alice", "002"]])
+    with pytest.raises(IngestError, match="duplicate header"):
+        read_excel(p)
+
+
 # ── CSV ─────────────────────────────────────────────────────────────
 
 
@@ -86,6 +94,14 @@ def test_csv_preserves_falsy_strings(tmp_path: Path) -> None:
 def test_csv_missing_file_raises(tmp_path: Path) -> None:
     with pytest.raises(IngestError, match="not found"):
         read_csv(tmp_path / "absent.csv")
+
+
+def test_csv_rejects_duplicate_headers(tmp_path: Path) -> None:
+    """DictReader silently collapses duplicate fieldnames — reject instead."""
+    p = tmp_path / "dup.csv"
+    p.write_text("sbd,name,sbd\n001,Alice,002\n", encoding="utf-8")
+    with pytest.raises(IngestError, match="duplicate header"):
+        read_csv(p)
 
 
 # ── JSON ────────────────────────────────────────────────────────────

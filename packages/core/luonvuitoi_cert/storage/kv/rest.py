@@ -16,6 +16,14 @@ from luonvuitoi_cert.storage.kv.base import KVError
 
 DEFAULT_TIMEOUT = 5.0
 
+# Redis glob metacharacters that must be escaped to match a literal prefix.
+_GLOB_META = frozenset("\\*?[]")
+
+
+def _escape_glob(text: str) -> str:
+    """Backslash-escape Redis glob metacharacters so ``text`` matches literally."""
+    return "".join("\\" + c if c in _GLOB_META else c for c in text)
+
 
 class RestKV:
     """Talks to Upstash / Vercel-KV over HTTPS.
@@ -82,11 +90,18 @@ class RestKV:
         return bool(self._command("EXISTS", key))
 
     def scan_prefix(self, prefix: str, *, limit: int = 100) -> list[str]:
-        # Uses SCAN which Upstash/Vercel KV both expose. Cursor-paginates until limit reached.
+        # Uses SCAN which Upstash/Vercel KV both expose. Cursor-paginates until
+        # limit reached. The prefix is escaped so Redis glob metacharacters
+        # (*, ?, [, \) in it are matched literally — otherwise a prefix like
+        # "a[b" would be read as a character class and silently diverge from the
+        # local backends' str.startswith. COUNT is capped at the caller's limit
+        # so a small request doesn't over-fetch a 100-key page.
+        pattern = _escape_glob(prefix) + "*"
+        count = max(1, min(limit, 100))
         collected: list[str] = []
         cursor = "0"
         while True:
-            result = self._command("SCAN", cursor, "MATCH", f"{prefix}*", "COUNT", 100)
+            result = self._command("SCAN", cursor, "MATCH", pattern, "COUNT", count)
             if not isinstance(result, list) or len(result) != 2:
                 break
             cursor, batch = str(result[0]), result[1] or []
@@ -117,3 +132,9 @@ class RestKV:
 
     def close(self) -> None:
         self._client.close()
+
+    def __enter__(self) -> RestKV:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()

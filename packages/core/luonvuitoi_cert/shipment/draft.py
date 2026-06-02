@@ -35,7 +35,7 @@ from luonvuitoi_cert.auth.activity_log import ActivityLog, log_admin_action
 from luonvuitoi_cert.auth.admin_db import Role
 from luonvuitoi_cert.auth.tokens import TokenError, verify_admin_token
 from luonvuitoi_cert.config import CertConfig
-from luonvuitoi_cert.shipment.bulk_import import _iso_now  # reuse
+from luonvuitoi_cert.shipment._time import iso_now
 
 _DRAFT_SCHEMA = """
 CREATE TABLE IF NOT EXISTS shipment_draft (
@@ -91,6 +91,23 @@ class ExportResult:
 
 
 # ---------- helpers ---------------------------------------------------------
+
+
+_FORMULA_TRIGGERS = ("=", "+", "-", "@")
+
+
+def _excel_safe(value: str) -> str:
+    """Neutralize spreadsheet formula injection in an exported cell value.
+
+    A cell starting with ``= + - @`` (optionally after a leading tab/CR/LF) is
+    an active formula when the generated .xlsx is opened by carrier staff. Prefix
+    such values with an apostrophe so the spreadsheet treats them as literal
+    text. Student data flows in from operator ingest, which may carry
+    form-submitted fields, so escape defensively.
+    """
+    if value and value.lstrip("\t\r\n")[:1] in _FORMULA_TRIGGERS:
+        return "'" + value
+    return value
 
 
 def _ensure_schema(conn: sqlite3.Connection) -> None:
@@ -269,7 +286,7 @@ def draft_add(
         subject_cols,
     )
 
-    now = _iso_now()
+    now = iso_now()
     created: list[DraftRow] = []
     sbd_col = config.data_mapping.sbd_col
     with closing(sqlite3.connect(str(db_path))) as conn, conn:
@@ -394,7 +411,7 @@ def draft_cancel(
     ids = params.get("ids") or []
     if not isinstance(ids, list) or not ids:
         raise DraftError("ids must be a non-empty list")
-    now = _iso_now()
+    now = iso_now()
     placeholders = ",".join(["?"] * len(ids))
     with closing(sqlite3.connect(str(db_path))) as conn, conn:
         _ensure_schema(conn)
@@ -448,7 +465,7 @@ def draft_export(
         )
 
     batch_id = str(uuid.uuid4())
-    now = _iso_now()
+    now = iso_now()
 
     with closing(sqlite3.connect(str(db_path))) as conn, conn:
         _ensure_schema(conn)
@@ -501,7 +518,7 @@ def draft_export(
             if logical.startswith("__template_blank__"):
                 row_cells.append("")
             else:
-                row_cells.append(str(d.snapshot.get(logical, "")))
+                row_cells.append(_excel_safe(str(d.snapshot.get(logical, ""))))
         ws.append(row_cells)
 
     import io
@@ -509,7 +526,13 @@ def draft_export(
     buf = io.BytesIO()
     wb.save(buf)
     file_bytes = buf.getvalue()
-    filename = f"{round_id}-{carrier}-{batch_id[:8]}.xlsx"
+    # Sanitize even though round_id is _IDENT and batch_id is a UUID — carrier
+    # is an operator-authored profile key that isn't pattern-validated, and the
+    # download route drops this straight into Content-Disposition. Imported
+    # lazily so the shipment package never depends on api at import time.
+    from luonvuitoi_cert.api.security import sanitize_filename
+
+    filename = sanitize_filename(f"{round_id}-{carrier}-{batch_id[:8]}.xlsx", default="shipment-export.xlsx")
 
     log_admin_action(
         activity,

@@ -27,7 +27,10 @@ services:
       - ./project:/app/project:rw
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -X POST http://127.0.0.1:8000/api/captcha -H 'Content-Type: application/json' -d '{}' || exit 1"]
+      # Probe the dependency-free /health endpoint — a GET that writes no KV and
+      # isn't rate-limited (the old POST /api/captcha probe burned a KV entry
+      # every 30s and could trip the captcha rate limit).
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

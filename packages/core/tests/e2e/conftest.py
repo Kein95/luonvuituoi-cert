@@ -45,7 +45,27 @@ DEMO_CONFIG = {
     },
     "fonts": {"serif": "assets/fonts/serif.ttf"},
     "admin": {"auth_mode": "password", "multi_user": True},
-    "features": {"qr_verify": {"enabled": True}, "shipment": {"enabled": True}, "kv_backend": "local"},
+    "features": {
+        "qr_verify": {"enabled": True},
+        "shipment": {
+            "enabled": True,
+            "import": {
+                "default": "viettel",
+                "profiles": {
+                    "viettel": {
+                        "column_mapping": {
+                            "tracking_code": ["Mã vận đơn"],
+                            "phone": ["SĐT"],
+                            "status": ["Trạng thái"],
+                        },
+                        "success_keywords": ["GIAO THÀNH CÔNG"],
+                        "export_template": {"sbd": "Mã học viên", "full_name": "Họ tên", "phone": "SĐT"},
+                    }
+                },
+            },
+        },
+        "kv_backend": "local",
+    },
 }
 
 

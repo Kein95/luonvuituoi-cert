@@ -26,6 +26,13 @@ def read_csv(path: str | Path) -> list[dict[str, str]]:
             reader = csv.DictReader(fh)
             if not reader.fieldnames:
                 raise IngestError(f"CSV file has no header row: {p}")
+            names = [f for f in reader.fieldnames if f]
+            if len(names) != len(set(names)):
+                dupes = sorted({f for f in names if names.count(f) > 1})
+                raise IngestError(
+                    f"duplicate header columns {dupes} in {p} — rename so each column is unique "
+                    "(DictReader silently collapses duplicates, dropping a column's data)"
+                )
             for row in reader:
                 cleaned = {k: (v.strip() if isinstance(v, str) else "") for k, v in row.items() if k}
                 if all(v == "" for v in cleaned.values()):

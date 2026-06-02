@@ -42,6 +42,14 @@ testing) and keeps output PDFs to sane sizes. Handlers can truncate or reject
 upstream; the engine enforces it as a last-resort safeguard.
 """
 
+MAX_TEMPLATE_BYTES = 50 * 1024 * 1024
+"""Reject template PDFs larger than this before parsing.
+
+Templates are operator-supplied (config-declared paths), so this is a guard
+against an accidentally-huge / pathological file blowing up per-request memory
+in pypdf — not an untrusted-upload defense.
+"""
+
 
 class OverlayError(Exception):
     """Raised when a rendering request can't be fulfilled (missing template, bad page)."""
@@ -106,6 +114,11 @@ def render_certificate_bytes(
     process-local caches) to avoid re-parsing TTF files.
     """
     template_path = _resolve_template(request)
+    template_size = template_path.stat().st_size
+    if template_size > MAX_TEMPLATE_BYTES:
+        raise OverlayError(
+            f"template PDF too large ({template_size} > {MAX_TEMPLATE_BYTES} bytes): {template_path.name}"
+        )
     reader = PdfReader(str(template_path))
     if request.page_number < 1 or request.page_number > len(reader.pages):
         raise OverlayError(
@@ -165,8 +178,9 @@ def render_certificate_bytes(
     c.save()
     overlay_buf.seek(0)
 
-    # Attach the template page to the writer first, then merge the overlay onto
-    # the writer-owned page. pypdf 7+ requires this ordering.
+    # Merge the overlay onto a writer-owned page: add_page deep-clones the
+    # template into the writer, so writer.pages[0] is a distinct object and
+    # merging onto it can't mutate the reader-owned source page.
     writer = PdfWriter()
     writer.add_page(template_page)
     overlay_page = PdfReader(overlay_buf).pages[0]

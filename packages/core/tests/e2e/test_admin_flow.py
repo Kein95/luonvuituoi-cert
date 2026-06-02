@@ -107,6 +107,26 @@ def test_shipment_upsert_rejects_unknown_status(live_server: str) -> None:
     assert resp.status_code == 400
 
 
+def test_shipment_draft_export_flow(live_server: str) -> None:
+    """End-to-end draft -> carrier export: previously only unit-tested."""
+    token = _login(live_server)
+    add = httpx.post(
+        live_server + "/api/admin/shipments/draft",
+        json={"token": token, "round_id": "main", "sbd_list": ["12345"]},
+    )
+    assert add.status_code == 200, add.text
+    assert add.json()["created"] == 1
+
+    exp = httpx.post(
+        live_server + "/api/admin/shipments/export",
+        json={"token": token, "round_id": "main", "carrier": "viettel"},
+    )
+    assert exp.status_code == 200, exp.text
+    assert exp.content[:2] == b"PK"  # a real .xlsx (zip) came back
+    assert ".xlsx" in exp.headers.get("Content-Disposition", "")
+    assert exp.headers.get("X-Shipment-Row-Count") == "1"
+
+
 def test_shipment_lookup_requires_captcha(live_server: str) -> None:
     """Missing CAPTCHA → CaptchaError → 400."""
     resp = httpx.post(

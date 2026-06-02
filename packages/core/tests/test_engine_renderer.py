@@ -52,6 +52,15 @@ def test_page_number_zero_rejected(cert_config, project_root: Path) -> None:  # 
         render_certificate_bytes(req)
 
 
+def test_template_too_large_rejected(cert_config, project_root: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """A template PDF over the size cap is rejected before pypdf parses it."""
+    from luonvuitoi_cert.engine import renderer as _renderer
+
+    monkeypatch.setattr(_renderer, "MAX_TEMPLATE_BYTES", 10)
+    with pytest.raises(OverlayError, match="too large"):
+        render_certificate_bytes(_make_request(cert_config, project_root, name="Alice"))
+
+
 def test_unknown_field_silently_ignored(cert_config, project_root: Path) -> None:  # type: ignore[no-untyped-def]
     req = _make_request(cert_config, project_root, name="Alice", not_declared_in_layout="junk")
     out = render_certificate_bytes(req)
