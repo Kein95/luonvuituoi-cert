@@ -1,6 +1,6 @@
 # LUONVUITUOI-CERT
 
-> 🤝 Teammate [@Liamlenguyen](https://github.com/Liamlenguyen) — stay tuned for more collabs from **LUONVUITUOI TEAM** ✨
+> 🤝 Farewell to our teammate [@Liamlenguyen](https://github.com/Liamlenguyen). Wishing you success on the path you've chosen ✨
 
 > Config-driven certificate portal toolkit. Bring your own PDF template + student list → ship a search / download / QR-verify / admin portal to Vercel or Docker in an afternoon.
 
@@ -102,7 +102,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). One rule worth calling out: this repo wa
 - **Phone / Zalo**: [+84 348 635 408](tel:+84348635408)
 - **GitHub**: [@Kein95](https://github.com/Kein95)
 
-Teammate: [@Liamlenguyen](https://github.com/Liamlenguyen). Stay tuned for more collabs from **LUONVUITUOI TEAM** ✨
+Farewell to our teammate [@Liamlenguyen](https://github.com/Liamlenguyen). Wishing you success on the path you've chosen ✨
 
 ## Sibling project
 
