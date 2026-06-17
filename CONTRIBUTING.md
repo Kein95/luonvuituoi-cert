@@ -43,7 +43,7 @@ The `test_schema_export` test fails if you forget.
 
 This repo was extracted from three internal exam-certificate portals. Nothing in the public source may be traceable to them. Specifically:
 
-- Don't copy strings verbatim from private codebases — reword to generic language.
+- Don't copy strings verbatim from private codebases; reword to generic language.
 - Don't ship PDFs, fonts, data files, or real student records.
 - Config samples should use fabricated names like "DEMO ACADEMY," "demo-award," "Science / Math / English."
 - If a feature was motivated by a private issue, describe it in your PR without naming the source portal.
@@ -70,7 +70,7 @@ Keep PRs focused. One behavioral change per PR, one commit if possible. Use conv
 - **SQL identifiers are validated.** Any string that ends up interpolated into SQL (column name, table name) must pass through `_SQL_IDENT` at config time.
 - **Secrets never leak into errors.** When wrapping exceptions, strip raw input; log the detail to the stdlib `logging` module for operators.
 - **Admin auth lives in the body, not a cookie.** JWTs are kept in client-side `sessionStorage` and sent via a request-body `token` field. Browsers do not auto-send body params on cross-origin navigation, so CSRF is not exploitable. Moving admin auth to a cookie (even `SameSite=Strict`) re-introduces the entire CSRF attack surface; such a refactor MUST ship with a CSRF-token middleware in the same PR or will be reverted.
-- **Audit metadata has no PII.** `admin_update` records `{column, changed, value_length_delta}` — not raw `old`/`new` values. Phones, DOBs, and addresses never reach the audit table (or the GSheet webhook forward). Keep the same shape for any new admin write endpoint.
+- **Audit metadata has no PII.** `admin_update` records `{column, changed, value_length_delta}`, not raw `old`/`new` values. Phones, DOBs, and addresses never reach the audit table (or the GSheet webhook forward). Keep the same shape for any new admin write endpoint.
 
 ## What a "no" looks like
 
@@ -78,7 +78,7 @@ Features we've deliberately declined:
 
 - QR payload encryption. Payload is non-sensitive; signature alone prevents forgery.
 - Playwright browser tests. httpx gives equivalent coverage for the JS-free API surface.
-- A per-endpoint file layout for the Vercel handler. One `api/index.py` dispatches everything — fewer cold starts, less duplication.
+- A per-endpoint file layout for the Vercel handler. One `api/index.py` dispatches everything, giving fewer cold starts and less duplication.
 - A CAPTCHA vendor SDK (hCaptcha / Turnstile). Math CAPTCHA covers the scrape-bot threat without adding a dependency; vendors are a PR away if your threat model demands them.
 
 ## Releasing

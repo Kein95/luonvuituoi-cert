@@ -1,6 +1,6 @@
 # Deploy lên Vercel
 
-Runtime Python serverless của Vercel là target production khuyến nghị cho cổng quy mô nhỏ-trung — free tier xử lý hàng nghìn học viên/tháng.
+Runtime Python serverless của Vercel là môi trường production được khuyến nghị cho các cổng quy mô vừa và nhỏ: ngay cả free tier cũng xử lý được hàng nghìn học viên mỗi tháng.
 
 ## Yêu cầu
 
@@ -25,10 +25,10 @@ my-portal/
 └── .gitignore
 ```
 
-> Phase 15 wire handler `api/*.py` mà Vercel gọi. Tạm thời, mirror
-> route Flask trong `packages/cli/luonvuitoi_cert_cli/server/app.py` —
-> mỗi handler là wrapper một dòng quanh hàm thuần từ
-> `luonvuitoi_cert.api`.
+> Phase 15 sẽ wire các handler `api/*.py` mà Vercel gọi. Trong lúc chờ, hãy
+> phản chiếu (mirror) các route Flask trong
+> `packages/cli/luonvuitoi_cert_cli/server/app.py`: mỗi handler là một wrapper
+> một dòng bọc quanh hàm thuần lấy từ `luonvuitoi_cert.api`.
 
 ## Biến môi trường
 
@@ -39,12 +39,12 @@ Set trong dashboard Vercel hoặc qua `vercel env add`:
 | `JWT_SECRET` | có | 32+ ký tự random. |
 | `ADMIN_DEFAULT_PASSWORD` | bootstrap | Dùng bởi seed script; xoay ngay. |
 | `PUBLIC_BASE_URL` | có | Ví dụ `https://mycerts.example`. Ghim magic-link + URL QR chống Host-header injection. |
-| `KV_BACKEND` | có | `upstash` hoặc `vercel-kv` (không bao giờ `local` trên Vercel — `/tmp` là ephemeral). |
+| `KV_BACKEND` | có | `upstash` hoặc `vercel-kv` (không bao giờ dùng `local` trên Vercel, vì `/tmp` chỉ là tạm thời). |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | nếu `KV_BACKEND=upstash` | |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | nếu `KV_BACKEND=vercel-kv` | Vercel auto-inject khi bạn link Vercel KV store. |
 | `RESEND_API_KEY` / `CERT_EMAIL_FROM` | nếu `admin.auth_mode` là `otp_email` hoặc `magic_link` | Thiếu key → fallback `NullEmailProvider` với warning; OTP bị drop âm thầm. |
 | `GSHEET_WEBHOOK_URL` | tùy chọn | Phải `https://…`. Scheme khác bị reject với warning (guard SSRF). |
-| `ALLOWED_ORIGINS` | khuyến nghị | Whitelist CORS, phân cách dấu phẩy; ví dụ `https://mycerts.example`. Default `*` — ghim khi biết domain front-end. |
+| `ALLOWED_ORIGINS` | khuyến nghị | Whitelist CORS, phân cách bằng dấu phẩy; ví dụ `https://mycerts.example`. Mặc định là `*`; hãy ghim lại ngay khi biết domain front-end. |
 | `TRUST_PROXY_HEADERS` | **có cho Vercel** | Set `1`. Vercel terminate TLS và forward `X-Forwarded-For`; không có flag này, rate limiter key theo IP proxy Vercel, mọi request share chung một bucket. |
 | `FORCE_HSTS` | khuyến nghị | Set `1`. Vercel là HTTPS-only; emit HSTS để browser từ chối downgrade. |
 

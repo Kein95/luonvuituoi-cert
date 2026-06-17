@@ -7,7 +7,7 @@ Common failure modes and their root causes. Organized by symptom, not by subsyst
 **Cause**: `RESEND_API_KEY` (or `CERT_EMAIL_FROM`) is missing. The app falls back to `NullEmailProvider` and silently swallows messages. Startup logs:
 
 ```
-RESEND_API_KEY not set — OTP / magic-link emails will be swallowed.
+RESEND_API_KEY not set. OTP / magic-link emails will be swallowed.
 ```
 
 **Fix**: Set both env vars:
@@ -56,7 +56,7 @@ Default is `*`, which echoes every origin. Restrict only when you know your fron
 
 ## "Docker healthcheck reports unhealthy"
 
-**Cause**: Old deploy probing `POST /api/captcha` (pre-P2). That endpoint is now rate-limited and writes KV state — a probe every 30s quickly fills the captcha rate bucket and `429`s itself.
+**Cause**: Old deploy probing `POST /api/captcha` (pre-P2). That endpoint is now rate-limited and writes KV state, so a probe every 30s quickly fills the captcha rate bucket and `429`s itself.
 
 **Fix**: The current Dockerfile already uses `GET /health`. If you've extended it, make sure your probe points at `/health`, not `/api/captcha`.
 
@@ -67,7 +67,7 @@ Default is `*`, which echoes every origin. Restrict only when you know your fron
 **Startup warning**:
 
 ```
-KV_BACKEND=local with 2 workers is unsafe — concurrent reads can lose writes.
+KV_BACKEND=local with 2 workers is unsafe. Concurrent reads can lose writes.
 ```
 
 **Fix**: Pick one:
@@ -77,7 +77,7 @@ KV_BACKEND=local with 2 workers is unsafe — concurrent reads can lose writes.
 
 ## "Magic-link email carries the wrong origin"
 
-**Cause**: `PUBLIC_BASE_URL` not set (or wrong). The fallback uses `request.host_url`, which echoes whatever Host header the client sent — an attacker can poison the email with their own domain.
+**Cause**: `PUBLIC_BASE_URL` not set (or wrong). The fallback uses `request.host_url`, which echoes whatever Host header the client sent, so an attacker can poison the email with their own domain.
 
 **Fix**:
 
@@ -85,7 +85,7 @@ KV_BACKEND=local with 2 workers is unsafe — concurrent reads can lose writes.
 PUBLIC_BASE_URL=https://mycerts.example  # exact HTTPS origin, no trailing slash
 ```
 
-## "Admin session won't log out — JWT still works after `/api/admin/logout`"
+## "Admin session won't log out; JWT still works after `/api/admin/logout`"
 
 **Cause**: The route that's still accepting the token doesn't pass `kv` to `verify_admin_token`. Revocation is opt-in per endpoint.
 
@@ -96,7 +96,7 @@ PUBLIC_BASE_URL=https://mycerts.example  # exact HTTPS origin, no trailing slash
 
 Custom transport code (Vercel shim, embedded usage) must pass `kv=` to `verify_admin_token` for the denylist to apply.
 
-**Alternative fix**: Rotate `JWT_SECRET` — invalidates every session, all admins need to log back in.
+**Alternative fix**: Rotate `JWT_SECRET`. This invalidates every session, so all admins need to log back in.
 
 ## "The mkdocs build fails in CI"
 
@@ -113,13 +113,13 @@ Custom transport code (Vercel shim, embedded usage) must pass `kv=` to `verify_a
 **Causes** (in order of likelihood):
 
 1. **Wrong `public_key.pem`**. The verifier was given a key that doesn't match the signer. Check `sha256sum public_key.pem` on both ends.
-2. **Project slug mismatch**. QR payload binds to `project.slug` — a cert signed for `demo-2025` won't validate against a config with `slug: demo-2026`.
+2. **Project slug mismatch**. QR payload binds to `project.slug`, so a cert signed for `demo-2025` won't validate against a config with `slug: demo-2026`.
 3. **Clock skew beyond tolerance**. Payload signatures accept ±60s. If the verifying host's clock is more than 60s off, every request fails.
 4. **`max_age_seconds` triggered**. If `features.qr_verify.max_age_seconds` is non-zero, certs older than that are rejected regardless of signature.
 
 ## "`test_search_rate_limit_kicks_in` fails in CI"
 
-Already fixed — the test now loops with headroom to survive a window-boundary rollover. If it's still failing, the fixed-window rate limiter may have been replaced without updating the test. Check the loop bound (should be ≥ `2 × STUDENT_RATE_LIMIT`).
+Already fixed: the test now loops with headroom to survive a window-boundary rollover. If it's still failing, the fixed-window rate limiter may have been replaced without updating the test. Check the loop bound (should be ≥ `2 × STUDENT_RATE_LIMIT`).
 
 ## "Pydantic rejects my config with `rounds: List should have at most 20 items`"
 
@@ -129,7 +129,7 @@ Intentional. `rounds` is capped at 20 (H3 from the 2026-04-22 eval) so public se
 
 ## "Dependabot opens a PR every week"
 
-Working as intended — weekly pip / monthly actions+docker. Merge promptly; `reportlab`, `pypdf`, `cryptography` are supply-chain-sensitive. If you want a quieter cadence, edit `.github/dependabot.yml` (`schedule.interval`).
+Working as intended: weekly pip / monthly actions+docker. Merge promptly; `reportlab`, `pypdf`, `cryptography` are supply-chain-sensitive. If you want a quieter cadence, edit `.github/dependabot.yml` (`schedule.interval`).
 
 ## Still stuck?
 

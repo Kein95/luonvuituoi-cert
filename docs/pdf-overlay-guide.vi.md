@@ -1,25 +1,25 @@
 # Hướng dẫn PDF overlay
 
-Cách LUONVUITUOI-CERT biến PDF template + một row học viên thành chứng chỉ tải được.
+Cách LUONVUITUOI-CERT biến một file PDF template cùng một dòng dữ liệu học viên thành chứng chỉ tải về được.
 
 ## Mô hình tư duy
 
-**Template** của bạn là PDF nhiều trang. Mỗi trang là một biến thể chứng chỉ trống — một trang cho mỗi combo (môn, kết quả). Engine vẽ tên / trường / lớp / v.v. của học viên lên trên, tại tọa độ bạn chỉ định trong `cert.config.json#layout.fields`.
+**Template** của bạn là một file PDF nhiều trang. Mỗi trang là một biến thể chứng chỉ để trống, ứng với một tổ hợp (môn, kết quả). Engine sẽ vẽ tên, trường, lớp và các thông tin khác của học viên lên trên, tại đúng tọa độ bạn chỉ định trong `cert.config.json#layout.fields`.
 
 ```
 templates/main.pdf
-├── trang 1 — background giải Vàng (chưa có tên, trường)
-├── trang 2 — background giải Bạc
-└── trang 3 — background giải Đồng
+├── trang 1: nền giải Vàng (chưa có tên, trường)
+├── trang 2: nền giải Bạc
+└── trang 3: nền giải Đồng
                                  ↓   + overlay
                                final.pdf  (một trang, có dữ liệu học viên)
 ```
 
 ## Hệ tọa độ
 
-Points (1/72 inch). Gốc là **góc dưới-trái** của trang — theo convention reportlab. Trang A5 landscape là `(842, 595)`; "một inch từ dưới lên" là `y = 72`.
+Đơn vị là points (1/72 inch). Gốc tọa độ nằm tại **góc dưới bên trái** của trang, theo quy ước của reportlab. Trang A5 nằm ngang có kích thước `(842, 595)`; "một inch tính từ đáy lên" tương ứng `y = 72`.
 
-`layout.page_size` trong config là hint cho author — renderer dùng MediaBox thực của trang template, nên nếu hai giá trị khác nhau, template thắng.
+`layout.page_size` trong config chỉ là gợi ý cho người thiết kế. Renderer dùng MediaBox thực tế của trang template, nên nếu hai giá trị khác nhau thì template được ưu tiên.
 
 ## Spec field
 
@@ -44,56 +44,56 @@ Points (1/72 inch). Gốc là **góc dưới-trái** của trang — theo conven
 
 | Key | Ý nghĩa |
 |-----|---------|
-| `x`, `y` | Vị trí baseline text. Cho `align: center` / `right`, x là cạnh giữa/phải. |
-| `font` | Key vào registry `fonts` top-level. |
-| `size` | Size font theo points. |
-| `color` | Chuỗi hex; default `#000000`. |
-| `align` | `left`, `center`, `right`. |
-| `wrap` | Int tùy chọn. Trigger word-wrap ngây thơ tại số ký tự cho trước. Text nhiều dòng flow **xuống** từ `y` với leading 1.2×. |
+| `x`, `y` | Vị trí baseline của dòng chữ. Với `align: center` hoặc `right`, `x` là cạnh giữa hoặc cạnh phải. |
+| `font` | Khóa trỏ tới registry `fonts` ở cấp cao nhất. |
+| `size` | Cỡ chữ tính theo points. |
+| `color` | Chuỗi màu hex; mặc định `#000000`. |
+| `align` | Một trong `left`, `center`, `right`. |
+| `wrap` | Số nguyên tùy chọn. Kích hoạt cơ chế xuống dòng đơn giản tại số ký tự cho trước. Văn bản nhiều dòng trải **xuống dưới** tính từ `y`, với khoảng cách dòng 1.2 lần. |
 
-## Tên field
+## Tên trường
 
-Các field built-in engine populate từ `data_mapping`:
+Các trường dựng sẵn được engine điền từ `data_mapping`:
 
-| Field layout | Nguồn |
+| Trường layout | Nguồn |
 |--------------|-------|
 | `name` | `data_mapping.name_col` |
-| `dob`, `school`, `grade`, `phone` | `data_mapping.*_col` tương ứng nếu khai báo |
-| Bất cứ gì trong `data_mapping.extra_cols` | Cột DB cùng tên |
+| `dob`, `school`, `grade`, `phone` | `data_mapping.*_col` tương ứng, nếu có khai báo |
+| Mọi mục trong `data_mapping.extra_cols` | Cột cơ sở dữ liệu cùng tên |
 
-Field khai báo trong `layout.fields` mà handler không fill sẽ bị skip im lặng; giá trị extra trong dict handler không khớp field layout nào sẽ bị drop. Có nghĩa thêm cột mới vào Excel nguồn và khai báo trong `data_mapping.extra_cols` là đủ để render — không cần thay đổi handler.
+Trường khai báo trong `layout.fields` mà handler không điền sẽ bị bỏ qua trong im lặng; giá trị thừa trong dict của handler không khớp với trường layout nào sẽ bị loại bỏ. Nghĩa là chỉ cần thêm cột mới vào Excel nguồn rồi khai báo trong `data_mapping.extra_cols` là đủ để hiển thị, không cần sửa handler.
 
 ## Vị trí QR
 
-`features.qr_verify.{x, y, size_pt}` chỉ định nơi QR đã ký được vẽ. Tọa độ là góc dưới-trái của QR square; `size_pt` là độ dài cạnh. Vị trí phổ biến là góc dưới-phải:
+`features.qr_verify.{x, y, size_pt}` chỉ định vị trí vẽ mã QR đã ký. Tọa độ là góc dưới bên trái của ô vuông QR; `size_pt` là độ dài cạnh. Vị trí phổ biến là góc dưới bên phải:
 
 ```json
 "qr_verify": { "enabled": true, "x": 720, "y": 40, "size_pt": 80 }
 ```
 
-## Workflow authoring
+## Quy trình thiết kế
 
-1. Thiết kế template trống trong tool bạn chọn (InDesign, Figma → PDF, LibreOffice, Canva). Một trang mỗi ô giải thưởng.
-2. Mở PDF trong viewer show tọa độ (Preview trên macOS, hầu hết PDF editor, hoặc drop vào reportlab để vẽ crosshair tại vị trí biết trước).
-3. Ước lượng baseline nơi muốn tên ngồi. Thử `"y": page_height / 2`, rồi chỉnh ±10 points cho đến khi trông đúng.
-4. Chạy `lvt-cert dev` và hit `/` với học viên seed; tải PDF và kiểm tra.
-5. Lặp tọa độ cho đến khi layout landed.
+1. Thiết kế template trống bằng công cụ bạn chọn (InDesign, Figma xuất ra PDF, LibreOffice, Canva). Mỗi ô giải thưởng một trang.
+2. Mở PDF trong trình xem có hiển thị tọa độ (Preview trên macOS, đa số trình chỉnh sửa PDF, hoặc nạp vào reportlab để vẽ điểm ngắm tại vị trí đã biết).
+3. Ước lượng baseline nơi muốn đặt tên. Thử `"y": page_height / 2`, sau đó chỉnh ±10 points cho đến khi trông vừa ý.
+4. Chạy `lvt-cert dev`, truy cập `/` với học viên dữ liệu mẫu; tải PDF về và kiểm tra.
+5. Lặp lại việc chỉnh tọa độ cho đến khi bố cục đã đúng vị trí.
 
-## Input safety
+## An toàn dữ liệu đầu vào
 
-- Giá trị single field cap ở 1000 ký tự (`MAX_FIELD_LENGTH`). Input oversize raise `OverlayError` để row DB độc hại không thể làm phồng PDF render.
-- Giá trị chỉ whitespace bị skip (không overlay trống).
-- Giá trị non-string bị coerce qua `str()` sau check length — số, boolean, v.v. render như dạng string.
+- Giá trị mỗi trường bị giới hạn ở 1000 ký tự (`MAX_FIELD_LENGTH`). Đầu vào quá dài sẽ làm phát sinh `OverlayError`, nhờ đó một dòng dữ liệu độc hại không thể làm phình to PDF khi render.
+- Giá trị chỉ gồm khoảng trắng sẽ bị bỏ qua (không overlay phần trống).
+- Giá trị không phải chuỗi sẽ được ép kiểu qua `str()` sau khi kiểm tra độ dài; số, boolean và các kiểu khác đều hiển thị dưới dạng chuỗi.
 
 ## Fonts
 
-Ship font TrueType có license cho redistribute (SIL OFL, Apache 2.0, v.v.). Đặt `.ttf` tại path khai báo trong `fonts.<key>`; registry đăng ký font với reportlab khi dùng lần đầu và cache theo path đã resolve để hai project trong cùng process dùng chung key nhưng khác file không bị va chạm.
+Toolkit đi kèm các font TrueType có giấy phép cho phép phân phối lại (SIL OFL, Apache 2.0 và tương tự). Đặt file `.ttf` tại đường dẫn khai báo trong `fonts.<key>`; registry sẽ đăng ký font với reportlab ở lần dùng đầu tiên và lưu cache theo đường dẫn đã phân giải, nhờ đó hai project trong cùng một process dùng chung một khóa nhưng trỏ tới file khác nhau sẽ không xung đột.
 
-## Những gì engine KHÔNG làm
+## Những việc engine KHÔNG làm
 
-- Không shape vector / layout kiểu CSS — PDF là design; engine chỉ overlay text.
-- Không fill form-field PDF. Dùng cách template-as-background.
-- Không hyphen. `wrap` chỉ break theo space.
-- Không overlay ảnh ngoài QR — drop logo vào template.
+- Không tạo hình vector hay dàn trang kiểu CSS. Bản thân PDF là phần thiết kế; engine chỉ overlay chữ.
+- Không điền vào trường biểu mẫu của PDF. Hãy dùng cách lấy template làm nền.
+- Không tự ngắt từ bằng dấu gạch nối. `wrap` chỉ ngắt theo khoảng trắng.
+- Không overlay hình ảnh nào ngoài QR. Hãy đặt logo trực tiếp vào template.
 
-Cho chứng chỉ nhiều trang hoặc watermark, post-process output engine với `pypdf` trong handler custom.
+Với chứng chỉ nhiều trang hoặc cần đóng watermark, hãy hậu xử lý kết quả đầu ra của engine bằng `pypdf` trong một handler tùy chỉnh.

@@ -60,8 +60,8 @@ Maps logical roles to source column names (i.e. what the Excel/CSV header calls 
 |-----|----------|
 | `sbd_col` | yes |
 | `name_col` | yes |
-| `dob_col`, `school_col`, `grade_col`, `phone_col` | optional — enable their respective search modes |
-| `extra_cols` | `string[]` — flex fields ingested into the schema |
+| `dob_col`, `school_col`, `grade_col`, `phone_col` | optional; each enables its respective search mode |
+| `extra_cols` | `string[]`; flex fields ingested into the schema |
 
 ## `layout`
 
@@ -84,7 +84,7 @@ Field keys are the logical names the engine fills (e.g. `name`, `school`, `grade
 ## `student_search`
 
 - `mode`: `name_dob_captcha` (default) / `name_sbd_captcha` / `sbd_phone`.
-- `admin_mode`: `sbd_auth` (default) / `sbd_phone` — used by the admin panel's search form.
+- `admin_mode`: `sbd_auth` (default) / `sbd_phone`. Used by the admin panel's search form.
 
 ## `admin`
 
@@ -113,16 +113,16 @@ Field keys are the logical names the engine fills (e.g. `name`, `school`, `grade
 | `enabled` | bool |
 | `statuses` | Non-empty, case-insensitive-unique status vocabulary. |
 | `fields` | Extra TEXT columns on the shipments table. Each must be a SQL identifier; clashes with reserved names (`id`, `round_id`, `sbd`, `status`, `created_at`, `updated_at`) are rejected. |
-| `public_fields` | Subset of `fields` that the public lookup endpoint is allowed to return. Default empty — students see only `status` + `updated_at`. |
+| `public_fields` | Subset of `fields` that the public lookup endpoint is allowed to return. Default empty, so students see only `status` + `updated_at`. |
 
 ### `kv_backend`
 
-`local` (default), `upstash`, or `vercel-kv`. See [Deploy — Vercel](deploy-vercel.md) for the env vars each backend needs.
+`local` (default), `upstash`, or `vercel-kv`. See [Deploy to Vercel](deploy-vercel.md) for the env vars each backend needs.
 
 ### Other feature flags
 
-- `otp_email.enabled` + `otp_email.provider: "resend"` — wires OTP login. Needs `RESEND_API_KEY` and `CERT_EMAIL_FROM` env vars.
-- `gsheet_log.enabled` — forwards admin activity to `GSHEET_WEBHOOK_URL` on a background thread.
+- `otp_email.enabled` + `otp_email.provider: "resend"` wires OTP login. Needs `RESEND_API_KEY` and `CERT_EMAIL_FROM` env vars.
+- `gsheet_log.enabled` forwards admin activity to `GSHEET_WEBHOOK_URL` on a background thread.
 
 ## Environment variables
 
@@ -133,7 +133,7 @@ Full list with defaults:
 
 | Name | Notes |
 |------|-------|
-| `JWT_SECRET` | 32+ random chars. No ephemeral fallback — missing value raises `TokenError` at startup. Rotate on compromise (nukes all sessions). |
+| `JWT_SECRET` | 32+ random chars. No ephemeral fallback; a missing value raises `TokenError` at startup. Rotate on compromise (invalidates all sessions). |
 | `PUBLIC_BASE_URL` | Pins magic-link emails + QR verify URLs against Host-header injection. Set to the exact HTTPS origin. |
 
 ### Commonly set
@@ -141,8 +141,8 @@ Full list with defaults:
 | Name | Default | Notes |
 |------|---------|-------|
 | `ALLOWED_ORIGINS` | `*` | Comma-separated CORS whitelist. Leave as `*` only if the portal is fully public. |
-| `TRUST_PROXY_HEADERS` | `0` | Set to `1` when deploying behind Nginx / Caddy / Vercel / Cloud Run so the app reads `X-Forwarded-For` for rate-limit bucketing. Do NOT enable on direct binds — clients could spoof the header to bypass the limiter. |
-| `FORCE_HSTS` | `0` | Set to `1` once the site is reachable only via HTTPS. Emits `Strict-Transport-Security: max-age=31536000; includeSubDomains` on every response. Browsers cache HSTS — enabling on HTTP locks users out. |
+| `TRUST_PROXY_HEADERS` | `0` | Set to `1` when deploying behind Nginx / Caddy / Vercel / Cloud Run so the app reads `X-Forwarded-For` for rate-limit bucketing. Do NOT enable on direct binds, because clients could spoof the header to bypass the limiter. |
+| `FORCE_HSTS` | `0` | Set to `1` once the site is reachable only via HTTPS. Emits `Strict-Transport-Security: max-age=31536000; includeSubDomains` on every response. Browsers cache HSTS, so enabling it on HTTP locks users out. |
 | `WEB_CONCURRENCY` | `2` | Gunicorn worker count. Dockerfile sets this; if paired with `KV_BACKEND=local` and >1 worker, a startup warning fires (local KV is not cross-process safe). |
 | `KV_BACKEND` | `local` | `local` / `upstash` / `vercel-kv`. See [operations](operations.md#kv-backends). |
 
@@ -151,7 +151,7 @@ Full list with defaults:
 | Name | Notes |
 |------|-------|
 | `ADMIN_DEFAULT_PASSWORD` | Used by the one-off admin-bootstrap script. Rotate immediately after first login. |
-| `RESEND_API_KEY` | Required for `otp_email` / `magic_link` auth modes. Without it, `_resolve_email_provider` falls back to `NullEmailProvider` and logs a warning — OTP / magic-link flows will silently drop messages. |
+| `RESEND_API_KEY` | Required for `otp_email` / `magic_link` auth modes. Without it, `_resolve_email_provider` falls back to `NullEmailProvider` and logs a warning, and OTP / magic-link flows will silently drop messages. |
 | `RESEND_FROM_ADDRESS` / `CERT_EMAIL_FROM` | Verified Resend sender. Either name works (alias for backwards compat with `.env.example`). |
 
 ### Storage backends
@@ -166,7 +166,7 @@ Full list with defaults:
 
 | Name | Notes |
 |------|-------|
-| `GSHEET_WEBHOOK_URL` | Must be `https://…`. Non-HTTPS URLs are rejected with a warning (SSRF guard). Fire-and-forget — local audit table is authoritative. |
+| `GSHEET_WEBHOOK_URL` | Must be `https://…`. Non-HTTPS URLs are rejected with a warning (SSRF guard). Fire-and-forget; the local audit table is authoritative. |
 | `GUNICORN_WORKERS` / `UVICORN_WORKERS` | Detected by the KV factory alongside `WEB_CONCURRENCY` for the multi-worker warning. |
 
 ## Validation errors

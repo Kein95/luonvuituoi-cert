@@ -4,7 +4,7 @@ Self-host when you want persistent SQLite instead of the Vercel `/tmp` dance, or
 
 ## The bundled image
 
-The repo root ships a `Dockerfile` that installs the core engine + gunicorn and serves the Flask dev server on port 8000. It's fine for small-org production — a single worker handles ~30 req/s on cheap hardware.
+The repo root ships a `Dockerfile` that installs the core engine + gunicorn and serves the Flask dev server on port 8000. It is fine for small-org production: a single worker handles ~30 req/s on cheap hardware.
 
 ```bash
 docker build -t my-portal:latest .
@@ -32,15 +32,15 @@ docker run --rm -p 8000:8000 \
 | `JWT_SECRET` | Required. No ephemeral fallback. |
 | `PUBLIC_BASE_URL` | Pins magic-link + QR URLs. |
 | `ALLOWED_ORIGINS` | CORS whitelist; scope down from `*` once the front-end origin is known. |
-| `TRUST_PROXY_HEADERS=1` | Enable only when the Nginx/Caddy reverse proxy below is in place. Without a proxy rewriting `X-Forwarded-For`, leave at `0` — otherwise clients can spoof their IP and bypass rate limits. |
+| `TRUST_PROXY_HEADERS=1` | Enable only when the Nginx/Caddy reverse proxy below is in place. Without a proxy rewriting `X-Forwarded-For`, leave at `0`; otherwise clients can spoof their IP and bypass rate limits. |
 | `FORCE_HSTS=1` | Enable once the reverse proxy terminates TLS. |
-| `WEB_CONCURRENCY` | Defaults to `2`. With `KV_BACKEND=local` + >1 worker, startup logs a warning — the local file KV is not cross-process safe. Switch to `upstash` when scaling. |
+| `WEB_CONCURRENCY` | Defaults to `2`. With `KV_BACKEND=local` + >1 worker, startup logs a warning, since the local file KV is not cross-process safe. Switch to `upstash` when scaling. |
 | `GSHEET_WEBHOOK_URL` | Optional. Must be `https://…`. |
 
 ### Mounted volumes
 
-- `data/` — persistent SQLite + optional local KV store survives container restarts.
-- `private_key.pem` — the QR signing key. Never bake this into the image.
+- `data/`: persistent SQLite plus optional local KV store survives container restarts.
+- `private_key.pem`: the QR signing key. Never bake this into the image.
 
 ### Container user
 
@@ -80,7 +80,7 @@ Stop the container (or use SQLite's `.backup` command against a live DB), tar up
 The Flask dev server is single-process; gunicorn spawns multiple workers but they share nothing in memory. That's fine because:
 
 - The rate limiter + CAPTCHA live in the configured KV backend (Upstash REST, Vercel KV REST, or a shared `LocalFileKV` mount). Use Upstash if you want multi-host.
-- SQLite writes serialize per database file — adequate for sub-second admin edits.
+- SQLite writes serialize per database file, which is adequate for sub-second admin edits.
 - The FontRegistry is per-process, so extra workers just re-register fonts on first request.
 
-If you outgrow SQLite (~hundreds of writes/sec), swap the data layer to Postgres — the repository pattern in `luonvuitoi_cert.storage` is a small target for a new backend.
+If you outgrow SQLite (~hundreds of writes/sec), swap the data layer to Postgres. The repository pattern in `luonvuitoi_cert.storage` is a small target for a new backend.

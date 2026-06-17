@@ -16,11 +16,11 @@ lvt-cert dev                # local dev server at http://localhost:5000
 
 ## Structure
 
-- `cert.config.json` — the single source of truth (project name, rounds, subjects, layout, features).
-- `templates/` — your certificate PDF template(s). Each page corresponds to one (subject, result) cell per `cert.config.json#results`.
-- `assets/fonts/` — TrueType fonts referenced by `cert.config.json#fonts`.
-- `data/` — SQLite + ingested Excel data lives here.
-- `api/` — Vercel-compatible serverless entrypoints (see the deploy guide).
+- `cert.config.json`: the single source of truth (project name, rounds, subjects, layout, features).
+- `templates/`: your certificate PDF template(s). Each page corresponds to one (subject, result) cell per `cert.config.json#results`.
+- `assets/fonts/`: TrueType fonts referenced by `cert.config.json#fonts`.
+- `data/`: SQLite + ingested Excel data lives here.
+- `api/`: Vercel-compatible serverless entrypoints (see the deploy guide).
 
 ## Next steps
 

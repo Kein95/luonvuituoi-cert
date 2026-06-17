@@ -1,6 +1,6 @@
 # luonvuitoi-cert
 
-Engine package for [LUONVUITUOI-CERT](https://github.com/Kein95/luonvuituoi-cert) — the serverless handlers, PDF overlay, auth, and features that power a certificate portal.
+Engine package for [LUONVUITUOI-CERT](https://github.com/Kein95/luonvuituoi-cert), providing the serverless handlers, PDF overlay, auth, and features that power a certificate portal.
 
 ## Install
 
@@ -8,7 +8,7 @@ Engine package for [LUONVUITUOI-CERT](https://github.com/Kein95/luonvuituoi-cert
 pip install luonvuitoi-cert
 ```
 
-Typical users don't install this directly — they run `lvt-cert init` from [`luonvuitoi-cert-cli`](../cli), which scaffolds a project that depends on this engine.
+Typical users do not install this directly. They run `lvt-cert init` from [`luonvuitoi-cert-cli`](../cli), which scaffolds a project that depends on this engine.
 
 ## Status
 

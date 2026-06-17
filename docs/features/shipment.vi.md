@@ -1,6 +1,6 @@
 # Theo dõi vận chuyển
 
-Bảng opt-in theo dõi giao chứng chỉ vật lý. Admin upsert record; học viên tra cứu trạng thái của mình.
+Bảng tùy chọn để theo dõi việc giao chứng chỉ bản cứng. Admin upsert bản ghi; học viên tra cứu trạng thái của mình.
 
 ## Bật
 
@@ -15,9 +15,9 @@ Bảng opt-in theo dõi giao chứng chỉ vật lý. Admin upsert record; học
 }
 ```
 
-- `statuses` — các giá trị cho phép cho cột `status`. Phải không rỗng và unique không phân biệt hoa/thường.
-- `fields` — cột TEXT extra trên bảng `shipments`. Mỗi cột phải là SQL identifier. Tên reserved (`id`, `round_id`, `sbd`, `status`, `created_at`, `updated_at`) bị từ chối để tránh va chạm với schema cố định.
-- `public_fields` — subset của `fields` mà public lookup endpoint được phép trả về. **Default rỗng.** Học viên chỉ thấy `status` và `updated_at` trừ khi bạn allowlist thêm.
+- `statuses`: các giá trị cho phép của cột `status`. Danh sách phải khác rỗng và không trùng nhau khi bỏ qua hoa thường.
+- `fields`: các cột TEXT bổ sung trên bảng `shipments`. Mỗi cột phải là một SQL identifier hợp lệ. Các tên dành riêng (`id`, `round_id`, `sbd`, `status`, `created_at`, `updated_at`) bị từ chối để tránh xung đột với schema cố định.
+- `public_fields`: tập con của `fields` mà endpoint tra cứu công khai được phép trả về. **Mặc định là rỗng.** Học viên chỉ thấy `status` và `updated_at`, trừ khi bạn đưa thêm cột vào danh sách cho phép.
 
 ## Bố cục bảng
 
@@ -26,12 +26,12 @@ Bảng opt-in theo dõi giao chứng chỉ vật lý. Admin upsert record; học
 | Cột | Kiểu | Ghi chú |
 |-----|------|---------|
 | `id` | TEXT PK | UUID. |
-| `round_id` | TEXT | Từ danh sách rounds của bạn. |
+| `round_id` | TEXT | Lấy từ danh sách rounds của bạn. |
 | `sbd` | TEXT | Số báo danh học viên. |
-| `status` | TEXT | Một trong `features.shipment.statuses`. |
+| `status` | TEXT | Một trong các giá trị `features.shipment.statuses`. |
 | `created_at` / `updated_at` | TEXT | ISO 8601 UTC. |
-| …`fields[]` | TEXT | Các extra bạn khai báo. |
-| `UNIQUE(round_id, sbd)` | | Composite key — một row per cert per student. |
+| …`fields[]` | TEXT | Các cột bổ sung bạn khai báo. |
+| `UNIQUE(round_id, sbd)` | | Khóa tổ hợp: mỗi học viên một dòng cho mỗi chứng chỉ. |
 
 ## API admin
 
@@ -47,9 +47,9 @@ Bảng opt-in theo dõi giao chứng chỉ vật lý. Admin upsert record; học
 }
 ```
 
-Dùng `INSERT ... ON CONFLICT DO UPDATE` của SQLite nên hai admin bấm Save trên cùng row đồng thời không race thành `IntegrityError`. Semantic patch khi conflict: chỉ field caller-supplied ghi đè; cột không chạm giữ giá trị trước.
+Hàm này dùng `INSERT ... ON CONFLICT DO UPDATE` của SQLite, nên hai admin cùng bấm Lưu trên một dòng đồng thời sẽ không tranh chấp dẫn tới `IntegrityError`. Khi xảy ra xung đột, cơ chế cập nhật theo kiểu vá: chỉ những trường do người gọi cung cấp mới bị ghi đè, còn cột không đụng tới vẫn giữ giá trị cũ.
 
-Activity log ghi `shipment.upsert` với `status` + `fields_touched` (danh sách key, **không** phải giá trị — giữ tracking code và địa chỉ khỏi stream webhook).
+Activity log ghi `shipment.upsert` kèm `status` và `fields_touched` (danh sách các khóa, **không** phải giá trị, để giữ mã vận đơn và địa chỉ không lọt vào luồng webhook).
 
 ## Tra cứu công khai
 
@@ -64,7 +64,7 @@ Activity log ghi `shipment.upsert` với `status` + `fields_touched` (danh sách
 }
 ```
 
-Đi qua cùng cửa CAPTCHA + rate-limit như tra cứu student. Shape response:
+Đi qua cùng lớp CAPTCHA và rate limit như tra cứu của học viên. Cấu trúc response:
 
 ```json
 {
@@ -74,27 +74,27 @@ Activity log ghi `shipment.upsert` với `status` + `fields_touched` (danh sách
 }
 ```
 
-`fields` chỉ chứa key trong `features.shipment.public_fields`. `id`, `created_at`, và internal khác không bị expose.
+`fields` chỉ chứa các khóa nằm trong `features.shipment.public_fields`. Các cột `id`, `created_at` và các cột nội bộ khác không bị để lộ.
 
-## Kỷ luật status
+## Ràng buộc giá trị status
 
-`upsert_shipment` validate `status` với danh sách cấu hình trước khi ghi. Typo trong UI admin surface thành 400 với listing giá trị cho phép.
+`upsert_shipment` kiểm tra `status` so với danh sách cấu hình trước khi ghi. Lỗi gõ sai trong giao diện admin sẽ làm phát sinh mã 400 kèm danh sách các giá trị được phép.
 
-## Listing shipment
+## Liệt kê shipment
 
-`list_shipments(db, config, status=..., round_id=..., limit=200)` trả N gần nhất (cap ở `MAX_LIST_LIMIT = 500`) sort theo `updated_at DESC`. Trang admin dùng cho tab "shipments" (Phase 10+).
+`list_shipments(db, config, status=..., round_id=..., limit=200)` trả về N bản ghi gần nhất (giới hạn ở `MAX_LIST_LIMIT = 500`), sắp xếp theo `updated_at DESC`. Trang admin dùng hàm này cho tab "shipments" (từ Phase 10 trở đi).
 
-## Guard feature flag
+## Bảo vệ bằng cờ tính năng
 
-Cả ba entry point (`upsert_shipment_record`, `lookup_shipment`, `build_shipment_schema`) raise nếu `features.shipment.enabled` là false — có thể toggle feature off mà không drop bảng.
+Cả ba điểm vào (`upsert_shipment_record`, `lookup_shipment`, `build_shipment_schema`) đều phát sinh lỗi nếu `features.shipment.enabled` là false, nhờ đó bạn có thể tắt tính năng mà không cần xóa bảng.
 
-## Lưu ý migration
+## Lưu ý về migration
 
-Thêm entry mới vào `features.shipment.fields` work với database hiện có — dynamic typing của SQLite đủ dễ dãi để cách `CREATE TABLE IF NOT EXISTS` không alter schema hiện có. Nếu cần thêm cột cho DB đã có data, dùng `ALTER TABLE` thủ công; không có framework migration.
+Thêm mục mới vào `features.shipment.fields` vẫn hoạt động với cơ sở dữ liệu hiện có, vì kiểu dữ liệu động của SQLite đủ linh hoạt để cách `CREATE TABLE IF NOT EXISTS` không làm thay đổi schema sẵn có. Nếu cần thêm cột cho một cơ sở dữ liệu đã có dữ liệu, hãy dùng `ALTER TABLE` thủ công; toolkit không có framework migration.
 
 ## Import hàng loạt từ Excel/CSV của carrier
 
-Các đơn vị vận chuyển (Viettel Post, GHN, GHTK, …) giao cho ban tổ chức bản Excel báo cáo giao hàng theo tháng. Lệnh CLI `lvt-cert import-shipments` và endpoint `POST /api/admin/shipments/import` parse các file này qua profile riêng mỗi carrier và ghi vào bảng `shipment_history` (PK `(round_id, sbd, tracking_code)` — giữ mọi lần gửi cho audit).
+Các đơn vị vận chuyển (Viettel Post, GHN, GHTK và những hãng khác) gửi cho ban tổ chức bản Excel báo cáo giao hàng hằng tháng. Lệnh CLI `lvt-cert import-shipments` và endpoint `POST /api/admin/shipments/import` phân tích các file này qua profile riêng cho từng hãng vận chuyển rồi ghi vào bảng `shipment_history` (khóa chính là `(round_id, sbd, tracking_code)`, lưu lại mọi lần gửi để phục vụ audit).
 
 ### Cấu hình
 
@@ -129,22 +129,22 @@ Thêm vào `cert.config.json#features.shipment`:
 }
 ```
 
-Mỗi field nhận single string hoặc list fallback — carrier đổi header tháng sau, chỉ cần update list, không phải sửa code.
+Mỗi trường nhận một chuỗi đơn hoặc một danh sách phương án thay thế, nên khi hãng vận chuyển đổi tiêu đề cột vào tháng sau, bạn chỉ cần cập nhật danh sách chứ không phải sửa code.
 
 ### Cách dùng CLI
 
 ```bash
-# dry run — xem stats trước, không ghi DB
+# chạy thử: chỉ xem thống kê trước, không ghi vào cơ sở dữ liệu
 lvt-cert import-shipments path/to/carrier.xlsx --round main --carrier viettel
 
-# commit sau khi review
+# ghi nhận sau khi đã rà soát
 lvt-cert import-shipments path/to/carrier.xlsx --round main --carrier viettel --commit
 
-# JSON output cho automation
+# xuất JSON để tự động hóa
 lvt-cert import-shipments path/to/carrier.xlsx --carrier viettel --json
 ```
 
-Dry-run là default có chủ đích — admin nhìn status breakdown + match rate trước khi write. Chạy lại với `--commit` để persist.
+Chế độ chạy thử là mặc định một cách có chủ đích, để admin xem phân tích trạng thái và tỷ lệ khớp trước khi ghi. Chạy lại với `--commit` để lưu lại.
 
 ### Cách dùng API
 
@@ -157,27 +157,27 @@ curl -F file=@carrier.xlsx \
      https://mycerts.example/api/admin/shipments/import
 ```
 
-- Chỉ admin (viewer role → 403)
-- Rate-limit: 5 request/phút/IP
-- Max file: 10 MB (tune qua env `SHIPMENT_IMPORT_MAX_BYTES`)
-- Chỉ chấp nhận `.xlsx`, `.xlsm`, `.csv`
+- Chỉ admin được phép (vai trò viewer sẽ nhận 403).
+- Giới hạn tần suất: 5 request mỗi phút trên mỗi IP.
+- Dung lượng file tối đa: 10 MB (điều chỉnh qua biến môi trường `SHIPMENT_IMPORT_MAX_BYTES`).
+- Chỉ chấp nhận `.xlsx`, `.xlsm`, `.csv`.
 
-### Cách matching hoạt động
+### Cơ chế khớp dữ liệu
 
-1. Parse mỗi row qua `column_mapping` — header name đầu tiên match thắng
-2. Normalize phone (strip non-digit + zero đầu, VN convention)
-3. Dedup theo `tracking_code` — row trước thắng khi trùng
-4. Query `students.phone` resolve SBDs (một phone có thể map nhiều SBDs; mỗi match một row shipment)
-5. Row có status bắt đầu bằng `skip_status_prefixes` bị loại
-6. Status substring không phân biệt hoa/thường với `success_keywords` → flag `is_success`
+1. Phân tích từng dòng qua `column_mapping`; tên tiêu đề khớp đầu tiên được chọn.
+2. Chuẩn hóa số điện thoại (bỏ ký tự không phải số và số 0 ở đầu, theo quy ước Việt Nam).
+3. Khử trùng lặp theo `tracking_code`; khi trùng thì dòng xuất hiện trước được giữ.
+4. Truy vấn `students.phone` để phân giải ra SBD (một số điện thoại có thể ứng với nhiều SBD; mỗi lần khớp tạo một dòng shipment).
+5. Dòng có status bắt đầu bằng `skip_status_prefixes` sẽ bị loại.
+6. Nếu status chứa chuỗi con khớp với `success_keywords` (không phân biệt hoa thường) thì được gắn cờ `is_success`.
 
 ### Audit trail
 
-Mỗi import emit 1 entry `shipment.bulk_import` trong `admin_activity` với metadata `{parsed, matched_sbds, inserted, success_count, unmatched_phones, committed}`. Không có row data thô vào log — PII chỉ nằm trong bảng SQLite `shipment_history`.
+Mỗi lần nhập sẽ phát sinh một bản ghi `shipment.bulk_import` trong `admin_activity` với metadata `{parsed, matched_sbds, inserted, success_count, unmatched_phones, committed}`. Không có dữ liệu dòng thô nào lọt vào log; PII chỉ nằm trong bảng SQLite `shipment_history`.
 
 ### Khắc phục sự cố
 
-- **Match rate thấp** — phần lớn SBD gửi qua trường bulk, không qua carrier cá nhân. Bình thường.
-- **Status không được coi là success** — thêm keyword vào `success_keywords`. Section `Status breakdown` của dry-run CLI hiển thị mọi giá trị raw.
-- **Lỗi `data_mapping.phone_col`** — import cần cột phone trên students; set nó và re-ingest.
-- **Header không resolve** — `first_matching_header` không tìm ra. Chạy file qua CLI; error liệt kê field logic nào chưa resolve + header file hiện có.
+- **Tỷ lệ khớp thấp**: phần lớn SBD được gửi qua trường gộp chứ không qua từng hãng riêng lẻ. Đây là điều bình thường.
+- **Status không được coi là thành công**: hãy thêm từ khóa vào `success_keywords`. Mục `Status breakdown` của chế độ chạy thử trên CLI hiển thị mọi giá trị thô.
+- **Lỗi `data_mapping.phone_col`**: quá trình nhập cần cột số điện thoại trên bảng students; hãy thiết lập cột này rồi nhập lại dữ liệu.
+- **Tiêu đề không phân giải được**: `first_matching_header` không tìm thấy cột phù hợp. Hãy chạy file qua CLI; thông báo lỗi sẽ liệt kê trường logic nào chưa phân giải được cùng các tiêu đề hiện có trong file.
