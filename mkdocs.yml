@@ -1,11 +1,11 @@
 site_name: LUONVUITUOI-CERT
-site_description: Config-driven certificate portal toolkit — issue verifiable PDF certificates with QR verify, admin panel, and zero boilerplate.
+site_description: Config-driven certificate portal toolkit. Issue verifiable PDF certificates with QR verify, admin panel, and zero boilerplate.
 site_url: https://kein95.github.io/luonvuituoi-cert
 repo_url: https://github.com/Kein95/luonvuituoi-cert
 repo_name: Kein95/luonvuituoi-cert
 edit_uri: edit/main/docs/
 docs_dir: docs
-copyright: Copyright &copy; 2026 LUONVUITUOI-CERT — MIT License
+copyright: Copyright &copy; 2026 LUONVUITUOI-CERT, MIT License
 
 theme:
   name: material
@@ -39,7 +39,7 @@ theme:
     - content.action.edit
     - content.tooltips
   palette:
-    # Auto — follows OS preference. Must come first; no scheme key.
+    # Auto follows the OS preference. Must come first; no scheme key.
     - media: "(prefers-color-scheme)"
       primary: custom
       accent: custom
