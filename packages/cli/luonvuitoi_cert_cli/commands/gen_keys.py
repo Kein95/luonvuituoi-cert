@@ -1,4 +1,4 @@
-"""``lvt-cert gen-keys`` — generate an RSA keypair for QR signing.
+"""``lvt-cert gen-keys`` generates an RSA keypair for QR signing.
 
 Writes ``private_key.pem`` and ``public_key.pem`` into the current project.
 The private key is the signing secret for the QR payload; commit **only** the
@@ -50,7 +50,7 @@ def gen_keys(
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
     )
 
-    # Write the private key owner-only (0600) from creation — it's the sole
+    # Write the private key owner-only (0600) from creation. It's the sole
     # secret behind every QR signature, so don't leave even a brief
     # world-readable window. POSIX honours the mode; on Windows the mode bits
     # are a best-effort no-op (NTFS ACLs govern access there).
@@ -63,4 +63,4 @@ def gen_keys(
 
     console.print(f"[green]OK[/] private key -> {priv_path} (mode 0600)")
     console.print(f"[green]OK[/] public  key -> {pub_path}")
-    console.print("[yellow]![/] add [cyan]private_key.pem[/] to .gitignore — never commit it.")
+    console.print("[yellow]![/] add [cyan]private_key.pem[/] to .gitignore. Never commit it.")

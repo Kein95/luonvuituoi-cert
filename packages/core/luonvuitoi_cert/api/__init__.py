@@ -3,7 +3,7 @@
 Every public entry point takes an input dict and the runtime dependencies
 (config, DB path, KV backend, project root) and returns a typed response.
 This lets the same logic run under Vercel's ``BaseHTTPRequestHandler`` in
-production and under Flask in the local dev server — both wrap these pure
+production and under Flask in the local dev server. Both wrap these pure
 functions with transport-specific glue.
 """
 

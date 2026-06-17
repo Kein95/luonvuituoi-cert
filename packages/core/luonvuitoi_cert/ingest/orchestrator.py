@@ -10,11 +10,11 @@ Usage:
 
 The orchestrator owns three concerns:
 
-1. **Schema bootstrap** — calls :func:`build_schema` and runs the generated
+1. **Schema bootstrap**: calls :func:`build_schema` and runs the generated
    ``CREATE TABLE IF NOT EXISTS`` statements idempotently.
-2. **Column projection** — drops source columns the config doesn't declare;
+2. **Column projection**: drops source columns the config doesn't declare;
    fills missing declared columns with the empty string.
-3. **Duplicate policy** — ``warn`` (default, records dup as a warning and
+3. **Duplicate policy**: ``warn`` (default, records dup as a warning and
    keeps the first), ``skip`` (silent), or ``replace`` (overwrite).
 """
 
@@ -36,7 +36,7 @@ DuplicatePolicy = Literal["warn", "skip", "replace"]
 def _coerce(value: Any) -> str:
     """Stringify a source-row cell without dropping falsy-but-meaningful values.
 
-    The previous ``str(v or "")`` idiom swallowed ``0`` / ``False`` / ``0.0`` —
+    The previous ``str(v or "")`` idiom swallowed ``0`` / ``False`` / ``0.0``,
     real data when the column is a score or a boolean flag. Only ``None`` is
     skipped; everything else is preserved as a stripped string.
     """

@@ -18,12 +18,12 @@ Running a competition, issuing training diplomas, or distributing awards to a co
 - An **admin backend** to manage records, corrections, and shipments.
 - A **verification page** so third parties (employers, schools) can confirm a certificate is genuine.
 
-LUONVUITUOI-CERT ships all three — config-driven, zero-code — deployable to Vercel's free tier or a Docker host.
+LUONVUITUOI-CERT ships all three. It is config-driven and zero-code, deployable to Vercel's free tier or a Docker host.
 
 ## Features
 
 - Three public surfaces: student portal (`/`), admin panel (`/admin`), Certificate-Checker (`/certificate-checker`).
-- Student search: name + DOB + CAPTCHA (or name + SBD, or SBD + phone — configurable).
+- Student search: name + DOB + CAPTCHA (or name + SBD, or SBD + phone; configurable).
 - PDF overlay: reportlab + pypdf, TrueType fonts, per-field positioning.
 - RSA-PSS-signed QR verification with optional expiry.
 - Multi-user admin: RBAC (`super-admin` / `admin` / `viewer`), JWT sessions, 3 auth modes (password / OTP email / magic link).
@@ -63,15 +63,15 @@ lvt-cert dev
 
 ## Deploy
 
-- **Vercel** — `vercel deploy` against the scaffolded `api/index.py` + `vercel.json`. See [docs/deploy-vercel.md](docs/deploy-vercel.md).
-- **Docker** — `docker compose up -d` against the repo-root Dockerfile + compose file. See [docs/deploy-docker.md](docs/deploy-docker.md).
+- **Vercel**: run `vercel deploy` against the scaffolded `api/index.py` + `vercel.json`. See [docs/deploy-vercel.md](docs/deploy-vercel.md).
+- **Docker**: run `docker compose up -d` against the repo-root Dockerfile + compose file. See [docs/deploy-docker.md](docs/deploy-docker.md).
 
 ## Repo layout
 
 ```text
 packages/
-  core/                # luonvuitoi-cert — engine + handlers + UI templates
-  cli/                 # luonvuitoi-cert-cli — lvt-cert scaffolder + Flask dev server
+  core/                # luonvuitoi-cert: engine + handlers + UI templates
+  cli/                 # luonvuitoi-cert-cli: lvt-cert scaffolder + Flask dev server
 examples/
   demo-academy/        # full-feature reference project
 docs/                  # MkDocs Material source
@@ -89,7 +89,7 @@ Highlights:
 
 - `JWT_SECRET` mandatory (no ephemeral fallback).
 - `PUBLIC_BASE_URL` pins magic-link + QR URLs against Host-header injection.
-- CAPTCHA / OTP / magic-link use atomic `kv.consume()` — no race.
+- CAPTCHA / OTP / magic-link use atomic `kv.consume()` with no race.
 - PBKDF2 passwords, RSA-PSS QR signatures, CSP nonce on admin.
 
 ## Contributing
@@ -106,7 +106,7 @@ Farewell to our teammate [@Liamlenguyen](https://github.com/Liamlenguyen). Wishi
 
 ## Sibling project
 
-- [**LUONVUITUOI-LPR-DATAHUB**](https://github.com/Kein95/luonvuituoi-lpr-datahub) — all-in-one gateway for License Plate Recognition research (16+ datasets across 10+ countries).
+- [**LUONVUITUOI-LPR-DATAHUB**](https://github.com/Kein95/luonvuituoi-lpr-datahub): all-in-one gateway for License Plate Recognition research (16+ datasets across 10+ countries).
 
 ## License
 

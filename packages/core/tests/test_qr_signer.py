@@ -135,7 +135,7 @@ def test_render_qr_png_produces_image() -> None:
 
 
 def test_render_qr_png_rejects_oversize_text() -> None:
-    """Regression: Phase 07 review H3 — bounded text length stops DoS through the renderer."""
+    """Regression: Phase 07 review H3 - bounded text length stops DoS through the renderer."""
     with pytest.raises(CodecError, match="too long"):
         render_qr_png("x" * 5000)
 

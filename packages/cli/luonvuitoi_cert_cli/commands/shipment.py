@@ -1,4 +1,4 @@
-"""``lvt-cert shipment <subcommand>`` — manage shipment drafts + exports.
+"""``lvt-cert shipment <subcommand>`` manages shipment drafts + exports.
 
 Subcommands:
   - draft add     Add drafts from a student filter (column / result / SBD list).
@@ -7,7 +7,7 @@ Subcommands:
   - export        Produce carrier-ready Excel and hard-lock drafts as 'exported'.
 
 All subcommands require JWT_SECRET (env) and an admin token; pass via
-``--token`` or ``LVT_ADMIN_TOKEN`` env. Handlers are pure — this module is a
+``--token`` or ``LVT_ADMIN_TOKEN`` env. Handlers are pure. This module is a
 thin Typer shell around them.
 """
 
@@ -30,7 +30,7 @@ app.add_typer(draft_app, name="draft")
 def _load_token(explicit: str | None) -> str:
     tok = explicit or os.getenv("LVT_ADMIN_TOKEN", "").strip()
     if not tok:
-        console.print("[red]ERR[/] admin token required — pass --token or set LVT_ADMIN_TOKEN")
+        console.print("[red]ERR[/] admin token required. Pass --token or set LVT_ADMIN_TOKEN")
         raise typer.Exit(code=2)
     return tok
 
@@ -123,7 +123,7 @@ def draft_list_cmd(
         return
     table = Table("Status", "Round", "SBD", "Carrier", "Batch", "Updated")
     for r in rows:
-        table.add_row(r.status, r.round_id, r.sbd, r.carrier or "—", (r.batch_id or "—")[:8], r.updated_at)
+        table.add_row(r.status, r.round_id, r.sbd, r.carrier or "-", (r.batch_id or "-")[:8], r.updated_at)
     console.print(table)
 
 

@@ -1,7 +1,7 @@
 """JWT HS256 issue + verify for admin sessions.
 
 Keeping the token logic in one place means admin handlers only ever see
-:class:`AdminToken` objects — they never import PyJWT themselves. The secret
+:class:`AdminToken` objects. They never import PyJWT themselves. The secret
 comes from the ``JWT_SECRET`` env var; it is mandatory (no silent fallback)
 and must not be the unedited shipped placeholder.
 """
@@ -52,7 +52,7 @@ class AdminToken:
 
 
 def _resolve_secret(env: dict[str, str] | None) -> str:
-    """Require ``JWT_SECRET`` explicitly — no silent fallback.
+    """Require ``JWT_SECRET`` explicitly; no silent fallback.
 
     Serverless handlers may run in many processes; sharing an ephemeral
     secret across invocations is impossible, so a missing secret is a
@@ -110,7 +110,7 @@ def verify_admin_token(
 
     If ``kv`` is provided, the decoded ``jti`` is also checked against the
     denylist (M7). A revoked token is rejected with the same ``TokenError``
-    shape as an expired one — callers don't need to distinguish.
+    shape as an expired one. Callers don't need to distinguish.
     """
     if not token:
         raise TokenError("admin token is required")

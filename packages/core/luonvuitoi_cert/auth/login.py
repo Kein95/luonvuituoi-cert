@@ -1,11 +1,11 @@
-"""Login dispatcher — consumes a credential payload, returns a signed JWT.
+"""Login dispatcher: consumes a credential payload, returns a signed JWT.
 
 Three flavors share the same response shape so callers don't branch on mode:
 
-- ``password`` — ``{"email", "password"}`` → ``verify_admin_password``
-- ``otp_email`` — two-step: first call seeds ``{"email"}``; second call
+- ``password``: ``{"email", "password"}`` → ``verify_admin_password``
+- ``otp_email``: two-step: first call seeds ``{"email"}``; second call
   verifies ``{"email", "code"}``
-- ``magic_link`` — two-step: first call seeds ``{"email"}``; second call
+- ``magic_link``: two-step: first call seeds ``{"email"}``; second call
   consumes ``{"token"}``
 
 Missing credentials or wrong guesses raise :class:`LoginError` with a
@@ -37,7 +37,7 @@ _LOGGER = logging.getLogger(__name__)
 def _burn_equivalent_kv_write(kv: KVBackend, email: str) -> None:
     """Write to a decoy KV key + compute a dummy hash so unknown-user request timing matches.
 
-    Closes the user-enumeration timing oracle in OTP / magic-link flows — step 1
+    Closes the user-enumeration timing oracle in OTP / magic-link flows. Step 1
     takes roughly the same wall-clock regardless of whether the email maps to
     an active admin. Actual email delivery happens only for real users, but
     the outward-facing response is identical (``challenge_issued=True``).

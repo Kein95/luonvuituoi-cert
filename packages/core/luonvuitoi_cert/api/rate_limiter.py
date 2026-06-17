@@ -2,7 +2,7 @@
 
 Simpler than a sliding-window log; accepts the well-known burst-at-boundary
 trade-off. If a project needs sub-minute precision, swap in a new
-:func:`check_rate_limit` implementation — the call signature is the contract,
+:func:`check_rate_limit` implementation. The call signature is the contract,
 not the algorithm.
 """
 

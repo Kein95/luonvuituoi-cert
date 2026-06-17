@@ -1,4 +1,4 @@
-"""``lvt-cert init`` — scaffold a new certificate portal project.
+"""``lvt-cert init`` scaffolds a new certificate portal project.
 
 Copies the packaged ``scaffolds/default/`` tree into ``<target>`` and
 renders ``.j2`` templates with the answers from an interactive Typer

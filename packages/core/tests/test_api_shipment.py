@@ -127,7 +127,7 @@ def test_admin_viewer_role_rejected(tmp_path: Path) -> None:
 
 
 def test_audit_log_redacts_field_values(tmp_path: Path) -> None:
-    """Regression: Phase 09 review M1 — audit must not echo raw field values into the webhook stream."""
+    """Regression: Phase 09 review M1 - audit must not echo raw field values into the webhook stream."""
     cfg = _cfg()
     db = tmp_path / "s.db"
     audit = ActivityLog(tmp_path / "a.db")
@@ -246,7 +246,7 @@ def test_public_lookup_returns_status(tmp_path: Path, kv_memory) -> None:  # typ
 
 
 def test_public_lookup_defaults_to_no_fields(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 09 review H1 — lookup used to return ALL fields."""
+    """Regression: Phase 09 review H1 - lookup used to return ALL fields."""
     cfg = _cfg()  # no public_fields
     db = tmp_path / "s.db"
     _seed_student(cfg, db)
@@ -363,7 +363,7 @@ def test_public_lookup_blocked_by_freeze(tmp_path: Path, kv_memory) -> None:  # 
 
 
 def test_public_lookup_by_phone(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
-    """Identity by phone (last 4) alone — no name — must authorize the lookup."""
+    """Identity by phone (last 4) alone - no name - must authorize the lookup."""
     cfg = _cfg(public_fields=["tracking_code"])
     db = tmp_path / "s.db"
     _seed_student(cfg, db)  # phone 0900001234

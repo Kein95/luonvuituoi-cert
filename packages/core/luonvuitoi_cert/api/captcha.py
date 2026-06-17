@@ -58,7 +58,7 @@ _OPS: list[_Op] = [_AddOp(), _SubOp(), _MulOp()]
 
 @dataclass(frozen=True, slots=True)
 class CaptchaChallenge:
-    """What the server hands to the client — *not* the answer."""
+    """What the server hands to the client. *Not* the answer."""
 
     id: str
     question: str
@@ -85,12 +85,12 @@ def issue_challenge(kv: KVBackend, *, rng: secrets.SystemRandom | None = None) -
 
 
 def verify_challenge(kv: KVBackend, challenge_id: str, answer: object) -> None:
-    """Consume the challenge — raises :class:`CaptchaError` on any mismatch.
+    """Consume the challenge. Raises :class:`CaptchaError` on any mismatch.
 
     Consumption is single-use and race-safe: the KV entry is atomically
     read-and-deleted via ``consume()``. Two concurrent requests with the same
     correct answer cannot both succeed, and replays of a correct answer never
-    work twice — even across backends with independent transactions.
+    work twice, even across backends with independent transactions.
     """
     if not challenge_id:
         raise CaptchaError("captcha id is required")

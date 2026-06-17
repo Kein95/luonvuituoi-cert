@@ -1,4 +1,4 @@
-"""Shipment tracking handlers — admin upsert + public status lookup.
+"""Shipment tracking handlers: admin upsert + public status lookup.
 
 Admin path (``upsert_shipment_record``):
 - Authenticates via :func:`verify_admin_token`; Viewer role rejected.
@@ -8,10 +8,10 @@ Admin path (``upsert_shipment_record``):
 
 Public path (``lookup_shipment``):
 - Anonymous student flow gated by the public-lookup feature flag (freeze),
-  CAPTCHA, a rate limit, AND an identity factor — the recipient confirms it's
+  CAPTCHA, a rate limit, AND an identity factor. The recipient confirms it's
   them with EITHER their name OR their phone number (last-4), so a guessable
   SBD alone can't enumerate shipment status/PII. Returns only the sanitized
-  status/fields dict — never the internal id or created_at.
+  status/fields dict, never the internal id or created_at.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def upsert_shipment_record(
     env: dict[str, str] | None = None,
     kv: object | None = None,
 ) -> ShipmentRecord:
-    """Admin entry point — write-through for shipment state. Audits every change.
+    """Admin entry point: write-through for shipment state. Audits every change.
 
     ``kv`` is optional and, when provided, enables JWT-revocation checks (M7).
     """
@@ -78,7 +78,7 @@ def upsert_shipment_record(
         token = verify_admin_token(str(params.get("token", "")), env=env, kv=kv)  # type: ignore[arg-type]
     except TokenError as e:
         raise ShipmentHandlerError(str(e)) from e
-    # Allowlist — any future role (e.g. Role.AUDITOR) starts read-only until
+    # Allowlist: any future role (e.g. Role.AUDITOR) starts read-only until
     # explicitly opted-in, instead of silently inheriting write access.
     if token.role not in (Role.ADMIN, Role.SUPER_ADMIN):
         raise ShipmentHandlerError(f"role {token.role.value!r} cannot update shipments")
@@ -105,7 +105,7 @@ def upsert_shipment_record(
     except ShipmentError as e:
         raise ShipmentHandlerError(str(e)) from e
 
-    # Record which fields were touched but not the raw values — tracking codes
+    # Record which fields were touched but not the raw values. Tracking codes
     # and addresses shouldn't flow through the webhook-forwarded audit trail.
     log_admin_action(
         activity,
@@ -127,13 +127,13 @@ def lookup_shipment(
     params: dict[str, Any],
     client_id: str,
 ) -> ShipmentLookupResponse:
-    """Public student lookup — feature-gate + CAPTCHA + rate-limit + identity gated.
+    """Public student lookup: feature-gate + CAPTCHA + rate-limit + identity gated.
 
     The recipient proves identity with EITHER their name OR phone number (any
     one provided factor must match the student row), so a guessable SBD can't
     enumerate shipment status/PII; the public-lookup freeze covers this surface
-    too. Intentionally returns only (status, updated_at, fields) — no internal
-    ids, no timestamps beyond ``updated_at`` — so scrapers can't harvest the
+    too. Intentionally returns only (status, updated_at, fields): no internal
+    ids, no timestamps beyond ``updated_at``, so scrapers can't harvest the
     admin record shape.
     """
     _require_enabled(config)
@@ -144,7 +144,7 @@ def lookup_shipment(
     _require_round(config, round_id)
 
     # Gate before CAPTCHA/rate-limit so a disabled (frozen) surface doesn't burn
-    # a captcha token or tick the quota — mirrors search_student's ordering.
+    # a captcha token or tick the quota. Mirrors search_student's ordering.
     require_public_lookup(kv)
     verify_challenge(kv, str(params.get("captcha_id", "")), params.get("captcha_answer"))
     check_rate_limit(
@@ -155,7 +155,7 @@ def lookup_shipment(
         window_seconds=PUBLIC_LOOKUP_WINDOW_SECONDS,
     )
     if not verify_identity_any(config=config, db_path=db_path, round_id=round_id, sbd=sbd, params=params):
-        # Opaque message — identical to the genuine not-found case below so the
+        # Opaque message, identical to the genuine not-found case below so the
         # response never reveals whether the SBD exists or only the identity
         # factor (name / phone) missed.
         raise ShipmentHandlerError("no shipment recorded for this certificate yet")
@@ -163,7 +163,7 @@ def lookup_shipment(
     record = get_shipment(db_path, config, round_id=round_id, sbd=sbd)
     if record is None:
         raise ShipmentHandlerError("no shipment recorded for this certificate yet")
-    # Only fields the operator explicitly allowlisted leave the server —
+    # Only fields the operator explicitly allowlisted leave the server.
     # defaults to empty, so a fresh deploy doesn't leak tracking codes.
     public_keys = set(config.features.shipment.public_fields)
     safe_fields = {k: v for k, v in record.fields.items() if k in public_keys}

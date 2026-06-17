@@ -197,7 +197,7 @@ def test_list_shipments_filters_and_sorts(tmp_path: Path) -> None:
 
 
 def test_list_shipments_clamps_limit(tmp_path: Path) -> None:
-    """Regression: Phase 09 review M2 — limit must not be unbounded."""
+    """Regression: Phase 09 review M2 - limit must not be unbounded."""
     from luonvuitoi_cert.shipment.repository import MAX_LIST_LIMIT
 
     cfg = _cfg()
@@ -210,7 +210,7 @@ def test_list_shipments_clamps_limit(tmp_path: Path) -> None:
 
 
 def test_upsert_concurrent_inserts_do_not_race(tmp_path: Path) -> None:
-    """Regression: Phase 09 review H2 — racing inserts used to hit IntegrityError."""
+    """Regression: Phase 09 review H2 - racing inserts used to hit IntegrityError."""
     import threading
 
     cfg = _cfg()

@@ -9,7 +9,7 @@ Các file trong thư mục này được dispatcher phục vụ tại `/static/<
 để chức năng upload ảnh QR trên trang Certificate-Checker chạy offline,
 không phụ thuộc CDN allowlist.
 
-Nguồn: [jsQR v1.4.0](https://github.com/cozmo/jsQR) — Apache-2.0
+Nguồn: [jsQR v1.4.0](https://github.com/cozmo/jsQR), giấy phép Apache-2.0
 (minified bởi jsDelivr, ~127 KB).
 
 Muốn đổi sang phiên bản mới: thay file bằng bản build từ

@@ -1,4 +1,4 @@
-"""Admin handler — update one field on a student record, with audit trail.
+"""Admin handler: update one field on a student record, with audit trail.
 
 Authorization:
 - Viewer role: rejected (read-only).
@@ -71,7 +71,7 @@ def update_student_field(
         token = verify_admin_token(token_raw, env=env, kv=kv)  # type: ignore[arg-type]
     except TokenError as e:
         raise AdminUpdateError(str(e)) from e
-    # Allowlist rather than denylist — any future role (e.g. Role.AUDITOR) is
+    # Allowlist rather than denylist: any future role (e.g. Role.AUDITOR) is
     # read-only by default until explicitly granted write access.
     if token.role not in (Role.ADMIN, Role.SUPER_ADMIN):
         raise AdminUpdateError(f"role {token.role.value!r} is read-only")

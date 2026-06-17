@@ -88,7 +88,7 @@ def test_unknown_subject_raises(cert_config, populated_db, project_root, kv_memo
 def test_download_requires_verify_url_builder_when_qr_enabled(
     project_root, tmp_path, kv_memory, config_dict
 ) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 07 review M2 — missing builder would otherwise ship a footgun QR."""
+    """Regression: Phase 07 review M2 - missing builder would otherwise ship a footgun QR."""
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
     from luonvuitoi_cert.config import CertConfig
@@ -141,12 +141,12 @@ def test_download_requires_verify_url_builder_when_qr_enabled(
                 "subject_code": "S",
             },
             client_id="ip-1",
-            # verify_url_builder deliberately omitted — production path must raise.
+            # verify_url_builder deliberately omitted - production path must raise.
         )
 
 
 def test_download_embeds_signed_qr_when_enabled(project_root, tmp_path, kv_memory, config_dict) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 07 — QR pipeline renders + signs + embeds + roundtrips through /api/verify."""
+    """Regression: Phase 07 - QR pipeline renders + signs + embeds + roundtrips through /api/verify."""
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
     from luonvuitoi_cert.api import verify_qr

@@ -3,13 +3,13 @@
 Two independent booleans live in the KV so super-admins can flip them without
 a redeploy:
 
-- ``public_lookup_enabled`` — gates ``/api/search`` (student mode).
-- ``public_download_enabled`` — gates ``/api/download`` (student mode).
+- ``public_lookup_enabled``: gates ``/api/search`` (student mode).
+- ``public_download_enabled``: gates ``/api/download`` (student mode).
 
 Invariant enforced both on write and on read: download requires lookup. A
 recipient who can't find their record cannot be handed a PDF either, so the
 downstream gate refuses unconditionally when the upstream gate is off. Admin
-mode bypasses both — operators still need to run the panel during a public
+mode bypasses both. Operators still need to run the panel during a public
 freeze (e.g. embargo period before results publish).
 
 Defaults: both ON. A fresh deploy that never writes to KV behaves exactly
@@ -58,7 +58,7 @@ def get_state(kv: KVBackend) -> FeatureState:
 def set_state(kv: KVBackend, *, lookup_enabled: bool, download_enabled: bool) -> FeatureState:
     """Persist a new gate state. Forces ``download=false`` when ``lookup=false``.
 
-    The write is two separate KV operations — concurrent writers racing each
+    The write is two separate KV operations. Concurrent writers racing each
     other can't leave the pair in an invalid combination because :func:`get_state`
     re-applies the invariant on read.
     """

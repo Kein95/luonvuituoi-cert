@@ -9,7 +9,7 @@ with `Content-Type: application/javascript` (or matching MIME).
 so the QR image upload on the Certificate-Checker page works offline /
 without a CDN allowlist.
 
-Source: [jsQR v1.4.0](https://github.com/cozmo/jsQR) — Apache-2.0
+Source: [jsQR v1.4.0](https://github.com/cozmo/jsQR), Apache-2.0
 (minified by jsDelivr, ~127 KB).
 
 To swap a newer release: replace the file with the build from

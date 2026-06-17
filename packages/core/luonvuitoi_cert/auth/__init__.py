@@ -7,9 +7,9 @@ present to the admin handlers. The JWT embeds ``sub`` (admin user id),
 
 The login flavor is picked by ``config.admin.auth_mode``:
 
-- ``password`` — classic email + password bcrypt-style check
-- ``otp_email`` — one-time 6-digit code delivered by email
-- ``magic_link`` — one-time URL token delivered by email
+- ``password``: classic email + password bcrypt-style check
+- ``otp_email``: one-time 6-digit code delivered by email
+- ``magic_link``: one-time URL token delivered by email
 
 All three mint identical JWTs on success, so admin handlers stay auth-mode
 agnostic.

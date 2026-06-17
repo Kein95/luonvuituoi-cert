@@ -2,9 +2,9 @@
 
 Two implementations ship:
 
-- :class:`NullEmailProvider` — swallows messages into an in-process list.
+- :class:`NullEmailProvider`: swallows messages into an in-process list.
   Tests and local dev use it so no real provider credentials are needed.
-- :class:`ResendProvider` — wraps the Resend HTTP API.
+- :class:`ResendProvider`: wraps the Resend HTTP API.
 
 The :class:`EmailProvider` protocol keeps handler code provider-agnostic so
 dropping in SendGrid / SMTP is a 30-line module, not a refactor.
@@ -48,7 +48,7 @@ class NullEmailProvider:
 
 
 class ResendProvider:
-    """Thin wrapper over the Resend v1 send API. No retries — handlers decide."""
+    """Thin wrapper over the Resend v1 send API. No retries; handlers decide."""
 
     ENDPOINT = "https://api.resend.com/emails"
 

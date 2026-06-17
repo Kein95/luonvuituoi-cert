@@ -175,7 +175,7 @@ def test_admin_uses_configured_endpoints() -> None:
 
 
 def test_admin_exit_clears_lookup_state() -> None:
-    """Regression: Phase 10 review B1 — sign-out must wipe the previous lookup."""
+    """Regression: Phase 10 review B1 - sign-out must wipe the previous lookup."""
     html = render_admin_page(config=_cfg(), locale=load_locale("en"))
     exit_body = html.split("function exitDashboard")[1].split("function ")[0]
     assert "lookupFields.innerHTML" in exit_body
@@ -184,7 +184,7 @@ def test_admin_exit_clears_lookup_state() -> None:
 
 
 def test_student_portal_parses_rfc5987_filename() -> None:
-    """Regression: Phase 10 review B2 — parseFilename must handle filename* form."""
+    """Regression: Phase 10 review B2 - parseFilename must handle filename* form."""
     html = render_student_portal_page(config=_cfg(), locale=load_locale("en"))
     parser_body = html.split("function parseFilename")[1].split("function ")[0]
     assert "filename\\*" in parser_body

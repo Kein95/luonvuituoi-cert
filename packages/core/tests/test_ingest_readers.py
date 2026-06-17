@@ -74,12 +74,12 @@ def test_csv_empty_rows_dropped(tmp_path: Path) -> None:
 
 
 def test_csv_preserves_quoted_multiline_fields(tmp_path: Path) -> None:
-    """Regression: Phase 04 review H1 — text.splitlines() joined lines inside quotes."""
+    """Regression: Phase 04 review H1 - text.splitlines() joined lines inside quotes."""
     p = tmp_path / "in.csv"
     # Write bytes directly to avoid Windows newline translation altering the fixture.
     p.write_bytes(b'sbd,note\n001,"line1\nline2\nline3"\n')
     rows = read_csv(p)
-    # Normalize to compare — csv.reader may return \n or \r\n depending on platform/newline args.
+    # Normalize to compare - csv.reader may return \n or \r\n depending on platform/newline args.
     assert rows[0]["note"].replace("\r\n", "\n") == "line1\nline2\nline3"
 
 
@@ -97,7 +97,7 @@ def test_csv_missing_file_raises(tmp_path: Path) -> None:
 
 
 def test_csv_rejects_duplicate_headers(tmp_path: Path) -> None:
-    """DictReader silently collapses duplicate fieldnames — reject instead."""
+    """DictReader silently collapses duplicate fieldnames - reject instead."""
     p = tmp_path / "dup.csv"
     p.write_text("sbd,name,sbd\n001,Alice,002\n", encoding="utf-8")
     with pytest.raises(IngestError, match="duplicate header"):

@@ -49,7 +49,7 @@ def test_ensure_loaded_returns_psname(cert_config, project_root: Path) -> None: 
 
 
 def test_same_key_different_paths_do_not_collide(tmp_path: Path, config_dict: dict) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 03 review C1 — previously project B's font silently replaced project A's."""
+    """Regression: Phase 03 review C1 - previously project B's font silently replaced project A's."""
     import reportlab as rl
 
     rl_fonts = Path(rl.__file__).parent / "fonts"

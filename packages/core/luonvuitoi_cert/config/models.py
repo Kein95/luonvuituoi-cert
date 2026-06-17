@@ -29,7 +29,7 @@ EmailProvider = Literal["resend"]
 _HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 # Slug: lowercase kebab-case segments joined by single hyphens, no leading/trailing hyphen.
 _SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-# Identifier used as a dict/URL key — letters/digits/_/- only, no path separators.
+# Identifier used as a dict/URL key: letters/digits/_/- only, no path separators.
 _IDENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 # SQL identifier safe to interpolate into column/table fragments (no quoting needed).
 _SQL_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -73,7 +73,7 @@ class Branding(_Strict):
     def _safe_scheme(cls, v: str | None) -> str | None:
         """Reject ``javascript:``, ``vbscript:``, and other XSS-adjacent URIs.
 
-        Only relative paths, HTTP(S), and inline image data URIs are allowed —
+        Only relative paths, HTTP(S), and inline image data URIs are allowed,
         which covers the real-world cases (uploaded logo, CDN-hosted image,
         embedded base64) without opening an execution sink.
         """
@@ -223,7 +223,7 @@ class QRVerify(_Strict):
     enabled: bool = False
     public_key_path: str = "public_key.pem"
     private_key_path: str = "private_key.pem"
-    """Signing key — only the issuer needs this. Never commit it.
+    """Signing key: only the issuer needs this. Never commit it.
 
     The public key is safe to ship; the verifier endpoint uses only it.
     """
@@ -235,7 +235,7 @@ class QRVerify(_Strict):
     """Reject QR payloads older than this when verifying. ``0`` disables the check.
 
     Use a non-zero value (e.g., 365 * 86400) when you want issued certificates
-    to expire — useful as a poor-man's revocation when there's no admin-side
+    to expire; useful as a poor-man's revocation when there's no admin-side
     revocation list.
     """
 
@@ -268,7 +268,7 @@ class ShipmentImportMapping(_Strict):
 
 
 class ShipmentExportTemplate(_Strict):
-    """Reverse column mapping — logical field → exact header name written to Excel.
+    """Reverse column mapping: logical field → exact header name written to Excel.
 
     Used by ``lvt-cert shipment export`` to produce a carrier-ready order
     file. Unlike the import mapping (which accepts fallbacks), export uses a
@@ -346,7 +346,7 @@ class Shipment(_Strict):
     public_fields: list[str] = Field(default_factory=list)
     """Subset of ``fields`` the public lookup endpoint may return.
 
-    Default empty — public responses carry only ``status`` + ``updated_at``.
+    Default empty; public responses carry only ``status`` + ``updated_at``.
     Enumerate non-sensitive fields here (e.g. carrier name) when you want
     students to see them. Tracking codes + recipient addresses should stay
     out unless your threat model tolerates SBD-only enumeration leaks.

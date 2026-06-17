@@ -30,7 +30,7 @@ def read_csv(path: str | Path) -> list[dict[str, str]]:
             if len(names) != len(set(names)):
                 dupes = sorted({f for f in names if names.count(f) > 1})
                 raise IngestError(
-                    f"duplicate header columns {dupes} in {p} — rename so each column is unique "
+                    f"duplicate header columns {dupes} in {p}. Rename so each column is unique "
                     "(DictReader silently collapses duplicates, dropping a column's data)"
                 )
             for row in reader:

@@ -22,7 +22,7 @@ def test_builtin_vi_loads_and_translates() -> None:
 
 def test_vi_falls_back_to_en_for_missing_key() -> None:
     loc = load_locale("vi")
-    # Key not present in either bundle — must return the key itself as final fallback.
+    # Key not present in either bundle - must return the key itself as final fallback.
     assert loc.get("completely.missing.key") == "completely.missing.key"
 
 
@@ -41,7 +41,7 @@ def test_substitute_uses_dollar_syntax(tmp_path: Path) -> None:
 
 
 def test_curly_brace_format_is_not_interpolated(tmp_path: Path) -> None:
-    """Old ``{name}`` syntax must pass through literally — no str.format execution."""
+    """Old ``{name}`` syntax must pass through literally - no str.format execution."""
     bundle = tmp_path / "en.json"
     bundle.write_text(json.dumps({"greet": "Hello {name}"}), encoding="utf-8")
     loc = load_locale("en", search_dirs=[tmp_path])
@@ -54,7 +54,7 @@ def test_attribute_traversal_cannot_leak_class_info(tmp_path: Path) -> None:
     bundle.write_text(json.dumps({"t": "{x.__class__}"}), encoding="utf-8")
     loc = load_locale("en", search_dirs=[tmp_path])
     result = loc.get("t", x="hello")
-    # safe_substitute uses $ syntax, so {x.__class__} is passed through literally —
+    # safe_substitute uses $ syntax, so {x.__class__} is passed through literally -
     # no reflection, no class info actually extracted.
     assert result == "{x.__class__}"
     assert "'str'" not in result  # would appear if str.format had been used

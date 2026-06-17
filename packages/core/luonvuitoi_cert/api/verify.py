@@ -2,7 +2,7 @@
 
 Accepts the opaque blob a scanner extracted from the printed QR, validates
 the signature with the config-provided public key, and returns a structured
-verdict the UI renders. The endpoint is unauthenticated by design — anyone
+verdict the UI renders. The endpoint is unauthenticated by design: anyone
 holding a printed certificate must be able to confirm it.
 
 Transport-layer contract: the HTTP wrapper **must** call
@@ -65,11 +65,11 @@ def verify_qr(
     blob: str,
     clock=None,  # type: ignore[no-untyped-def]
 ) -> VerifyResponse:
-    """Decode + verify the QR blob. Never raises on bad client input — always returns a verdict.
+    """Decode + verify the QR blob. Never raises on bad client input; always returns a verdict.
 
     :class:`VerifyError` is raised only for operational misconfiguration
     (QR disabled, missing public key) so the transport layer can respond with
-    a distinct HTTP status. The exception message is caller-safe — it never
+    a distinct HTTP status. The exception message is caller-safe: it never
     contains filesystem paths or raw key material.
     """
     qr_cfg = config.features.qr_verify
@@ -82,7 +82,7 @@ def verify_qr(
     except CodecError as e:
         return VerifyResponse(valid=False, reason=f"malformed QR payload: {e}")
     if payload.project_slug != config.project.slug:
-        # Signed for a different project — treat as tampered rather than valid.
+        # Signed for a different project: treat as tampered rather than valid.
         return VerifyResponse(
             valid=False,
             reason=(

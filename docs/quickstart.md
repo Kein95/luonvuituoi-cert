@@ -5,7 +5,7 @@ From zero to a running certificate portal in five minutes.
 ## Prerequisites
 
 - Python 3.11 or newer
-- A PDF template with one page per (subject, result) variant — or use the `demo-academy` example, which draws one at runtime.
+- A PDF template with one page per (subject, result) variant. Alternatively, use the `demo-academy` example, which draws one at runtime.
 - A TrueType font per role you want to style (e.g. one serif, one script).
 
 ## 1. Install
@@ -16,7 +16,7 @@ Once the packages are on PyPI:
 pip install luonvuitoi-cert-cli
 ```
 
-Pre-PyPI (install from source — recommended while v1.0.0 is not yet published):
+Pre-PyPI (install from source, recommended while v1.0.0 is not yet published):
 
 ```bash
 git clone https://github.com/Kein95/luonvuituoi-cert
@@ -44,7 +44,7 @@ my-portal/
 ├── .env.example
 ├── .gitignore
 ├── README.md
-└── (templates/, assets/fonts/, data/ — you populate these)
+└── (templates/, assets/fonts/, data/ : you populate these)
 ```
 
 ## 3. Configure environment
@@ -55,9 +55,9 @@ cp .env.example .env
 
 Edit `.env` and set at minimum:
 
-- `JWT_SECRET` — 32+ random characters. The server refuses to issue admin tokens without this.
-- `ADMIN_DEFAULT_PASSWORD` — used by one-off admin bootstrap scripts; change for real deploys.
-- `PUBLIC_BASE_URL` — your deploy's HTTPS origin; pins magic-link + QR URLs.
+- `JWT_SECRET`: 32+ random characters. The server refuses to issue admin tokens without this.
+- `ADMIN_DEFAULT_PASSWORD`: used by one-off admin bootstrap scripts; change for real deploys.
+- `PUBLIC_BASE_URL`: your deploy's HTTPS origin; pins magic-link + QR URLs.
 
 For production you'll also want `ALLOWED_ORIGINS`, `TRUST_PROXY_HEADERS=1` (if
 behind a reverse proxy), and `FORCE_HSTS=1` (after TLS cutover). See the
@@ -68,7 +68,7 @@ behind a reverse proxy), and `FORCE_HSTS=1` (after TLS cutover). See the
 1. Drop your certificate template PDF into `templates/main.pdf`. Each page corresponds to one cell in `cert.config.json#results` (e.g. `G.GOLD → page 1`).
 2. Drop your font TTFs into `assets/fonts/` using the filenames referenced by `cert.config.json#fonts`.
 
-For a taste without real assets, run the demo-academy example (see [Deploy — Docker](deploy-docker.md) or the repo's `examples/demo-academy/README.md`).
+For a taste without real assets, run the demo-academy example (see [Deploy to Docker](deploy-docker.md) or the repo's `examples/demo-academy/README.md`).
 
 ## 5. Seed test data + run
 
@@ -80,17 +80,17 @@ lvt-cert dev                           # http://127.0.0.1:5000
 
 Visit:
 
-- `/` — public student portal (search + download)
-- `/admin` — admin panel (create the first admin via `luonvuitoi_cert.auth.create_admin_user`; see [Admin auth](admin-auth.md))
-- `/certificate-checker` — public QR verification page
+- `/`: public student portal (search + download)
+- `/admin`: admin panel (create the first admin via `luonvuitoi_cert.auth.create_admin_user`; see [Admin auth](admin-auth.md))
+- `/certificate-checker`: public QR verification page
 
 ## Next
 
-- [Architecture](architecture.md) — how the pieces fit
-- [Configuration reference](config-reference.md) — every key in `cert.config.json` + env vars
-- [Security guide](security.md) — hardening checklist for production
-- [PDF overlay guide](pdf-overlay-guide.md) — coordinates, fonts, field positioning
-- [Admin auth](admin-auth.md) — login modes + session revocation
-- [Operations](operations.md) — health probe, logs, audit trail
-- [Troubleshooting](troubleshooting.md) — common failure modes
+- [Architecture](architecture.md): how the pieces fit
+- [Configuration reference](config-reference.md): every key in `cert.config.json` + env vars
+- [Security guide](security.md): hardening checklist for production
+- [PDF overlay guide](pdf-overlay-guide.md): coordinates, fonts, field positioning
+- [Admin auth](admin-auth.md): login modes + session revocation
+- [Operations](operations.md): health probe, logs, audit trail
+- [Troubleshooting](troubleshooting.md): common failure modes
 - [Deploy to Vercel](deploy-vercel.md) or [Docker](deploy-docker.md)

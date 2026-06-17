@@ -1,12 +1,12 @@
 """Key/value backends for transient portal state.
 
 Three backends ship:
-- :class:`LocalFileKV` — JSON file, ideal for ``lvt-cert dev`` and tests
-- :class:`RestKV` — REST Redis protocol, speaks Upstash and Vercel KV
+- :class:`LocalFileKV`: JSON file, ideal for ``lvt-cert dev`` and tests
+- :class:`RestKV`: REST Redis protocol, speaks Upstash and Vercel KV
 - stub (no-op) when an empty/invalid configuration is passed; handlers that
   truly need KV will surface a clear error at use time
 
-Pick one with :func:`open_kv` — it reads ``config.features.kv_backend`` and
+Pick one with :func:`open_kv`; it reads ``config.features.kv_backend`` and
 the environment for credentials.
 """
 

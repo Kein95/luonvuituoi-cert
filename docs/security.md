@@ -1,10 +1,10 @@
 # Security (user guide)
 
-This page is the **deployer's** security guide — what knobs to turn, what to watch for, what's already handled for you. For the maintainer-facing policy (reporting a vulnerability, threat model, cryptographic choices), see [`SECURITY.md`](https://github.com/Kein95/luonvuituoi-cert/blob/main/SECURITY.md) at the repo root.
+This page is the **deployer's** security guide: what knobs to turn, what to watch for, and what is already handled for you. For the maintainer-facing policy (reporting a vulnerability, threat model, cryptographic choices), see [`SECURITY.md`](https://github.com/Kein95/luonvuituoi-cert/blob/main/SECURITY.md) at the repo root.
 
 ## What's protected by default
 
-You don't need to do anything for these — they're on from the first deploy:
+You don't need to do anything for these; they are on from the first deploy:
 
 - **Rate limiting + CAPTCHA** on every public endpoint (`/api/search`, `/api/download`, `/api/verify`, `/api/captcha`, `/api/shipment/lookup`). Burst defaults: 20 req/min per IP for search, 30 req/min for CAPTCHA.
 - **Oversized requests rejected at the socket.** Werkzeug enforces `MAX_CONTENT_LENGTH = 32 KB` before parsing, so a 1 GB POST can't exhaust parser memory.
@@ -26,11 +26,11 @@ You don't need to do anything for these — they're on from the first deploy:
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Rotate on compromise — note that rotation invalidates every session. For single-admin compromise, use `POST /api/admin/logout` instead (see [revocation](admin-auth.md#signing-out-revoking-sessions)).
+Rotate on compromise. Note that rotation invalidates every session. For single-admin compromise, use `POST /api/admin/logout` instead (see [revocation](admin-auth.md#signing-out-revoking-sessions)).
 
 ### 2. `PUBLIC_BASE_URL`
 
-**Required for production.** Pins the origin baked into magic-link emails and QR verify URLs against an attacker-controlled `Host` header. Set it to the exact HTTPS origin — `https://mycerts.example`, no trailing slash.
+**Required for production.** Pins the origin baked into magic-link emails and QR verify URLs against an attacker-controlled `Host` header. Set it to the exact HTTPS origin, such as `https://mycerts.example`, with no trailing slash.
 
 ### 3. `ALLOWED_ORIGINS`
 
@@ -40,24 +40,24 @@ Rotate on compromise — note that rotation invalidates every session. For singl
 ALLOWED_ORIGINS=https://mycerts.example
 ```
 
-A mismatched origin gets no `Access-Control-Allow-Origin` header back — the browser will reject the cross-origin fetch.
+A mismatched origin gets no `Access-Control-Allow-Origin` header back, so the browser will reject the cross-origin fetch.
 
 ### 4. `TRUST_PROXY_HEADERS`
 
-Set to `1` **only** when the deploy sits behind a reverse proxy that overwrites `X-Forwarded-For` (Nginx, Caddy, Vercel, Cloud Run). Without a trusted proxy, a direct client can send the header themselves and spoof their IP — bypassing the rate limiter.
+Set to `1` **only** when the deploy sits behind a reverse proxy that overwrites `X-Forwarded-For` (Nginx, Caddy, Vercel, Cloud Run). Without a trusted proxy, a direct client can send the header themselves and spoof their IP, bypassing the rate limiter.
 
 Defaults to `0` (use `request.remote_addr` directly).
 
 ### 5. `FORCE_HSTS`
 
-Set to `1` once the site is **exclusively** reachable over HTTPS. Browsers cache `Strict-Transport-Security` for a year — enabling on an HTTP dev env locks users out when they try to revisit.
+Set to `1` once the site is **exclusively** reachable over HTTPS. Browsers cache `Strict-Transport-Security` for a year, so enabling it on an HTTP dev env locks users out when they try to revisit.
 
 ### 6. Email provider
 
 If `admin.auth_mode` is `otp_email` or `magic_link`, set both:
 
-- `RESEND_API_KEY` — from the Resend dashboard
-- `CERT_EMAIL_FROM` (or `RESEND_FROM_ADDRESS`) — a verified sender
+- `RESEND_API_KEY`: from the Resend dashboard
+- `CERT_EMAIL_FROM` (or `RESEND_FROM_ADDRESS`): a verified sender
 
 Without the key, the app falls back to `NullEmailProvider` and logs a warning. Login flows succeed at the HTTP level but silently drop the outgoing email, leaving users stuck.
 
@@ -72,11 +72,11 @@ If the private key leaks, regenerate and re-sign (every prior cert loses its sig
 
 ### 8. `GSHEET_WEBHOOK_URL`
 
-If you enable activity-log forwarding, the URL **must** be `https://`. Other schemes are rejected with a warning — the local SQLite audit table is always authoritative, so a disabled webhook doesn't break admin flows.
+If you enable activity-log forwarding, the URL **must** be `https://`. Other schemes are rejected with a warning. The local SQLite audit table is always authoritative, so a disabled webhook doesn't break admin flows.
 
 ## What to watch
 
-See [operations — Logs](operations.md#logs) for the loud messages worth alerting on. Short version:
+See [operations (Logs)](operations.md#logs) for the loud messages worth alerting on. Short version:
 
 - `RESEND_API_KEY not set` → login emails are dropping.
 - `KV_BACKEND=local with N workers` → race conditions on CAPTCHA / rate-limit state.

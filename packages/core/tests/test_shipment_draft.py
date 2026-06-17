@@ -485,7 +485,7 @@ def test_bulk_import_promotes_exported_drafts(draft_config, draft_populated_db, 
         env=_env(),
     )
 
-    # Simulate carrier return — tracking file
+    # Simulate carrier return - tracking file
     wb = Workbook()
     ws = wb.active
     ws.append(["Mã vận đơn", "SĐT", "Trạng thái"])

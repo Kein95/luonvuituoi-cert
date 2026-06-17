@@ -35,7 +35,7 @@ flowchart LR
 ```text
 packages/
 ├── core/luonvuitoi_cert/
-│   ├── api/          # handlers — pure functions, no Flask
+│   ├── api/          # handlers (pure functions, no Flask)
 │   │   ├── search.py, download.py, verify.py, shipment.py
 │   │   ├── admin_update.py, captcha.py
 │   │   ├── rate_limiter.py, security.py
@@ -58,7 +58,7 @@ packages/
 
 Everything in `luonvuitoi_cert.api` is a **plain function** that takes config + DB path + KV + params and returns a dataclass. Flask (dev) and the Vercel entrypoint (prod) are thin wrappers. This is the golden rule: **no Flask imports in `luonvuitoi_cert.*`**.
 
-## Request flow — public search
+## Request flow: public search
 
 ```mermaid
 sequenceDiagram
@@ -71,7 +71,7 @@ sequenceDiagram
     Browser->>Flask: POST /api/search {sbd, name, dob, captcha_id, answer}
     Flask->>Flask: validate size ≤ 32 KB
     Flask->>Handler: search_student(config, db, kv, params, client_id)
-    Handler->>KV: consume(captcha:<id>) — atomic
+    Handler->>KV: consume(captcha:<id>), atomic
     KV-->>Handler: ok / miss
     Handler->>KV: check_rate_limit(search, client_id, 20/60s)
     Handler->>DB: SELECT across rounds (capped at 20)
@@ -80,9 +80,9 @@ sequenceDiagram
     Flask-->>Browser: 200 {sbd, name, certificates[]}
 ```
 
-Rate limit comes **after** CAPTCHA on purpose — a user typo shouldn't burn their quota.
+Rate limit comes **after** CAPTCHA on purpose, so that a user typo does not burn their quota.
 
-## Request flow — admin sign-out + revocation
+## Request flow: admin sign-out and revocation
 
 ```mermaid
 sequenceDiagram
@@ -152,9 +152,9 @@ erDiagram
     }
 ```
 
-- **One SQLite file per project** — students + admins + audit live together, because the whole point is "config + data dir = entire deployment."
+- **One SQLite file per project.** Students, admins, and audit live together, because the whole point is "config + data dir = entire deployment."
 - **Students table name is per-round** (`rounds[].table`), so the config can model "qualifier" vs "finals" as parallel tables with the same schema.
-- **No foreign-key enforcement** — config-author is trusted; we validate identifiers at load time.
+- **No foreign-key enforcement.** The config-author is trusted; we validate identifiers at load time.
 
 ## KV usage
 
@@ -166,19 +166,19 @@ erDiagram
 | `magic:<hash>` | Magic-link tokens | 15 min |
 | `jwt_denylist:<jti>` | Revoked admin sessions (M7) | matches token remaining-life |
 
-All writes either `set(ttl)` or `consume()` — no orphan keys, no cron.
+All writes either `set(ttl)` or `consume()`, leaving no orphan keys and requiring no cron.
 
 ## Design axes
 
 - **Config-driven, not code-driven.** Adding a new project = new `cert.config.json` + template + data. Zero Python.
 - **Stateless handlers.** Any handler in `luonvuitoi_cert.api` can be moved behind a different transport (AWS Lambda, Cloud Functions) with a one-line wrapper.
-- **KV is the synchronization primitive.** Nothing shares in-process state — workers scale horizontally by sharing KV and SQLite.
-- **Fail loud, not silent.** Missing `JWT_SECRET`, unknown config keys, non-HTTPS webhook URLs — every one raises or logs a warning at startup. Production surprises are debt.
+- **KV is the synchronization primitive.** Nothing shares in-process state; workers scale horizontally by sharing KV and SQLite.
+- **Fail loud, not silent.** Missing `JWT_SECRET`, unknown config keys, and non-HTTPS webhook URLs each raise or log a warning at startup. Production surprises are debt.
 
 ## Where to go next
 
-- [Operations](operations.md) — health probe, logs, audit
-- [Security](security.md) — user-facing hardening checklist
-- [Configuration reference](config-reference.md) — every config key
-- [Admin auth](admin-auth.md) — login flows + revocation
-- [PDF overlay guide](pdf-overlay-guide.md) — coordinate measurement + fonts
+- [Operations](operations.md): health probe, logs, audit
+- [Security](security.md): user-facing hardening checklist
+- [Configuration reference](config-reference.md): every config key
+- [Admin auth](admin-auth.md): login flows and revocation
+- [PDF overlay guide](pdf-overlay-guide.md): coordinate measurement and fonts

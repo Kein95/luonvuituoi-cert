@@ -1,4 +1,4 @@
-"""Tests for :mod:`luonvuitoi_cert.auth.login` — password / OTP / magic-link dispatch."""
+"""Tests for :mod:`luonvuitoi_cert.auth.login` - password / OTP / magic-link dispatch."""
 
 from __future__ import annotations
 
@@ -119,7 +119,7 @@ def test_otp_login_two_steps(tmp_path: Path, kv_memory) -> None:  # type: ignore
 
 
 def test_otp_login_unknown_email_uniform_response(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 06 review C1 — unknown email must not be distinguishable.
+    """Regression: Phase 06 review C1 - unknown email must not be distinguishable.
 
     Step 1 responds ``challenge_issued=True`` whether or not the email maps
     to a real admin; the attacker can't tell them apart from the outside.
@@ -196,7 +196,7 @@ def test_magic_link_two_steps(tmp_path: Path, kv_memory) -> None:  # type: ignor
 
 
 def test_magic_link_unknown_email_uniform_response(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 06 review C1 — no user-enumeration via magic-link step 1."""
+    """Regression: Phase 06 review C1 - no user-enumeration via magic-link step 1."""
     db = tmp_path / "auth.db"
     mailer = NullEmailProvider()
     resp = perform_login(
@@ -213,7 +213,7 @@ def test_magic_link_unknown_email_uniform_response(tmp_path: Path, kv_memory) ->
 
 
 def test_login_success_and_failure_audited(tmp_path: Path, kv_memory) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 06 review H4 — login events must reach the audit trail."""
+    """Regression: Phase 06 review H4 - login events must reach the audit trail."""
     from luonvuitoi_cert.auth import ActivityLog, create_admin_user
 
     db = tmp_path / "auth.db"

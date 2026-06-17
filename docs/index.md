@@ -14,7 +14,7 @@ hide:
 # LUONVUITUOI-CERT
 
 <p class="lvt-hero-tagline">
-Config-driven certificate portal toolkit. Bring your PDF template and student list — get a full portal with search, download, admin panel, and QR verification in minutes.
+Config-driven certificate portal toolkit. Bring your PDF template and student list, and get a full portal with search, download, admin panel, and QR verification in minutes.
 </p>
 
 <div class="lvt-cta-row">
@@ -33,14 +33,14 @@ Config-driven certificate portal toolkit. Bring your PDF template and student li
 
 ## Why this exists
 
-Running a competition, awarding diplomas to a cohort, issuing completion certificates? You typically need a public lookup page, an admin backend, and a verification endpoint — all wired together correctly. **LUONVUITUOI-CERT gives you all three**, deployable to Vercel's free tier or any Docker host, with zero boilerplate.
+Running a competition, awarding diplomas to a cohort, issuing completion certificates? You typically need a public lookup page, an admin backend, and a verification endpoint, all wired together correctly. **LUONVUITUOI-CERT gives you all three**, deployable to Vercel's free tier or any Docker host, with zero boilerplate.
 
 <div class="lvt-features" markdown>
 
 <div class="lvt-feature" markdown>
 <span class="lvt-feature-icon">🎨</span>
 ### Bring your own template
-Drop in a PDF + coordinates file. The engine overlays student names, dates, and QR codes pixel-perfect — no redesign required.
+Drop in a PDF + coordinates file. The engine overlays student names, dates, and QR codes pixel-perfect, with no redesign required.
 </div>
 
 <div class="lvt-feature" markdown>
@@ -58,13 +58,13 @@ Manage records, apply corrections, track shipments, audit log. Password-protecte
 <div class="lvt-feature" markdown>
 <span class="lvt-feature-icon">📱</span>
 ### QR verification
-Every certificate carries a QR code linking to a public verify page — third parties confirm authenticity in one scan.
+Every certificate carries a QR code linking to a public verify page, so third parties confirm authenticity in one scan.
 </div>
 
 <div class="lvt-feature" markdown>
 <span class="lvt-feature-icon">⚡</span>
 ### Deploy anywhere
-One-command Vercel deploy (free tier), production Dockerfile, docker-compose — pick your infra.
+One-command Vercel deploy (free tier), production Dockerfile, docker-compose: pick your infra.
 </div>
 
 <div class="lvt-feature" markdown>
@@ -124,13 +124,13 @@ flowchart LR
 <div class="lvt-feature" markdown>
 <span class="lvt-feature-icon">🚀</span>
 ### [Quickstart →](quickstart.md)
-Deploy your first portal in 10 minutes — CLI scaffold, config tour, local run.
+Deploy your first portal in 10 minutes: CLI scaffold, config tour, local run.
 </div>
 
 <div class="lvt-feature" markdown>
 <span class="lvt-feature-icon">🏛️</span>
 ### [Architecture →](architecture.md)
-How the pieces fit — handlers, transport, KV, signing, data model.
+How the pieces fit: handlers, transport, KV, signing, data model.
 </div>
 
 <div class="lvt-feature" markdown>

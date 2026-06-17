@@ -1,13 +1,13 @@
 """Derive a SQLite schema from :class:`CertConfig`.
 
 One table per round (name = ``round.table``). Columns:
-- ``sbd`` — primary key, TEXT, named after ``data_mapping.sbd_col``
+- ``sbd``: primary key, TEXT, named after ``data_mapping.sbd_col``
 - Core optional columns: ``name``, ``dob``, ``school``, ``grade``, ``phone``
   (included only if declared in ``data_mapping``)
-- ``extra_cols`` — user-declared flex columns
+- ``extra_cols``: user-declared flex columns
 - One result column per subject, named after ``subject.db_col``
 
-All columns are TEXT — SQLite is dynamically typed and students' raw Excel
+All columns are TEXT; SQLite is dynamically typed and students' raw Excel
 values can be mixed numeric/string without penalty. Handlers cast when needed.
 """
 

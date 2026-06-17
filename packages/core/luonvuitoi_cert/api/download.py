@@ -1,4 +1,4 @@
-"""Download handler — render the certificate PDF for one (student, round, subject).
+"""Download handler: render the certificate PDF for one (student, round, subject).
 
 The handler composes three subsystems:
 - :func:`search_student` confirms the student exists and what certs are
@@ -8,7 +8,7 @@ The handler composes three subsystems:
 - :func:`sanitize_filename` produces the ``Content-Disposition`` name.
 
 Because ``search_student`` is called internally, each download consumes a
-fresh CAPTCHA challenge — callers must issue separate challenges for search
+fresh CAPTCHA challenge. Callers must issue separate challenges for search
 and for download; the same ``captcha_id`` cannot be reused.
 
 Transport-layer contract: the HTTP/Flask/Vercel wrapper **must** call
@@ -88,7 +88,7 @@ def _maybe_sign_qr(
     """Build + sign + render the QR PNG if ``features.qr_verify.enabled``.
 
     When ``verify_url_builder`` is None the QR holds the raw blob, which is
-    fine for tests but a footgun in production — end users expect scanning to
+    fine for tests but a footgun in production: end users expect scanning to
     open a URL. In production paths :func:`download_certificate` raises
     :class:`SearchError` unless the caller has opted in via
     ``allow_raw_qr=True``.

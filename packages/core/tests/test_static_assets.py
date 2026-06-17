@@ -1,7 +1,7 @@
 """Tests for the package's static-asset reader.
 
 Covers MIME inference, name validation (no traversal, no separators), and the
-"missing asset" path. Doesn't require any vendored binaries — the test creates
+"missing asset" path. Doesn't require any vendored binaries - the test creates
 a temporary file inside the package's ``static/`` directory and removes it on
 teardown.
 """
@@ -21,7 +21,7 @@ def static_dir() -> Path:
 
     importlib.resources.files() can return a MultiplexedPath that doesn't
     expose write APIs, so we resolve the package directory via the module's
-    __file__ instead — sufficient for editable installs and wheels.
+    __file__ instead - sufficient for editable installs and wheels.
     """
     return Path(_sa.__file__).resolve().parent.parent / "static"
 

@@ -1,6 +1,6 @@
 """Smoke tests for the ``examples/demo-academy/`` reference project.
 
-Guards against config drift — someone updates schema, forgets to update the
+Guards against config drift - someone updates schema, forgets to update the
 shipped example, and the demo quietly breaks for every new user. Also asserts
 the Phase 12 zero-leak contract: no ASMO/SEAMO/IKLC strings in the committed
 config.
@@ -19,7 +19,7 @@ EXAMPLE_DIR = Path(__file__).resolve().parent.parent.parent.parent / "examples" 
 
 @pytest.mark.skipif(
     not (EXAMPLE_DIR / "cert.config.json").exists(),
-    reason="examples/demo-academy not present — run from repo root.",
+    reason="examples/demo-academy not present - run from repo root.",
 )
 def test_demo_config_validates() -> None:
     cfg = load_config(EXAMPLE_DIR / "cert.config.json")

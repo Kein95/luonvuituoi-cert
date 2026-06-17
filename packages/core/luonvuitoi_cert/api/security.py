@@ -1,6 +1,6 @@
 """Security primitives shared by every API handler.
 
-Small, stateless helpers — the kind of thing that's tempting to copy-paste
+Small, stateless helpers, the kind of thing that's tempting to copy-paste
 between handlers until they drift. Living here as named functions makes it
 obvious when they change and keeps the handlers focused on their own logic.
 """
@@ -41,7 +41,7 @@ def clean_sbd(value: object) -> str:
     """Normalize a user-supplied SBD before validation or lookup.
 
     Accepts ``int``/``float`` (from Excel), strips whitespace, drops a
-    decimal-zero suffix (``"12345.0" → "12345"``). Does *not* validate — use
+    decimal-zero suffix (``"12345.0"`` becomes ``"12345"``). Does *not* validate; use
     :func:`validate_sbd` afterwards.
     """
     if value is None:

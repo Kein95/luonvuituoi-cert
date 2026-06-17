@@ -1,4 +1,4 @@
-"""``lvt-cert dev`` — run the portal locally under Flask.
+"""``lvt-cert dev`` runs the portal locally under Flask.
 
 Reads ``cert.config.json`` from the current directory, builds the Flask app
 from :mod:`luonvuitoi_cert_cli.server`, and serves it. Not for production;

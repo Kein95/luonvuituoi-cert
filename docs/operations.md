@@ -15,7 +15,7 @@ Returns `{"ok": true}` with HTTP 200. The endpoint:
 - Does **not** hit the rate limiter.
 - Has no auth requirement.
 
-Docker `HEALTHCHECK`, Kubernetes liveness, and load-balancer probes should all target this path. Older deploys that probed `POST /api/captcha` as a health signal should switch — every probe minted a KV entry and pushed the rate-limit bucket.
+Docker `HEALTHCHECK`, Kubernetes liveness, and load-balancer probes should all target this path. Older deploys that probed `POST /api/captcha` as a health signal should switch, because every probe minted a KV entry and pushed the rate-limit bucket.
 
 ## KV backends
 
@@ -23,14 +23,14 @@ Docker `HEALTHCHECK`, Kubernetes liveness, and load-balancer probes should all t
 
 | Backend | When to use | Multi-worker safe? |
 |---------|-------------|--------------------|
-| `local` | Local dev, single-container Docker | **No** — file-lock only scopes inside one process. Startup logs a warning when `WEB_CONCURRENCY > 1`. |
-| `upstash` | Anywhere — recommended for production | Yes — Redis atomic `GETDEL` backs `kv.consume()`. |
-| `vercel-kv` | Vercel deploys | Yes — auto-injected via the Vercel KV integration. |
+| `local` | Local dev, single-container Docker | **No.** File-lock only scopes inside one process. Startup logs a warning when `WEB_CONCURRENCY > 1`. |
+| `upstash` | Anywhere, recommended for production | Yes. Redis atomic `GETDEL` backs `kv.consume()`. |
+| `vercel-kv` | Vercel deploys | Yes. Auto-injected via the Vercel KV integration. |
 
 If you run gunicorn with multiple workers against `local`, watch the startup log for:
 
 ```
-KV_BACKEND=local with 2 workers is unsafe — concurrent reads can lose writes.
+KV_BACKEND=local with 2 workers is unsafe. Concurrent reads can lose writes.
 ```
 
 Either drop to 1 worker (`WEB_CONCURRENCY=1`) or switch to `upstash`.
@@ -48,7 +48,7 @@ Loud messages worth alerting on:
 | `luonvuitoi_cert.auth.activity_log` | `must be https://` | Someone set `GSHEET_WEBHOOK_URL` to a non-HTTPS target; forwarding is disabled. |
 | `luonvuitoi_cert.auth.activity_log` | `activity log webhook POST failed` | The GSheet endpoint is down. Local SQLite record is still authoritative. |
 
-Handled errors (rate-limit 429s, CAPTCHA rejections, 404 searches) are **not** logged — they're normal traffic.
+Handled errors (rate-limit 429s, CAPTCHA rejections, 404 searches) are **not** logged, since they are normal traffic.
 
 ## Audit log
 
@@ -61,10 +61,10 @@ Admin actions land in the `admin_activity` SQLite table:
 | `user_id` / `user_email` | JWT `sub` + `email` claims. |
 | `action` | `admin.login.success`, `admin.login.failure`, `student.update`, `shipment.upsert`, etc. |
 | `target_id` | Subject of the change (e.g. `students:12345`). |
-| `metadata` | JSON blob — _never includes PII_; `student.update` records `{column, changed, value_length_delta}`, not raw old/new values. |
+| `metadata` | JSON blob that _never includes PII_; `student.update` records `{column, changed, value_length_delta}`, not raw old/new values. |
 | `ip` | Client IP (honors `TRUST_PROXY_HEADERS`). |
 
-If `GSHEET_WEBHOOK_URL` is set (and `https://`), each entry is POSTed fire-and-forget to the sheet on a bounded `ThreadPoolExecutor(4)`. The SQLite write is authoritative — webhook failures never break admin flows.
+If `GSHEET_WEBHOOK_URL` is set (and `https://`), each entry is POSTed fire-and-forget to the sheet on a bounded `ThreadPoolExecutor(4)`. The SQLite write is authoritative, so webhook failures never break admin flows.
 
 ### Query recipes
 
@@ -81,7 +81,7 @@ See [admin-auth.md](admin-auth.md#signing-out-revoking-sessions) for the full fl
 
 - `POST /api/admin/logout` with the user's current JWT → `jti` added to the KV denylist with TTL matching the token's remaining life.
 - Any endpoint that threads `kv=` into `verify_admin_token` will reject the token.
-- Denylist self-expires — no cron needed.
+- Denylist self-expires, so no cron is needed.
 
 Use this instead of rotating `JWT_SECRET` (which invalidates _every_ session at once and requires all admins to log back in).
 
@@ -89,8 +89,8 @@ Use this instead of rotating `JWT_SECRET` (which invalidates _every_ session at 
 
 Two super-admin-only toggles control whether the public surfaces are live. State is stored in KV so flips take effect immediately, no redeploy.
 
-- **Lookup toggle** — gates `POST /api/search` (student mode). When off, the endpoint returns `503` with `{"error": "public lookup is currently disabled by the operator"}`. Admin mode (`mode=admin`, JWT required) is unaffected so operators keep working during a freeze.
-- **Download toggle** — gates `POST /api/download` (student mode). When off, the endpoint returns `503` with a download-specific message. Admin mode unaffected.
+- **Lookup toggle** gates `POST /api/search` (student mode). When off, the endpoint returns `503` with `{"error": "public lookup is currently disabled by the operator"}`. Admin mode (`mode=admin`, JWT required) is unaffected so operators keep working during a freeze.
+- **Download toggle** gates `POST /api/download` (student mode). When off, the endpoint returns `503` with a download-specific message. Admin mode unaffected.
 
 Invariant: **download requires lookup**. Lookup off ⇒ download forced off. This is enforced both on write (the toggle API clamps the request) and on read (the gate checks both flags).
 
@@ -110,11 +110,11 @@ Only the `super-admin` role is accepted; `admin` / `viewer` get `403`. Every fli
 
 ### Defaults
 
-Fresh deploys: both on (pre-gate behavior). The KV is only written when a super-admin first saves — a never-touched deploy reads the baked-in default.
+Fresh deploys: both on (pre-gate behavior). The KV is only written when a super-admin first saves, so a never-touched deploy reads the baked-in default.
 
 ## Updating dependencies
 
-Dependabot scans weekly (pip) and monthly (github-actions, docker) and opens PRs. Review and merge them promptly — `reportlab`, `pypdf`, and `cryptography` are supply-chain targets.
+Dependabot scans weekly (pip) and monthly (github-actions, docker) and opens PRs. Review and merge them promptly, since `reportlab`, `pypdf`, and `cryptography` are supply-chain targets.
 
 ## Backing up
 
@@ -131,7 +131,7 @@ Or with the container running, use SQLite's online backup:
 sqlite3 data/portal.db ".backup '/tmp/portal.db.bak'"
 ```
 
-The DB is the only stateful artifact — the KV entries (rate-limit counters, CAPTCHA challenges) are ephemeral.
+The DB is the only stateful artifact; the KV entries (rate-limit counters, CAPTCHA challenges) are ephemeral.
 
 ## Incident checklist
 
@@ -146,4 +146,4 @@ One admin's session looks compromised:
 
 1. Generate a new secret.
 2. Redeploy with the new value (invalidates every session).
-3. Rotate the **QR signing key** too if the secret leaked via the same channel — `private_key.pem` is a separate artifact but often co-located.
+3. Rotate the **QR signing key** too if the secret leaked via the same channel. `private_key.pem` is a separate artifact but often co-located.

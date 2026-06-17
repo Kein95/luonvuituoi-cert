@@ -3,7 +3,7 @@
 Fixed columns (``id`` PK, ``round_id``, ``sbd``, ``status``, ``created_at``,
 ``updated_at``) + one TEXT column per entry in
 ``config.features.shipment.fields``. ``(round_id, sbd)`` is UNIQUE so upserts
-are well-defined. All columns are TEXT — same rationale as the students
+are well-defined. All columns are TEXT, same rationale as the students
 schema.
 """
 

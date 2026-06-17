@@ -42,7 +42,7 @@ class FontRegistry:
 
     Paths in ``config.fonts`` are relative to ``project_root`` (the directory
     that owns the ``cert.config.json``). Missing files fail fast with a
-    readable :class:`FontRegistryError` — never silently.
+    readable :class:`FontRegistryError`, never silently.
 
     Thread-safety: registration is serialized by a module-level lock so
     concurrent serverless invocations in the same process don't race when
@@ -110,13 +110,13 @@ class FontRegistry:
         Uses ReportLab's parsed cmap (``face.charToGlyph``). An empty result
         means full coverage. Best-effort: if the face doesn't expose a cmap we
         return "" (can't tell → don't cry wolf). The point is to surface the
-        silent failure where a Latin-only font drops Vietnamese tone marks — the
+        silent failure where a Latin-only font drops Vietnamese tone marks. The
         glyph renders as a blank/.notdef box with no error otherwise.
         """
         psname = self.ensure_loaded(font_key)
         try:
             cmap = getattr(pdfmetrics.getFont(psname).face, "charToGlyph", None)
-        except Exception:  # noqa: BLE001 — diagnostics only, never block a render
+        except Exception:  # noqa: BLE001 diagnostics only, never block a render
             return ""
         if not cmap:
             return ""

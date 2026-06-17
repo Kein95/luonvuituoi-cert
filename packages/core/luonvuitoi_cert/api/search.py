@@ -1,12 +1,12 @@
-"""Search handler — look up a student record across all configured rounds.
+"""Search handler: look up a student record across all configured rounds.
 
 Two modes share this entry point:
 
-- ``student`` (default) — public lookup via name + DOB / SBD, protected by a
+- ``student`` (default): public lookup via name + DOB / SBD, protected by a
   one-shot CAPTCHA and a fixed-window rate limit. CAPTCHA runs first, rate
   limit only ticks after a successful CAPTCHA so a single typo can't lock the
   caller out. Both gates run before any DB access.
-- ``admin`` — privileged lookup by SBD. The caller is already authenticated
+- ``admin``: privileged lookup by SBD. The caller is already authenticated
   upstream (Phase 06 wires JWT); here we only re-check the token is non-empty.
   Admin skips CAPTCHA + rate limit.
 
@@ -76,10 +76,10 @@ def _normalize_dob(raw: str) -> str:
     """Canonicalize common date formats to ``DD-MM-YYYY`` zero-padded.
 
     Accepted inputs:
-    - ``D/M/YYYY`` or ``DD/MM/YYYY`` — slash separator
-    - ``DD-MM-YYYY`` — hyphen separator
-    - ``01.06.2010`` — dotted (European style)
-    - ``YYYY-MM-DD`` — ISO 8601 (auto-detected by 4-digit leading year)
+    - ``D/M/YYYY`` or ``DD/MM/YYYY``: slash separator
+    - ``DD-MM-YYYY``: hyphen separator
+    - ``01.06.2010``: dotted (European style)
+    - ``YYYY-MM-DD``: ISO 8601 (auto-detected by 4-digit leading year)
     Leading/trailing whitespace is stripped before parsing.
     """
     text = str(raw).strip().replace("/", "-").replace(".", "-")
@@ -141,7 +141,7 @@ def _collect_certificates(
 
 
 def _verify_student_gate(kv: KVBackend, params: dict[str, Any], client_id: str) -> None:
-    """CAPTCHA first, rate-limit after — a wrong guess must not burn the caller's quota.
+    """CAPTCHA first, rate-limit after. A wrong guess must not burn the caller's quota.
 
     Ordering rationale: the CAPTCHA is single-use and consumed on failure, so
     attackers can't get free retries; ticking the rate limit only *after* a
@@ -184,7 +184,7 @@ def verify_identity_any(
 ) -> bool:
     """Return True if ANY provided identity factor matches the ``sbd`` row in ``round_id``.
 
-    Accepts a name match, a phone last-4 match, or a DOB match — whichever the
+    Accepts a name match, a phone last-4 match, or a DOB match, whichever the
     caller supplied. At least one factor must be present AND correct, so a bare
     (guessable) SBD never authorizes the lookup, but recipients can identify
     themselves by either their name or their phone number.
@@ -203,7 +203,7 @@ def verify_identity_any(
         try:
             row = _fetch_row(conn, table, config.data_mapping.sbd_col, sbd)
         except sqlite3.OperationalError:
-            # No students table yet (nothing ingested) — treat as no identity.
+            # No students table yet (nothing ingested): treat as no identity.
             return False
     if row is None:
         return False

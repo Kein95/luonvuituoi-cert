@@ -105,7 +105,7 @@ def test_consume_expired_treated_as_missing(kv) -> None:  # type: ignore[no-unty
 
 
 def test_consume_is_single_use_under_concurrency(kv) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 05 review C1 — get+delete TOCTOU between threads."""
+    """Regression: Phase 05 review C1 - get+delete TOCTOU between threads."""
     import threading
 
     kv.set("race", "v")

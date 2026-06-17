@@ -73,7 +73,7 @@ ADMIN_LOGIN_RATE_WINDOW_SECONDS = 60
 # Carrier exports are multi-MB xlsx. 10MB cap prevents memory spikes without
 # hurting legitimate monthly dumps. Tunable via SHIPMENT_IMPORT_MAX_BYTES env.
 SHIPMENT_IMPORT_MAX_BYTES_DEFAULT = 10 * 1024 * 1024
-# Tight rate limit — file parse is expensive, admin drives manually anyway.
+# Tight rate limit: file parse is expensive, admin drives manually anyway.
 SHIPMENT_IMPORT_RATE_LIMIT = 5
 SHIPMENT_IMPORT_RATE_WINDOW_SECONDS = 60
 _ALLOWED_IMPORT_SUFFIXES = {".xlsx", ".xlsm", ".csv"}
@@ -111,20 +111,20 @@ def _resolve_email_provider():  # type: ignore[no-untyped-def]
     from_addr = os.getenv("RESEND_FROM_ADDRESS", "").strip() or os.getenv("CERT_EMAIL_FROM", "").strip()
     if not api_key:
         _LOGGER.warning(
-            "RESEND_API_KEY not set — OTP / magic-link emails will be swallowed. "
+            "RESEND_API_KEY not set. OTP / magic-link emails will be swallowed. "
             "Set RESEND_API_KEY + RESEND_FROM_ADDRESS for production.",
         )
         return NullEmailProvider()
     if not from_addr:
         _LOGGER.warning(
-            "RESEND_FROM_ADDRESS not set — falling back to NullEmailProvider. "
+            "RESEND_FROM_ADDRESS not set. Falling back to NullEmailProvider. "
             "Set a verified Resend sender address to enable real delivery.",
         )
         return NullEmailProvider()
     try:
         return ResendProvider(api_key=api_key, from_address=from_addr)
     except EmailError as e:
-        _LOGGER.warning("ResendProvider init failed (%s) — using NullEmailProvider.", e)
+        _LOGGER.warning("ResendProvider init failed (%s). Using NullEmailProvider.", e)
         return NullEmailProvider()
 
 
@@ -178,7 +178,7 @@ def _assert_no_placeholder_secrets() -> None:
         value = os.getenv(name, "")
         if value and is_placeholder_secret(value):
             raise RuntimeError(
-                f"{name} is still the shipped placeholder value — set a real "
+                f"{name} is still the shipped placeholder value. Set a real "
                 "secret before starting (see .env.example / SECURITY.md)."
             )
 
@@ -194,7 +194,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     mailer = _resolve_email_provider()
 
     app = Flask(__name__, static_folder=None)
-    # Werkzeug enforces this cap *before* parsing — a huge POST is rejected at
+    # Werkzeug enforces this cap *before* parsing: a huge POST is rejected at
     # the socket without the handler ever seeing it. JSON routes keep this tight
     # 32 KB bound; the carrier-import route raises its own per-request limit
     # (request.max_content_length) so multi-MB uploads aren't 413'd here first.
@@ -265,7 +265,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     # ── Pages ─────────────────────────────────────────────────────────
     @app.get("/health")
     def _health():  # type: ignore[no-untyped-def]
-        # M4: dependency-free probe — no KV, no DB, no rate-limit. Container
+        # M4: dependency-free probe. No KV, no DB, no rate-limit. Container
         # healthchecks and k8s liveness probes can hit this cheaply.
         return jsonify({"ok": True}), 200
 
@@ -330,7 +330,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
                     target_id=result.sbd,
                     ip=_client_id(),
                 )
-            except Exception:  # pragma: no cover — audit is best-effort
+            except Exception:  # pragma: no cover, audit is best-effort
                 pass
         return jsonify(
             {
@@ -400,7 +400,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
                     },
                     ip=_client_id(),
                 )
-            except Exception:  # pragma: no cover — audit is best-effort
+            except Exception:  # pragma: no cover, audit is best-effort
                 pass
         flask_resp: Response = make_response(resp_obj.pdf_bytes)
         flask_resp.headers["Content-Type"] = resp_obj.content_type
@@ -410,7 +410,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     @app.post("/api/verify")
     def _verify_qr():  # type: ignore[no-untyped-def]
         # Rate-limit before decode + signature verify so an attacker can't
-        # brute-force probe blobs or burn RSA-PSS CPU. No CAPTCHA here —
+        # brute-force probe blobs or burn RSA-PSS CPU. No CAPTCHA here:
         # third-party verifiers (schools, employers) need one-shot scan UX.
         handlers.check_rate_limit(
             kv,
@@ -460,7 +460,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
                 magic_link_builder=lambda token: f"{base}/admin?token={token}",
             )
         except LoginError as e:
-            # H2: narrow exception — internal exceptions bubble to Flask's
+            # H2: narrow exception. Internal exceptions bubble to Flask's
             # default 500 (and get logged) rather than leaking to the client.
             return jsonify({"error": str(e)}), 401
         return jsonify(
@@ -493,7 +493,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
             )
         except TokenError as e:
             # Already-invalid token: nothing to revoke, treat as 200 for
-            # idempotency — the client side is signing out anyway.
+            # idempotency. The client side is signing out anyway.
             return jsonify({"revoked": False, "error": str(e)}), 200
         return jsonify({"revoked": True, "jti": jti})
 
@@ -522,8 +522,8 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
         """Bulk-import carrier export. Multipart: file + token + form fields.
 
         Admin-only (viewer rejected). Rate-limited 5/min/IP. Temp-file cleanup
-        in finally. Defaults to dry-run unless ``commit=true`` in form body —
-        matches the CLI's safety default.
+        in finally. Defaults to dry-run unless ``commit=true`` in form body,
+        matching the CLI's safety default.
         """
         import tempfile
 
@@ -565,7 +565,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
         import contextlib
 
-        tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)  # noqa: SIM115 — handler needs path, not fd
+        tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)  # noqa: SIM115, handler needs path, not fd
         try:
             uploaded.save(tmp.name)
             tmp.close()
@@ -610,7 +610,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
     @app.post("/api/admin/shipments/draft/list")
     def _admin_shipment_draft_list():  # type: ignore[no-untyped-def]
-        """List drafts. POST (not GET) so body carries JWT + filters — matches CSRF posture."""
+        """List drafts. POST (not GET) so body carries JWT + filters, matching CSRF posture."""
         params = _json_body()
         rows = draft_list(config=config, db_path=db_path, params=params, kv=kv)
         return jsonify(
@@ -670,7 +670,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
     @app.post("/api/admin/features")
     def _admin_features_read():  # type: ignore[no-untyped-def]
-        """Read current public-surface gate state. Super-admin only — symmetric
+        """Read current public-surface gate state. Super-admin only, symmetric
         with write so the UI card only appears for users who can also save.
         Other admin roles can infer state from the public surface's 503 response.
         """
@@ -691,7 +691,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
 
     @app.post("/api/admin/features/update")
     def _admin_features_update():  # type: ignore[no-untyped-def]
-        """Flip gate state. Super-admin only — guard the blast radius of a
+        """Flip gate state. Super-admin only. Guard the blast radius of a
         public freeze to the role that also owns user/role management.
         """
         params = _json_body()
@@ -739,7 +739,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
         C1 fix: previously the app advertised CORS support in its docstring but
         never emitted a single ``Access-Control-Allow-*`` header. We now read
         ``ALLOWED_ORIGINS`` (comma-separated, or ``*`` wildcard) and echo the
-        caller's ``Origin`` back when it matches — never credentials, never ``*``
+        caller's ``Origin`` back when it matches, never credentials, never ``*``
         with ``Allow-Credentials: true`` (invalid combo per spec).
         """
         origin = request.headers.get("Origin", "")
@@ -760,7 +760,7 @@ def build_app(config_path: Path, project_root: Path) -> Flask:
     @app.after_request
     def _security_headers(response: Response) -> Response:  # type: ignore[no-untyped-def]
         if response.mimetype == "text/html":
-            # Nonce-based CSP on EVERY rendered page — the student portal,
+            # Nonce-based CSP on EVERY rendered page: the student portal,
             # certificate-checker, and admin all carry the per-request nonce on
             # their inline scripts, so a reflected/DOM-XSS injection point can't
             # execute without it. Applied to all three (was admin-only) since

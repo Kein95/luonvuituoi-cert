@@ -1,7 +1,7 @@
 """Read students from an Excel workbook (.xlsx / .xlsm).
 
 First row is the header; subsequent rows are data. Cells are coerced to
-strings at read time — downstream code doesn't have to defensively cast from
+strings at read time, so downstream code doesn't have to defensively cast from
 numeric/datetime/formula cell types.
 
 We lean on openpyxl directly (not pandas) to keep the dependency surface
@@ -42,7 +42,7 @@ def read_excel(path: str | Path, sheet: str | None = None) -> list[dict[str, str
         raise IngestError(f"failed to open Excel workbook ({p}): {e}") from e
 
     # ``load_workbook(read_only=True)`` holds a file handle open until close();
-    # ``finally`` guarantees it releases on every path — Windows otherwise locks
+    # ``finally`` guarantees it releases on every path; Windows otherwise locks
     # the file against subsequent writers in the same test.
     try:
         ws = wb[sheet] if sheet else wb.active
@@ -61,7 +61,7 @@ def read_excel(path: str | Path, sheet: str | None = None) -> list[dict[str, str
         if len(non_empty) != len(set(non_empty)):
             dupes = sorted({h for h in non_empty if non_empty.count(h) > 1})
             raise IngestError(
-                f"duplicate header columns {dupes} in {p} — rename so each column is unique "
+                f"duplicate header columns {dupes} in {p}. Rename so each column is unique "
                 "(a silent last-wins collision would drop a column's data)"
             )
 

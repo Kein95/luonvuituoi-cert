@@ -1,7 +1,7 @@
 """Regression tests for the P1 hardening fixes (H2, H3, H4, H5).
 
 - H2: ``open_kv`` raises when ``kv_backend=local`` and the host advertises
-  >1 worker (gunicorn/uvicorn/waitress) — the cross-process race on single-use
+  >1 worker (gunicorn/uvicorn/waitress) - the cross-process race on single-use
   tokens / rate limits is unsafe, so it fails loud rather than warning.
 - H3: ``CertConfig.rounds`` is capped at 20 entries.
 - H4: Activity-log webhook dispatch uses a bounded executor, not an

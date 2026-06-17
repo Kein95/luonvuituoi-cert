@@ -1,10 +1,10 @@
 # Deploy với Docker
 
-Tự host khi bạn muốn SQLite persistent thay vì phải xử lý `/tmp` ephemeral của Vercel, hoặc khi môi trường deploy không có serverless Python runtime.
+Hãy tự host khi bạn muốn dùng SQLite lưu trữ bền vững thay vì phải xoay xở với `/tmp` tạm thời của Vercel, hoặc khi môi trường deploy không có serverless Python runtime.
 
 ## Image có sẵn
 
-Root repo ship `Dockerfile` cài core engine + gunicorn và serve Flask dev server trên port 8000. Phù hợp production small-org — một worker xử lý ~30 req/s trên hardware rẻ.
+Root repo cung cấp sẵn `Dockerfile`, cài core engine cùng gunicorn và serve Flask dev server trên port 8000. Phù hợp cho production quy mô nhỏ: một worker xử lý khoảng 30 req/s trên phần cứng giá rẻ.
 
 ```bash
 docker build -t my-portal:latest .
@@ -32,15 +32,15 @@ docker run --rm -p 8000:8000 \
 | `JWT_SECRET` | Bắt buộc. Không có fallback. |
 | `PUBLIC_BASE_URL` | Ghim magic-link + URL QR. |
 | `ALLOWED_ORIGINS` | CORS whitelist; thu hẹp từ `*` khi biết origin front-end. |
-| `TRUST_PROXY_HEADERS=1` | Chỉ bật khi có reverse proxy Nginx/Caddy dưới đây. Không có proxy rewrite `X-Forwarded-For`, để `0` — nếu không client có thể spoof IP và bypass rate limit. |
+| `TRUST_PROXY_HEADERS=1` | Chỉ bật khi có reverse proxy Nginx/Caddy như mô tả bên dưới. Nếu không có proxy ghi đè `X-Forwarded-For`, hãy để `0`; nếu không, client có thể giả mạo IP và vượt qua rate limit. |
 | `FORCE_HSTS=1` | Bật khi reverse proxy đã terminate TLS. |
-| `WEB_CONCURRENCY` | Mặc định `2`. Với `KV_BACKEND=local` + >1 worker, startup log warning — local file KV không an toàn cross-process. Chuyển sang `upstash` khi scale. |
+| `WEB_CONCURRENCY` | Mặc định `2`. Với `KV_BACKEND=local` và nhiều hơn 1 worker, startup sẽ log cảnh báo, vì local file KV không an toàn khi chạy đa tiến trình. Hãy chuyển sang `upstash` khi cần scale. |
 | `GSHEET_WEBHOOK_URL` | Tùy chọn. Phải `https://…`. |
 
 ### Volume mount
 
-- `data/` — SQLite persistent + optional local KV store sống qua container restart.
-- `private_key.pem` — khóa ký QR. Không bao giờ bake vào image.
+- `data/`: SQLite lưu trữ bền vững và (tùy chọn) local KV store, tồn tại qua các lần restart container.
+- `private_key.pem`: khóa ký QR. Không bao giờ bake vào image.
 
 ### User container
 
@@ -76,7 +76,7 @@ Dừng container (hoặc dùng lệnh `.backup` SQLite trên DB đang live), tar
 Flask dev server là single-process; gunicorn spawn nhiều worker nhưng chúng không share memory. Ổn vì:
 
 - Rate limiter + CAPTCHA sống trong KV backend cấu hình (Upstash REST, Vercel KV REST, hoặc `LocalFileKV` mount share). Dùng Upstash nếu muốn multi-host.
-- SQLite write serialize per database file — đủ cho sub-second admin edit.
+- SQLite tuần tự hóa các lần ghi theo từng file database, đủ nhanh cho các thao tác chỉnh sửa của admin trong dưới một giây.
 - FontRegistry là per-process, nên worker thêm chỉ re-register fonts ở request đầu.
 
-Nếu outgrow SQLite (~hàng trăm write/giây), chuyển data layer sang Postgres — pattern repository trong `luonvuitoi_cert.storage` là target nhỏ cho backend mới.
+Nếu vượt quá khả năng của SQLite (khoảng vài trăm lượt ghi mỗi giây), hãy chuyển data layer sang Postgres; pattern repository trong `luonvuitoi_cert.storage` là điểm thay đổi nhỏ gọn để gắn backend mới.

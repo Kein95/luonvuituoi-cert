@@ -13,7 +13,7 @@ def test_hash_verify_roundtrip() -> None:
 
 
 def test_hash_differs_across_calls() -> None:
-    """Salts are random — same password hashes to distinct strings."""
+    """Salts are random - same password hashes to distinct strings."""
     assert hash_password("pw") != hash_password("pw")
 
 

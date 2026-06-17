@@ -8,7 +8,7 @@ over the template.
 
 Design notes:
 - Page size comes from the template's actual MediaBox, not from
-  ``config.layout.page_size`` — the config value is just a hint for authors;
+  ``config.layout.page_size``; the config value is just a hint for authors;
   the PDF itself is the source of truth.
 - Unknown values are skipped silently (makes field_name dicts forgiving).
 - Empty / None values are skipped (don't draw blanks over the template).
@@ -47,7 +47,7 @@ MAX_TEMPLATE_BYTES = 50 * 1024 * 1024
 
 Templates are operator-supplied (config-declared paths), so this is a guard
 against an accidentally-huge / pathological file blowing up per-request memory
-in pypdf — not an untrusted-upload defense.
+in pypdf, not an untrusted-upload defense.
 """
 
 
@@ -148,11 +148,11 @@ def render_certificate_bytes(
         psname = fonts.ensure_loaded(spec.font)
         missing = fonts.missing_glyphs(spec.font, text)
         if missing:
-            # The font has no glyph for these characters — ReportLab draws a
+            # The font has no glyph for these characters. ReportLab draws a
             # blank/.notdef box with no error, so a Latin-only font would
             # silently mangle Vietnamese names. Surface it loudly in the logs.
             _LOGGER.warning(
-                "font %r lacks glyphs for field %r (chars: %r) — output will show "
+                "font %r lacks glyphs for field %r (chars: %r). Output will show "
                 "blank boxes; configure a font with full coverage for the locale.",
                 spec.font,
                 field_name,

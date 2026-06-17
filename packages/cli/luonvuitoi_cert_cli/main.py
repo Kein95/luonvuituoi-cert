@@ -17,7 +17,7 @@ console = Console()
 
 app = typer.Typer(
     name="lvt-cert",
-    help="LUONVUITUOI-CERT scaffolder — create, configure, and run certificate portals.",
+    help="LUONVUITUOI-CERT scaffolder. Create, configure, and run certificate portals.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -46,5 +46,5 @@ def _root(
         raise typer.Exit()
 
 
-if __name__ == "__main__":  # pragma: no cover — hit via ``python -m luonvuitoi_cert_cli.main``
+if __name__ == "__main__":  # pragma: no cover, hit via ``python -m luonvuitoi_cert_cli.main``
     app()

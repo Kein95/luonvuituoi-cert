@@ -1,6 +1,6 @@
 """Serialized representation of a signed certificate.
 
-Keep the field set small and stable — every added key needs a corresponding
+Keep the field set small and stable; every added key needs a corresponding
 update in every existing QR in the wild, or legacy certs will fail to verify.
 """
 
@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass
 class QRPayload:
     """What gets signed and embedded in the QR.
 
-    ``project_slug`` binds the signature to its issuer — a malicious portal
+    ``project_slug`` binds the signature to its issuer; a malicious portal
     can't reuse our public key to validate certs from another deployment.
     """
 

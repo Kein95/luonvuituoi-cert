@@ -25,7 +25,7 @@ demo-academy/
 ├── templates/main.pdf         # 2-page GOLD / SILVER template drawn by reportlab
 ├── assets/fonts/{serif,script}.ttf   # Bitstream Vera copies (Apache-2.0)
 ├── data/students.xlsx         # 10 fake students, seed=42 so reproducible
-├── private_key.pem            # from gen-keys — do not commit
+├── private_key.pem            # from gen-keys; do not commit
 └── public_key.pem             # safe to ship
 ```
 

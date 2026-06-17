@@ -91,7 +91,7 @@ def test_static_unknown_file_404(client) -> None:  # type: ignore[no-untyped-def
 
 
 def test_static_unknown_suffix_404(client) -> None:  # type: ignore[no-untyped-def]
-    """Suffix allowlist is enforced — even if the name regex passed, .html is rejected."""
+    """Suffix allowlist is enforced: even if the name regex passed, .html is rejected."""
     resp = client.get("/static/index.html")
     assert resp.status_code == 404
 

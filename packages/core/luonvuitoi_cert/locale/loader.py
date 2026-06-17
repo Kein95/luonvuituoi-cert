@@ -1,6 +1,6 @@
 """Tiny i18n: load a locale bundle JSON and look up dotted keys.
 
-No templating, no plurals, no gender — just string substitution. If a project
+No templating, no plurals, no gender, just string substitution. If a project
 needs more, it can wrap a real library (gettext, Fluent). For now this covers
 the CLI output, UI labels, and error messages without bringing in a
 dependency.

@@ -1,4 +1,4 @@
-"""``lvt-cert seed`` — generate fake students for local testing.
+"""``lvt-cert seed`` generates fake students for local testing.
 
 Reads ``cert.config.json`` from the current directory, invents ``--count``
 students with Faker, and writes them to ``data/students.xlsx`` (or a custom
