@@ -4,7 +4,7 @@ These tests pin the behavior so the next refactor can't silently revert them:
 
 - **C1**: CORS headers are wired when ``ALLOWED_ORIGINS`` is set, including
   OPTIONS preflight handling for ``/api/*`` routes.
-- **C2**: ``/api/captcha`` is rate-limited — a burst of requests eventually
+- **C2**: ``/api/captcha`` is rate-limited - a burst of requests eventually
   returns 429 instead of unbounded KV writes.
 - **C3**: ``build_app`` resolves a real mailer when ``RESEND_API_KEY`` is set
   and falls back to ``NullEmailProvider`` with a warning otherwise.

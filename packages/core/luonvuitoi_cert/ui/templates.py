@@ -37,7 +37,7 @@ def build_environment() -> Environment:
 def build_page_context(config: CertConfig, locale: Locale) -> dict[str, Any]:
     """Shared context dict every rendered page receives.
 
-    Keep this small and stable — adding keys here touches every template.
+    Keep this small and stable. Adding keys here touches every template.
     Things that vary per-page belong in the page renderer's extra context.
     """
     branding = config.project.branding

@@ -265,7 +265,7 @@ def test_dev_server_captcha_endpoint(scaffolded_project: Path) -> None:
 
 
 def test_flask_enforces_max_content_length(scaffolded_project: Path) -> None:
-    """Regression: Phase 11 review H1 — Werkzeug must reject oversize bodies pre-parse."""
+    """Regression: Phase 11 review H1. Werkzeug must reject oversize bodies pre-parse."""
     from luonvuitoi_cert_cli.server import build_app
 
     flask_app = build_app(scaffolded_project / "cert.config.json", scaffolded_project)
@@ -275,7 +275,7 @@ def test_flask_enforces_max_content_length(scaffolded_project: Path) -> None:
 
 
 def test_csp_uses_nonce_not_unsafe_inline(scaffolded_project: Path) -> None:
-    """Regression: Phase 11 review H4 — CSP script-src must not contain unsafe-inline."""
+    """Regression: Phase 11 review H4. CSP script-src must not contain unsafe-inline."""
     import re
 
     from luonvuitoi_cert_cli.server import build_app
@@ -293,7 +293,7 @@ def test_csp_uses_nonce_not_unsafe_inline(scaffolded_project: Path) -> None:
 
 
 def test_login_errorhandler_narrows_to_login_error(scaffolded_project: Path) -> None:
-    """Regression: Phase 11 review H2 — internal exceptions must not leak as 401 body."""
+    """Regression: Phase 11 review H2. Internal exceptions must not leak as 401 body."""
     from luonvuitoi_cert_cli.server import build_app
 
     flask_app = build_app(scaffolded_project / "cert.config.json", scaffolded_project)
@@ -306,7 +306,7 @@ def test_login_errorhandler_narrows_to_login_error(scaffolded_project: Path) -> 
 def test_public_base_url_env_overrides_host(
     scaffolded_project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Regression: Phase 11 review H5 — PUBLIC_BASE_URL must win over Host header."""
+    """Regression: Phase 11 review H5. PUBLIC_BASE_URL must win over Host header."""
     from luonvuitoi_cert_cli.server import build_app
     from luonvuitoi_cert_cli.server.app import _public_base_url
 
@@ -317,7 +317,7 @@ def test_public_base_url_env_overrides_host(
 
 
 def test_init_template_escapes_quotes_in_project_name(tmp_path: Path) -> None:
-    """Regression: Phase 11 review M1 — project name with quotes must not break JSON."""
+    """Regression: Phase 11 review M1. Project name with quotes must not break JSON."""
     target = tmp_path / "escape-dir"
     result = runner.invoke(
         app,
@@ -339,7 +339,7 @@ def test_init_template_escapes_quotes_in_project_name(tmp_path: Path) -> None:
 def test_init_leaves_target_clean_on_validation_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Regression: Phase 11 review M2 — failed validation must not leave a half-populated target."""
+    """Regression: Phase 11 review M2. Failed validation must not leave a half-populated target."""
     import luonvuitoi_cert.config as cfg_module
     from luonvuitoi_cert.config.loader import ConfigError
 

@@ -1,4 +1,4 @@
-"""Vercel serverless entrypoint — single Flask app routed by ``vercel.json``.
+"""Vercel serverless entrypoint: single Flask app routed by ``vercel.json``.
 
 Vercel's Python runtime loads the ``app`` symbol as a WSGI callable and
 routes every incoming request through it. ``vercel.json`` rewrites all

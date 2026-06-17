@@ -15,7 +15,7 @@
   },
   "errors": {
     "not_found": "No certificate found for the provided details.",
-    "captcha_invalid": "Captcha is incorrect — please try again.",
+    "captcha_invalid": "Captcha is incorrect. Please try again.",
     "rate_limited": "Too many attempts. Please wait a moment before retrying.",
     "admin_required": "Admin sign-in required.",
     "expired": "Your session has expired. Please sign in again.",
@@ -36,7 +36,7 @@
     "title": "Certificate Verification",
     "subtitle": "Scan the QR from a printed certificate to confirm authenticity.",
     "valid": "Signature valid",
-    "tampered": "Signature does not match — certificate may be altered.",
+    "tampered": "Signature does not match. Certificate may be altered.",
     "upload_image": "Upload QR image",
     "upload_no_qr": "No QR detected in image.",
     "upload_too_large": "Image too large (max 10 MB).",

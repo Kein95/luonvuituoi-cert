@@ -2,7 +2,7 @@
 
 Each test file gets a fresh scaffolded project + live HTTP server so tests
 stay independent without the expense of a subprocess per test. Uses
-``werkzeug.serving.make_server`` in a daemon thread — stays within the
+``werkzeug.serving.make_server`` in a daemon thread - stays within the
 pytest process so coverage data aggregates cleanly.
 """
 
@@ -22,7 +22,7 @@ from werkzeug.serving import make_server
 
 try:
     from luonvuitoi_cert_cli.server import build_app
-except ImportError:  # pragma: no cover — CLI isn't installed in some environments
+except ImportError:  # pragma: no cover - CLI isn't installed in some environments
     build_app = None  # type: ignore[assignment]
 
 

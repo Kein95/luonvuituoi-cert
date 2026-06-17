@@ -1,6 +1,6 @@
 """Persistence layer: SQLite schema derivation and key/value adapters.
 
-SQLite holds the authoritative student table(s) — one per round. Transient
+SQLite holds the authoritative student table(s), one per round. Transient
 state (rate-limit counters, per-student admin overrides, OTP challenges) lives
 in a KV backend (local file for dev, Upstash/Vercel KV for serverless).
 """

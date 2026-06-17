@@ -146,7 +146,7 @@ def test_search_returns_503_when_lookup_disabled(tmp_path: Path) -> None:
 
 
 def test_search_passes_gate_when_lookup_enabled(tmp_path: Path) -> None:
-    """Gate lets the request through — captcha layer takes over. A 503 would
+    """Gate lets the request through - captcha layer takes over. A 503 would
     prove the gate fired; any other error means the gate passed and the
     request is handled by the usual pipeline.
     """
@@ -175,7 +175,7 @@ def test_admin_search_bypasses_gate(tmp_path: Path) -> None:
 
 def test_download_returns_503_when_download_disabled(tmp_path: Path) -> None:
     client, _ = _client(tmp_path)
-    # Lookup on, download off — student can search but not download.
+    # Lookup on, download off - student can search but not download.
     client.post(
         "/api/admin/features/update",
         json={"token": _token("super-admin"), "lookup_enabled": True, "download_enabled": False},

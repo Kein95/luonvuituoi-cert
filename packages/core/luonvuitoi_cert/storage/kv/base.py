@@ -2,7 +2,7 @@
 
 The interface stays minimal on purpose: ``get``, ``set`` (with optional TTL),
 ``delete``, ``exists``, and a bulk ``scan_prefix``. Everything else (hashes,
-sorted sets, transactions) is intentionally out of scope — if a handler
+sorted sets, transactions) is intentionally out of scope. If a handler
 decides it needs richer semantics, it can pick a vendor-specific client
 directly. Staying on the narrow subset keeps backend swaps painless.
 """
@@ -50,7 +50,7 @@ class KVBackend(Protocol):
 class MemoryKV:
     """In-process ``dict`` backend. Used by tests + embedded scenarios.
 
-    Not durable, not multi-process — don't rely on it in production handlers
+    Not durable, not multi-process; don't rely on it in production handlers
     even if the import is convenient.
     """
 

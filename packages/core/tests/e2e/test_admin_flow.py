@@ -31,7 +31,7 @@ def test_login_wrong_password_rejected(live_server: str) -> None:
 
 
 def test_login_missing_fields_narrow_error(live_server: str) -> None:
-    """Regression: Phase 11 H2 — /api/admin/login only surfaces LoginError messages."""
+    """Regression: Phase 11 H2 - /api/admin/login only surfaces LoginError messages."""
     resp = httpx.post(live_server + "/api/admin/login", json={})
     assert resp.status_code == 401
     assert resp.json()["error"] == "email and password are required"
@@ -76,7 +76,7 @@ def test_shipment_upsert_then_public_lookup(
     )
     assert upsert.status_code == 200, upsert.text
     # Public lookup now requires the same identity factor as search (name + DOB
-    # in the default mode) on top of the CAPTCHA — a guessable SBD alone won't do.
+    # in the default mode) on top of the CAPTCHA - a guessable SBD alone won't do.
     lookup = httpx.post(
         live_server + "/api/shipment/lookup",
         json={

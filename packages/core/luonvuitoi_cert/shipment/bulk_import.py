@@ -11,7 +11,7 @@ History semantics
 -----------------
 
 Shipment PK is ``(round_id, sbd, tracking_code)``. A re-send attempt for the
-same SBD produces a new row keyed by the new tracking code — the audit
+same SBD produces a new row keyed by the new tracking code. The audit
 trail keeps every carrier attempt for a student. Existing rows get
 overwritten on ``INSERT OR REPLACE`` only when the *same* tracking code
 arrives with updated status (carrier delivery-in-progress → delivered).
@@ -113,7 +113,7 @@ def _cell_to_str(value: Any) -> str:
 def _resolve_carrier(config: CertConfig, carrier: str | None) -> tuple[str, ShipmentImportProfile]:
     if config.features.shipment.import_ is None:
         raise BulkImportError(
-            "shipment.import block missing from config — add profiles before running bulk import"
+            "shipment.import block missing from config. Add profiles before running bulk import"
         )
     imp = config.features.shipment.import_
     name = carrier or imp.default
@@ -127,7 +127,7 @@ def _resolve_carrier(config: CertConfig, carrier: str | None) -> tuple[str, Ship
 def _require_phone_col(config: CertConfig) -> str:
     col = config.data_mapping.phone_col
     if not col:
-        raise BulkImportError("data_mapping.phone_col must be set — bulk import matches SBD via phone")
+        raise BulkImportError("data_mapping.phone_col must be set. Bulk import matches SBD via phone")
     return col
 
 
@@ -270,7 +270,7 @@ def bulk_import_shipments(
     """Parse a carrier export and (optionally) upsert its rows.
 
     Returns stats for the run. Does not mutate the DB when ``commit`` is
-    false — callers display the stats to the operator before rerunning
+    false. Callers display the stats to the operator before rerunning
     with ``commit=True``.
     """
     carrier_name, profile = _resolve_carrier(config, carrier)
@@ -305,7 +305,7 @@ def bulk_import_shipments(
 
     phone_to_sbds = _build_phone_to_sbds(db_path, round_table, config.data_mapping.sbd_col, phone_col)
 
-    # Dedup by tracking code — first row wins (stable file order).
+    # Dedup by tracking code; first row wins (stable file order).
     seen_tracking: set[str] = set()
     to_insert: list[tuple[str, str, str, int, str, str, str, str, str, str, str]] = []
     skipped_prefix = 0
@@ -389,7 +389,7 @@ def bulk_import_shipments(
                         "WHERE round_id=? AND sbd=? AND status='exported' LIMIT 1",
                         (r_id, sbd),
                     ).fetchone()
-                    # Only act when there's an exported draft to close — keeps a
+                    # Only act when there's an exported draft to close; keeps a
                     # re-run of the same import idempotent (no draft churn).
                     if exported is None:
                         continue

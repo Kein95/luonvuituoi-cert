@@ -1,6 +1,6 @@
 """Password hashing via stdlib PBKDF2-SHA256.
 
-No bcrypt / argon2 dependency on purpose — stdlib is enough for the threat
+No bcrypt / argon2 dependency on purpose. Stdlib is enough for the threat
 model of a small-org admin panel, and it keeps the serverless cold-start
 cheap. Hashes are stored in modular format ``pbkdf2$<iter>$<salt_b64>$<hash_b64>``
 so future migrations (argon2id) can coexist by sniffing the prefix.
@@ -46,7 +46,7 @@ def verify_password(password: str, stored: str) -> bool:
     """Constant-time check of ``password`` against a stored PBKDF2 hash.
 
     Malformed stored hashes, empty passwords, or unknown algorithms all
-    return ``False`` rather than raising — callers shouldn't leak the reason
+    return ``False`` rather than raising. Callers shouldn't leak the reason
     a login failed, and we already returned ``False`` on correct-password-but-
     corrupted-row before catching up to the typical wrong-password timing.
     """

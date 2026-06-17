@@ -2,7 +2,7 @@
 
 The loader is the single entry point CLI tools and serverless handlers call,
 so its error messages must survive refactors. Sample configs double as
-regression fixtures — if they stop validating, downstream docs and scaffolder
+regression fixtures - if they stop validating, downstream docs and scaffolder
 templates break.
 """
 
@@ -57,7 +57,7 @@ def test_load_validation_error_wraps_cleanly(tmp_path: Path) -> None:
 
 
 def test_validation_error_includes_file_path(tmp_path: Path) -> None:
-    """Regression: Phase 02 review H1 — file path was missing from validation-error branch."""
+    """Regression: Phase 02 review H1 - file path was missing from validation-error branch."""
     p = tmp_path / "bad.json"
     p.write_text(json.dumps({"project": {"name": "x", "slug": "x"}}), encoding="utf-8")
     try:
@@ -81,7 +81,7 @@ def test_validation_error_has_no_pydantic_url_noise(tmp_path: Path) -> None:
 
 
 def test_validation_error_does_not_echo_raw_input(tmp_path: Path) -> None:
-    """Raw input may contain secrets — don't echo it back."""
+    """Raw input may contain secrets - don't echo it back."""
     p = tmp_path / "bad.json"
     secret_marker = "s3cret-marker-do-not-leak"
     p.write_text(json.dumps({"project": {"name": secret_marker, "slug": "x"}}), encoding="utf-8")

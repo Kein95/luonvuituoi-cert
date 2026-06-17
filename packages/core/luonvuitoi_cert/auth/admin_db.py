@@ -5,7 +5,7 @@ Schema:
 - ``admin_users(id TEXT PK, email TEXT UNIQUE NOT NULL, password_hash TEXT,
   role TEXT NOT NULL, is_active INTEGER NOT NULL DEFAULT 1, created_at TEXT)``
 
-Passwords are optional — OTP-email and magic-link modes leave the column
+Passwords are optional. OTP-email and magic-link modes leave the column
 ``NULL``. Role is stored as the string enum value; :class:`Role` enforces the
 allowed set at read time.
 """

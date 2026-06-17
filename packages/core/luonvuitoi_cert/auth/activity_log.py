@@ -2,7 +2,7 @@
 
 Entries land in a ``admin_activity`` SQLite table. If a Google Sheets webhook
 URL is configured (``GSHEET_WEBHOOK_URL`` env), a copy is POSTed fire-and-
-forget — the local log is always authoritative; webhook failures never break
+forget. The local log is always authoritative; webhook failures never break
 the admin flow.
 """
 
@@ -25,7 +25,7 @@ import httpx
 _LOGGER = logging.getLogger(__name__)
 
 # H4: a single bounded executor per process, not one thread per admin action.
-# Uploading a 10k-row CSV triggers 10k audit writes — without this cap we'd
+# Uploading a 10k-row CSV triggers 10k audit writes. Without this cap we'd
 # spawn 10k daemon threads and the interpreter would thrash the scheduler.
 _WEBHOOK_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="activity-log-webhook")
 atexit.register(_WEBHOOK_EXECUTOR.shutdown, wait=False)
@@ -62,7 +62,7 @@ def _validated_webhook_url(url: str | None) -> str | None:
         return None
     if not url.strip().lower().startswith("https://"):
         _LOGGER.warning(
-            "activity log webhook must be https://; got scheme prefix %r — disabled.",
+            "activity log webhook must be https://; got scheme prefix %r. Disabled.",
             url[:20],
         )
         return None
@@ -145,7 +145,7 @@ class ActivityLog:
             _WEBHOOK_EXECUTOR.submit(self._post_webhook, payload)
         except RuntimeError:
             # Interpreter already shutting down; local SQLite record is
-            # authoritative — forwarding loss is acceptable.
+            # authoritative; forwarding loss is acceptable.
             _LOGGER.debug("activity log executor shut down; skipping webhook")
 
     def _post_webhook(self, payload: dict[str, object]) -> None:
@@ -165,7 +165,7 @@ def log_admin_action(
     metadata: dict[str, object] | None = None,
     ip: str | None = None,
 ) -> ActivityLogEntry:
-    """Convenience builder — timestamps the entry and hands it to :class:`ActivityLog`."""
+    """Convenience builder: timestamps the entry and hands it to :class:`ActivityLog`."""
     entry = ActivityLogEntry(
         id=str(uuid.uuid4()),
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -183,7 +183,7 @@ def log_admin_action(
 def resolve_webhook_url(env: dict[str, str] | None = None) -> str | None:
     """Return the configured webhook URL if it's an ``https://`` target, else ``None``.
 
-    M6: env-provided URL previously accepted any scheme — including ``http://``
+    M6: env-provided URL previously accepted any scheme, including ``http://``
     internal hosts or ``file://`` paths, giving a would-be attacker an SSRF
     vector if they could set the env var. We require explicit ``https://`` and
     log-then-drop anything else so operators notice misconfig.

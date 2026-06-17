@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 def _detect_worker_count(env: dict[str, str]) -> int | None:
     """Parse the worker count from common hosts (gunicorn, uvicorn, waitress).
 
-    Returns ``None`` when we can't tell — single-process local dev with Flask
+    Returns ``None`` when we can't tell; single-process local dev with Flask
     doesn't set these and shouldn't trigger the warning.
     """
     for key in ("WEB_CONCURRENCY", "GUNICORN_WORKERS", "UVICORN_WORKERS"):
@@ -57,15 +57,15 @@ def open_kv(
     if choice == "local":
         override = env.get("KV_LOCAL_PATH")
         path = Path(override) if override else Path(project_root) / ".kv" / "store.json"
-        # LocalFileKV serializes with a per-process threading.Lock — safe within
+        # LocalFileKV serializes with a per-process threading.Lock; safe within
         # one process but NOT cross-process. Multiple workers race the
         # read-modify-write and can replay single-use CAPTCHA/OTP/magic-link
         # tokens or undercount rate limits, so refuse to run rather than warn.
         workers = _detect_worker_count(env)
         if workers is not None and workers > 1:
             raise KVError(
-                f"kv_backend 'local' is unsafe with {workers} workers — concurrent "
-                "processes race single-use tokens and rate-limit counters. Set "
+                f"kv_backend 'local' is unsafe with {workers} workers. Concurrent reads can lose writes. "
+                "Set "
                 "KV_BACKEND=upstash or vercel-kv, or run a single worker."
             )
         return LocalFileKV(path)

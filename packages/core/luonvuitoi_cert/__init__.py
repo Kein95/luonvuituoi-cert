@@ -1,4 +1,4 @@
-"""LUONVUITUOI-CERT — config-driven certificate portal engine.
+"""LUONVUITUOI-CERT: config-driven certificate portal engine.
 
 Public API is stable within a minor version; internal modules under
 ``luonvuitoi_cert.*`` may change without notice in 0.x releases.

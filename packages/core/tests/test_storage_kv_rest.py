@@ -1,4 +1,4 @@
-"""Tests for RestKV — protocol-level verification with httpx MockTransport.
+"""Tests for RestKV - protocol-level verification with httpx MockTransport.
 
 We don't require a live Upstash/Vercel endpoint. The mock captures the
 command arrays the adapter sends and returns canned Redis-style responses.
@@ -97,7 +97,7 @@ def test_command_error_surface() -> None:
 
 
 def test_non_json_response_wrapped_in_kv_error() -> None:
-    """Regression: Phase 04 review H3 — json.JSONDecodeError used to leak through."""
+    """Regression: Phase 04 review H3 - json.JSONDecodeError used to leak through."""
 
     def handler(_):  # type: ignore[no-untyped-def]
         return httpx.Response(200, content=b"not actually json")
@@ -108,7 +108,7 @@ def test_non_json_response_wrapped_in_kv_error() -> None:
 
 
 def test_consume_uses_getdel() -> None:
-    """Regression: Phase 05 review C1 — atomic single-use via Redis GETDEL."""
+    """Regression: Phase 05 review C1 - atomic single-use via Redis GETDEL."""
     seen: list = []
 
     def handler(request: httpx.Request) -> httpx.Response:

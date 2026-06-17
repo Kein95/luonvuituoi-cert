@@ -1,8 +1,8 @@
-"""``lvt-cert import-shipments`` — bulk-import carrier Excel/CSV into shipments.
+"""``lvt-cert import-shipments`` bulk-imports carrier Excel/CSV into shipments.
 
 Parses a carrier export, matches SBD via ``data_mapping.phone_col``, and
-upserts rows into ``shipment_history``. Default behavior is a **dry run**
-— operator inspects stats then re-runs with ``--commit`` to persist.
+upserts rows into ``shipment_history``. Default behavior is a **dry run**:
+operator inspects stats then re-runs with ``--commit`` to persist.
 
 Config: ``features.shipment.import.profiles.<name>`` must be present. Select
 the profile via ``--carrier <name>``, or rely on
@@ -76,7 +76,7 @@ def import_shipments(
         print(_json.dumps(asdict(stats), ensure_ascii=False, indent=2))
         return
 
-    banner = "[yellow]DRY RUN — no DB changes[/]" if not commit else "[green]COMMITTED[/]"
+    banner = "[yellow]DRY RUN. no DB changes[/]" if not commit else "[green]COMMITTED[/]"
     console.print(f"\n[bold]Shipment bulk import[/] ({banner})")
     console.print(f"  carrier: [cyan]{stats.carrier}[/]")
     console.print(f"  round:   [cyan]{stats.round_id}[/]")

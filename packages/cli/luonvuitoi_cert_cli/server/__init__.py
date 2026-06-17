@@ -4,7 +4,7 @@
 ``lvt-cert dev`` locally, gunicorn in the Docker image (``wsgi.py``), and the
 Vercel serverless entrypoint (the scaffold's ``api/index.py``). All of them
 import ``build_app`` from here, so this subpackage is a production dependency,
-not a dev-only convenience — keep it installed wherever the portal is served.
+not a dev-only convenience. Keep it installed wherever the portal is served.
 The handlers themselves live in ``luonvuitoi_cert`` and stay transport-agnostic.
 """
 

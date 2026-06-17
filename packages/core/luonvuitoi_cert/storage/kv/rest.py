@@ -2,8 +2,8 @@
 
 Both vendors expose the same HTTP command surface: POST a JSON array of
 command args (``["GET", "mykey"]``) to the base URL with a Bearer token.
-Vercel KV is built on Upstash under the hood, so one adapter handles both —
-the only thing that differs is which env var pair we read at construction.
+Vercel KV is built on Upstash under the hood, so one adapter handles both.
+The only thing that differs is which env var pair we read at construction.
 """
 
 from __future__ import annotations
@@ -92,7 +92,7 @@ class RestKV:
     def scan_prefix(self, prefix: str, *, limit: int = 100) -> list[str]:
         # Uses SCAN which Upstash/Vercel KV both expose. Cursor-paginates until
         # limit reached. The prefix is escaped so Redis glob metacharacters
-        # (*, ?, [, \) in it are matched literally — otherwise a prefix like
+        # (*, ?, [, \) in it are matched literally; otherwise a prefix like
         # "a[b" would be read as a character class and silently diverge from the
         # local backends' str.startswith. COUNT is capped at the caller's limit
         # so a small request doesn't over-fetch a 100-key page.

@@ -66,7 +66,7 @@ def test_search_rate_limit_kicks_in(live_server: str, captcha_solver) -> None:  
     """T1: loop until 429 with enough headroom that a cross-window-boundary
     roll-over won't flake. The fixed-window limiter resets at 60s ticks; if the
     first batch lands 59.9s into a window, req #21 arrives after rollover and
-    comes back 200 — so the previous hard-coded "exactly 21 reqs" was timing-
+    comes back 200 - so the previous hard-coded "exactly 21 reqs" was timing-
     sensitive. Cap at 2× the limit (40 reqs) and assert *some* 429 appears.
     """
     codes: list[int] = []
@@ -138,14 +138,14 @@ def test_verify_rejects_tampered_blob(live_server: str) -> None:
 
 
 def test_oversize_body_rejected(live_server: str) -> None:
-    """Regression: Phase 11 H1 — MAX_CONTENT_LENGTH enforced by Werkzeug."""
+    """Regression: Phase 11 H1 - MAX_CONTENT_LENGTH enforced by Werkzeug."""
     huge = {"sbd": "x" * (40 * 1024)}
     resp = httpx.post(live_server + "/api/search", json=huge)
     assert resp.status_code == 413
 
 
 def test_verify_url_honors_public_base_url(live_server: str, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 11 H5 — magic-link / verify URLs pin to env-configured base."""
+    """Regression: Phase 11 H5 - magic-link / verify URLs pin to env-configured base."""
     # Fresh server with PUBLIC_BASE_URL set ahead of request.
     # (Re-using live_server; just confirm the env-read path is reachable.)
     import os

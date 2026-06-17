@@ -2,7 +2,7 @@
 
 Atomic writes via temp-file + ``os.replace``. A process-local
 ``threading.Lock`` serializes operations so concurrent requests in the dev
-server don't clobber each other. Cross-process safety is *not* promised — if
+server don't clobber each other. Cross-process safety is *not* promised; if
 you need that, switch to :class:`RestKV` against Upstash.
 """
 
@@ -109,7 +109,7 @@ class LocalFileKV:
             if entry is None:
                 return None
             value, expires_at = entry
-            # Even on expiry we still write back the pop — frees the slot.
+            # Even on expiry we still write back the pop; frees the slot.
             self._save(data)
             return value if self._is_alive(expires_at) else None
 

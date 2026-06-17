@@ -25,5 +25,5 @@ def test_committed_schema_matches_generator() -> None:
     expected = render_schema()
     actual = COMMITTED.read_text(encoding="utf-8")
     assert actual == expected, (
-        "cert.schema.json is out of date — run `python scripts/export_schema.py` and commit the result."
+        "cert.schema.json is out of date - run `python scripts/export_schema.py` and commit the result."
     )

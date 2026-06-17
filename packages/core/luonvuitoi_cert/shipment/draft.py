@@ -1,4 +1,4 @@
-"""Shipment draft state machine — forward half of the shipping lifecycle.
+"""Shipment draft state machine: forward half of the shipping lifecycle.
 
 Admins curate a list of students to ship (filter by column value, result
 tier, or external Excel list), export to carrier-ready Excel, then hard-lock
@@ -7,17 +7,17 @@ the batch. Once a carrier returns tracking data, the import pipeline
 
 State machine
 -------------
-``draft``     — added, editable, not exported
-``exported``  — included in an export; HARD-LOCKED (immutable; cancel only)
-``cancelled`` — admin voided before or after export
-``promoted``  — bulk_import matched a tracking_code; see shipment_history for
+``draft``     : added, editable, not exported
+``exported``  : included in an export; HARD-LOCKED (immutable; cancel only)
+``cancelled`` : admin voided before or after export
+``promoted``  : bulk_import matched a tracking_code; see shipment_history for
                 the live delivery status
 
 Schema lives in ``shipment_draft`` table (separate from ``shipment_history``).
-Composite PK ``(round_id, sbd)`` — one draft per student per round. Creating
+Composite PK ``(round_id, sbd)``: one draft per student per round. Creating
 a second draft for the same (round, sbd) while the first is still ``draft``
 replaces it; second draft while first is ``exported`` raises unless
-``--force`` (not implemented — hard lock means cancel first).
+``--force`` (not implemented; hard lock means cancel first).
 """
 
 from __future__ import annotations
@@ -162,7 +162,7 @@ def _parse_filters(raw: Any) -> dict[str, str]:
         for item in raw:
             s = str(item).strip()
             if "=" not in s:
-                raise DraftError(f"bad filter expression {item!r} — expected 'column=value'")
+                raise DraftError(f"bad filter expression {item!r}. Expected 'column=value'")
             k, v = s.split("=", 1)
             if k.strip() and v.strip():
                 out[k.strip()] = v.strip()
@@ -250,9 +250,9 @@ def draft_add(
     Accepted params:
         - ``round_id`` (required)
         - ``filters`` (optional dict or list[str] "col=value")
-        - ``result`` (optional) — match any subject column
-        - ``sbd_list`` (optional list[str]) — restrict to known SBDs
-        - ``note`` (optional) — stamp onto every draft
+        - ``result`` (optional): match any subject column
+        - ``sbd_list`` (optional list[str]): restrict to known SBDs
+        - ``note`` (optional): stamp onto every draft
 
     At least one of ``filters`` / ``result`` / ``sbd_list`` must be non-empty
     so ``add`` can never accidentally target the whole student table.
@@ -271,7 +271,7 @@ def draft_add(
 
     if not (filters or result_filter or sbd_list):
         raise DraftError(
-            "must supply at least one of filters / result / sbd_list — refusing to draft the entire round"
+            "must supply at least one of filters / result / sbd_list. Refusing to draft the entire round"
         )
 
     columns = _students_columns(config)
@@ -404,7 +404,7 @@ def draft_cancel(
     """Cancel drafts by id list. Returns number of rows affected.
 
     Exported drafts *can* be cancelled (operator caught a mistake after
-    export) but the carrier upload has already happened — follow up with
+    export) but the carrier upload has already happened. Follow up with
     carrier to void the actual shipment.
     """
     user_id, user_email = _verify_admin(params, env, kv)
@@ -445,7 +445,7 @@ def draft_export(
     client_ip: str | None = None,
 ) -> ExportResult:
     """Export all 'draft'-status rows for (round, carrier) to a carrier-ready
-    Excel file. Marks them 'exported' with a shared batch_id — HARD LOCK.
+    Excel file. Marks them 'exported' with a shared batch_id. HARD LOCK.
     """
     user_id, user_email = _verify_admin(params, env, kv)
     round_id = str(params.get("round_id", "")).strip()
@@ -461,7 +461,7 @@ def draft_export(
         raise DraftError(f"unknown carrier {carrier!r}")
     if profile.export_template is None:
         raise DraftError(
-            f"carrier {carrier!r} has no export_template — add features.shipment.import.profiles.{carrier}.export_template"
+            f"carrier {carrier!r} has no export_template. Add features.shipment.import.profiles.{carrier}.export_template"
         )
 
     batch_id = str(uuid.uuid4())
@@ -526,7 +526,7 @@ def draft_export(
     buf = io.BytesIO()
     wb.save(buf)
     file_bytes = buf.getvalue()
-    # Sanitize even though round_id is _IDENT and batch_id is a UUID — carrier
+    # Sanitize even though round_id is _IDENT and batch_id is a UUID. Carrier
     # is an operator-authored profile key that isn't pattern-validated, and the
     # download route drops this straight into Content-Disposition. Imported
     # lazily so the shipment package never depends on api at import time.

@@ -1,4 +1,4 @@
-"""Tests for :mod:`luonvuitoi_cert.api.feature_gates` — pure KV semantics."""
+"""Tests for :mod:`luonvuitoi_cert.api.feature_gates` - pure KV semantics."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ def test_require_lookup_ok_when_on() -> None:
 def test_require_download_raises_when_lookup_off() -> None:
     kv = MemoryKV()
     set_state(kv, lookup_enabled=False, download_enabled=False)
-    # Lookup message wins — downstream gate inherits upstream failure.
+    # Lookup message wins - downstream gate inherits upstream failure.
     with pytest.raises(FeatureDisabledError, match="lookup"):
         require_public_download(kv)
 

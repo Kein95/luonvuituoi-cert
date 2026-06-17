@@ -447,7 +447,7 @@
     },
     "ShipmentExportTemplate": {
       "additionalProperties": false,
-      "description": "Reverse column mapping — logical field → exact header name written to Excel.\n\nUsed by ``lvt-cert shipment export`` to produce a carrier-ready order\nfile. Unlike the import mapping (which accepts fallbacks), export uses a\nsingle canonical name per column so the resulting Excel always matches\nthe carrier's upload template.",
+      "description": "Reverse column mapping: logical field → exact header name written to Excel.\n\nUsed by ``lvt-cert shipment export`` to produce a carrier-ready order\nfile. Unlike the import mapping (which accepts fallbacks), export uses a\nsingle canonical name per column so the resulting Excel always matches\nthe carrier's upload template.",
       "properties": {
         "sbd": {
           "anyOf": [

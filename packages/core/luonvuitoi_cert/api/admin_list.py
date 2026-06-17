@@ -1,7 +1,7 @@
 """Admin-only list/filter endpoint.
 
 Unlike the student portal (which demands SBD + CAPTCHA and returns exactly
-one row), admins often need to *browse* — "show me everyone whose name
+one row), admins often need to *browse*: "show me everyone whose name
 starts with Nguyen" or "everyone with DOB 01/01/2010." This handler returns
 up to ``MAX_LIST_RESULTS`` matches per round with minimal row data and
 records an ``admin.search`` entry in the activity log so read actions are
@@ -27,7 +27,7 @@ from luonvuitoi_cert.config import CertConfig
 from luonvuitoi_cert.storage.kv.base import KVBackend
 
 MAX_LIST_RESULTS = 50
-MIN_NAME_PREFIX = 2  # Reject 1-char queries — would return most of the DB.
+MIN_NAME_PREFIX = 2  # Reject 1-char queries; would return most of the DB.
 
 
 class AdminListError(Exception):

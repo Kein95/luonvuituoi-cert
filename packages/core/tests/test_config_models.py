@@ -72,7 +72,7 @@ def test_results_keys_must_match_subject_codes() -> None:
 
 
 def test_subject_without_results_is_rejected() -> None:
-    """Regression: Phase 02 review C1 — a subject declared without results silently passed before."""
+    """Regression: Phase 02 review C1 - a subject declared without results silently passed before."""
     raw = _valid_raw()
     raw["subjects"].append({"code": "EXTRA", "en": "Extra", "db_col": "extra_col"})
     # results only has the first subject
@@ -196,7 +196,7 @@ def test_admin_roles_cannot_be_empty() -> None:
 
 
 def test_data_mapping_columns_must_be_sql_idents() -> None:
-    """Regression: Phase 05 review C2 — *_col fields fed SQL but weren't regex-validated."""
+    """Regression: Phase 05 review C2 - *_col fields fed SQL but weren't regex-validated."""
     raw = _valid_raw()
     raw["data_mapping"] = {"sbd_col": "col;DROP TABLE"}
     with pytest.raises(ValidationError, match="SQL identifier"):
@@ -217,7 +217,7 @@ def test_data_mapping_optional_cols_skip_validation_when_none() -> None:
 
 
 def test_qr_key_paths_reject_absolute() -> None:
-    """Regression: Phase 07 review C1 — public/private key paths bypassed traversal check."""
+    """Regression: Phase 07 review C1 - public/private key paths bypassed traversal check."""
     raw = _valid_raw()
     raw["features"] = {"qr_verify": {"public_key_path": "/etc/passwd"}}
     with pytest.raises(ValidationError, match="relative path"):

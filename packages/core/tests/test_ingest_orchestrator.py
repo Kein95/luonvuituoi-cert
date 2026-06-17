@@ -145,7 +145,7 @@ def test_sbd_is_stripped(tmp_path: Path) -> None:
 
 
 def test_falsy_numeric_values_preserved(tmp_path: Path) -> None:
-    """Regression: Phase 04 review C1 — 0 / False / 0.0 used to become empty strings."""
+    """Regression: Phase 04 review C1 - 0 / False / 0.0 used to become empty strings."""
     cfg = _cfg()
     db = tmp_path / "test.db"
     ingest_rows(

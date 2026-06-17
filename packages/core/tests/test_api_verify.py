@@ -130,7 +130,7 @@ def test_qr_disabled_raises(qr_project) -> None:  # type: ignore[no-untyped-def]
 
 
 def test_missing_public_key_error_hides_filesystem_path(qr_project) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 07 review H2 — error must not leak the resolved key path."""
+    """Regression: Phase 07 review H2 - error must not leak the resolved key path."""
     config, project_root, priv = qr_project
     blob = _make_blob(config, priv)
     (project_root / "public_key.pem").unlink()  # force load_public_key to fail
@@ -141,7 +141,7 @@ def test_missing_public_key_error_hides_filesystem_path(qr_project) -> None:  # 
 
 
 def test_expired_cert_rejected_when_max_age_set(qr_project) -> None:  # type: ignore[no-untyped-def]
-    """Regression: Phase 07 review H1 — issued_at TTL is enforced."""
+    """Regression: Phase 07 review H1 - issued_at TTL is enforced."""
     config, project_root, priv = qr_project
     aged = config.model_copy(
         update={

@@ -451,7 +451,7 @@ def test_phone_normalized_handles_float_and_separators(
     wb = Workbook()
     ws = wb.active
     ws.append(["Mã vận đơn", "SĐT", "Trạng thái"])
-    ws.append(["VN001", 901000001, "DELIVERED"])  # numeric cell — pandas/openpyxl stores as number
+    ws.append(["VN001", 901000001, "DELIVERED"])  # numeric cell - pandas/openpyxl stores as number
     ws.append(["VN002", "0901 000 002", "DELIVERED"])  # spaces
     path = tmp_path / "messy-phone.xlsx"
     wb.save(path)

@@ -1,4 +1,4 @@
-"""UI template rendering — Jinja2 + config-driven branding.
+"""UI template rendering: Jinja2 + config-driven branding.
 
 Templates live under ``luonvuitoi_cert/templates/`` as ``.html.j2`` files and
 ship with the package, so a deployed project doesn't need filesystem paths
@@ -6,7 +6,7 @@ to render them. Each public page has a thin render function (:mod:`ui.pages`)
 that the transport layer (Flask dev server, Vercel handler) calls to produce
 the HTML response.
 
-Autoescape is always on — never mark a string safe that originated in a
+Autoescape is always on. Never mark a string safe that originated in a
 config value or a user request without explicit justification.
 """
 

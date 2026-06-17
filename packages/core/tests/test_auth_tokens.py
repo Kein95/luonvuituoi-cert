@@ -65,7 +65,7 @@ def test_unknown_role_rejected() -> None:
 
 
 def test_missing_jwt_secret_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Regression: Phase 06 review H1 — silent ephemeral fallback removed."""
+    """Regression: Phase 06 review H1 - silent ephemeral fallback removed."""
     with pytest.raises(TokenError, match="JWT_SECRET is not set"):
         issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env={})
 
@@ -84,7 +84,7 @@ def test_placeholder_jwt_secret_rejected(secret: str) -> None:
 
 @pytest.mark.parametrize("secret", ["short", "a" * 31])
 def test_short_jwt_secret_rejected(secret: str) -> None:
-    """HS256 secrets under 32 bytes are offline-brute-forceable — reject them."""
+    """HS256 secrets under 32 bytes are offline-brute-forceable - reject them."""
     with pytest.raises(TokenError, match="too short"):
         issue_admin_token(user_id="u1", email="a@b.co", role=Role.ADMIN, env={"JWT_SECRET": secret})
 

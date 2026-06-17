@@ -4,7 +4,7 @@ Verifies:
 - ``revoke_admin_token`` stores the caller's ``jti`` in the KV denylist.
 - ``verify_admin_token`` with ``kv=`` rejects a revoked token.
 - ``verify_admin_token`` without ``kv=`` (legacy calls) still accepts it
-  — backwards compatible by design.
+  - backwards compatible by design.
 - TTL on the denylist entry matches the token's remaining life.
 - Already-expired tokens are no-op on revoke.
 """
@@ -26,7 +26,7 @@ from luonvuitoi_cert.auth.tokens import JTI_DENYLIST_PREFIX
 
 
 class _MemKV:
-    """Minimal in-memory KV for unit tests — mirrors the KVBackend protocol."""
+    """Minimal in-memory KV for unit tests - mirrors the KVBackend protocol."""
 
     def __init__(self) -> None:
         self.store: dict[str, tuple[str, float]] = {}

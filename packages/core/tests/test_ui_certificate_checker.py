@@ -93,7 +93,7 @@ def test_vi_locale_translates_page_strings() -> None:
 
 
 def test_page_js_uses_tojson_for_endpoint() -> None:
-    """Regression: Phase 08 review H1 — previous assertion was tautological.
+    """Regression: Phase 08 review H1 - previous assertion was tautological.
 
     ``|tojson`` must escape the closing quote inside the endpoint string so
     the attacker can't terminate the JS literal. Verify by asserting the
@@ -107,12 +107,12 @@ def test_page_js_uses_tojson_for_endpoint() -> None:
     )
     # Escaped closing quote must be present (Jinja tojson emits \").
     assert '\\"' in html
-    # The unescaped breakout — ending the string with `";` — must never occur.
+    # The unescaped breakout - ending the string with `";` - must never occur.
     assert 'verify";' not in html
 
 
 def test_branding_logo_url_rejects_javascript_uri() -> None:
-    """Regression: Phase 08 review C1 — logo_url is an active URL sink."""
+    """Regression: Phase 08 review C1 - logo_url is an active URL sink."""
     from pydantic import ValidationError
 
     with pytest.raises(ValidationError):
@@ -133,7 +133,7 @@ def test_branding_logo_url_accepts_safe_schemes() -> None:
 
 
 def test_result_region_has_aria_live() -> None:
-    """Regression: Phase 08 review M3 — badge + result must announce to screen readers."""
+    """Regression: Phase 08 review M3 - badge + result must announce to screen readers."""
     html = render_certificate_checker_page(config=_cfg(), locale=load_locale("en"))
     assert 'aria-live="polite"' in html
     assert 'role="region"' in html
@@ -191,7 +191,7 @@ def test_render_includes_upload_locale_strings_en() -> None:
 
 def test_render_includes_upload_locale_strings_vi() -> None:
     html = render_certificate_checker_page(config=_cfg(), locale=load_locale("vi"))
-    # `upload_image` is rendered as plain text inside the HTML body — appears literal.
+    # `upload_image` is rendered as plain text inside the HTML body - appears literal.
     assert "Tải ảnh QR lên" in html
     # The hint strings are emitted via |tojson which ASCII-escapes Unicode.
     # Either the literal or the escaped form is acceptable for translation coverage.
